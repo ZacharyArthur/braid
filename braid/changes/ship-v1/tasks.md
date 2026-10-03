@@ -7,8 +7,8 @@
 - [ ] 2.3 ZCode: find the marketplace path; confirm hooks.json is accepted or split it; close both Open items in `braid/routes/v1.md`
 
 ## 3. Release
-- [ ] 3.1 TESTING.md manual checklist
-- [ ] 3.2 GitHub Actions: `node scripts/check.cjs` on windows-latest and ubuntu-latest
+- [x] 3.1 TESTING.md manual checklist
+- [x] 3.2 GitHub Actions: `node scripts/check.cjs` on windows-latest and ubuntu-latest
 - [ ] 3.3 README: Codex and ZCode install, ZCode skills to toggle off
 - [ ] 3.4 Manual A/B on 5 ponytail benchmark tasks: braid vs ponytail vs none (diff size, tests pass, tokens)
 - [ ] 3.5 CHANGELOG.md; manifests to 1.0.0
