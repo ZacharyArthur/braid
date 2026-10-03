@@ -1,0 +1,5 @@
+interface:
+  display_name: "Braid Design"
+  short_description: "Native-first UI without the generic AI look"
+policy:
+  allow_implicit_invocation: false

@@ -27,3 +27,4 @@ Update a row: `gh api repos/<owner>/<repo>/compare/<sha>...HEAD --jq '.files[] |
 | `wayfind` | clean-room | mattpocock/skills | skills/engineering/wayfinder | - | MIT (idea only) |
 | `handoff` | clean-room | mattpocock/skills | skills/productivity/handoff | - | MIT (idea only) |
 | `xreview` | clean-room | - | - | - | - |
+| `design` | clean-room | pbakaus/impeccable, Leonxlnx/taste-skill, nextlevelbuilder/ui-ux-pro-max-skill | - | - | Apache-2.0 / MIT (ideas only) |
