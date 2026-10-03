@@ -1,0 +1,41 @@
+diff --git a/validate.py b/validate.py
+new file mode 100644
+index 0000000..5c129a8
+--- /dev/null
++++ b/validate.py
+@@ -0,0 +1,35 @@
++import re
++
++
++_EMAIL = re.compile(
++    r"[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+"
++    r"(?:\.[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+)*@"
++    r"(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+"
++    r"[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?"
++)
++
++
++def is_valid_email(address: str) -> bool:
++    """Check common ASCII email syntax with a dotted domain, not deliverability.
++
++    Quoted local parts and internationalized addresses are unsupported.
++    """
++    return (
++        isinstance(address, str)
++        and len(address) <= 254
++        and len(address.partition("@")[0]) <= 64
++        and _EMAIL.fullmatch(address) is not None
++    )
++
++
++if __name__ == "__main__":
++    for address in ("user@example.com", "first.last+tag@sub.example.org"):
++        assert is_valid_email(address), address
++    for address in (
++        "", None, "user@@example.com", ".user@example.com",
++        "user..name@example.com", "user@-example.com", "user@example",
++        "user@example.com\n", "a" * 65 + "@example.com",
++        "user@" + "a" * 64 + ".com",
++        "a" * 64 + "@" + ".".join(["b" * 63] * 3) + ".com",
++    ):
++        assert not is_valid_email(address), address

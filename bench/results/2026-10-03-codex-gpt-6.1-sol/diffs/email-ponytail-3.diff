@@ -1,0 +1,43 @@
+diff --git a/validate.py b/validate.py
+new file mode 100644
+index 0000000..c60b65a
+--- /dev/null
++++ b/validate.py
+@@ -0,0 +1,37 @@
++"""Practical validation for ASCII email addresses."""
++
++import re
++
++
++_EMAIL = re.compile(
++    r"[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+"
++    r"(?:\.[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+)*@"
++    r"(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+"
++    r"[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?"
++)
++
++
++def is_valid_email(address: str) -> bool:
++    """Check syntax; require a dotted domain, without checking deliverability.
++
++    Quoted local parts, domain literals, and internationalized addresses are
++    outside this validator's scope. Whitespace is rejected, not stripped.
++    """
++    return (
++        isinstance(address, str)
++        and len(address) <= 254
++        and 1 <= len(address.partition("@")[0]) <= 64
++        and _EMAIL.fullmatch(address) is not None
++    )
++
++
++if __name__ == "__main__":
++    for address in ("alice@example.com", "first.last+tag@sub.example.org",
++                    "a" * 64 + "@example.com"):
++        assert is_valid_email(address), address
++    for address in (None, "", "a@localhost", "a..b@example.com",
++                    ".a@example.com", "a@-example.com", "a@example-.com",
++                    "a@example.com\n", "a@@example.com", "a@exam ple.com",
++                    "a" * 65 + "@example.com", "a@" + "b" * 64 + ".com",
++                    "a@" + ".".join(["b" * 63] * 4)):
++        assert not is_valid_email(address), address

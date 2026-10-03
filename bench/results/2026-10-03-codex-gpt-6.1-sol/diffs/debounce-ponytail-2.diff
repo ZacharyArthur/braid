@@ -1,0 +1,39 @@
+diff --git a/debounce.js b/debounce.js
+new file mode 100644
+index 0000000..99b0b01
+--- /dev/null
++++ b/debounce.js
+@@ -0,0 +1,10 @@
++function debounce(fn, delay) {
++  let timer;
++
++  return function (...args) {
++    clearTimeout(timer);
++    timer = setTimeout(() => fn.apply(this, args), delay);
++  };
++}
++
++module.exports = debounce;
+diff --git a/debounce.test.js b/debounce.test.js
+new file mode 100644
+index 0000000..91e7806
+--- /dev/null
++++ b/debounce.test.js
+@@ -0,0 +1,17 @@
++const assert = require('node:assert/strict');
++const debounce = require('./debounce');
++
++const calls = [];
++const context = { value: 42 };
++const debounced = debounce(function (...args) {
++  calls.push({ context: this, args });
++}, 20);
++
++debounced.call(context, 'first');
++debounced.call(context, 'last', 2);
++assert.equal(calls.length, 0);
++
++setTimeout(() => {
++  assert.deepEqual(calls, [{ context, args: ['last', 2] }]);
++  console.log('Debounce check passed');
++}, 50);

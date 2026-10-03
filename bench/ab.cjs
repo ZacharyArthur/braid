@@ -126,6 +126,8 @@ function codex(task, arm, cwd) {
   };
 }
 
+const TEST_FILE = /(^|\/)(tests?\/|test_[^/]*$|[^/]*_test\.[^/]+$|[^/]*\.(test|spec)\.[^/]+$)/;
+
 function check(task, dir, cwd) {
   if (!task.check) return null;
   const file = path.join(dir, task.check);
@@ -158,12 +160,14 @@ function once(id, arm, i, outDir) {
 
   git(cwd, 'add', '-A');
   fs.writeFileSync(path.join(outDir, 'diffs', `${id}-${arm}-${i}.diff`), redact(git(cwd, 'diff', '--cached')));
-  let added = 0, removed = 0;
+  // Code and tests are counted apart: a test file the core rules asked for isn't bloat.
+  let added = 0, removed = 0, tests = 0;
   for (const line of git(cwd, 'diff', '--cached', '--numstat').split('\n').filter(Boolean)) {
-    const [a, r] = line.split('\t');
-    added += Number(a) || 0; removed += Number(r) || 0;
+    const [a, r, file] = line.split('\t');
+    if (TEST_FILE.test(file)) tests += Number(a) || 0;
+    else { added += Number(a) || 0; removed += Number(r) || 0; }
   }
-  const result = { task: id, arm, run: i, ...agent, error: agent.error && redact(agent.error), reply: redact(agent.reply), added, removed, check: check(task, dir, cwd), dry: dry(task, cwd) };
+  const result = { task: id, arm, run: i, ...agent, error: agent.error && redact(agent.error), reply: redact(agent.reply), added, removed, tests, check: check(task, dir, cwd), dry: dry(task, cwd) };
   fs.rmSync(cwd, { recursive: true, force: true }); // the diff is saved; the run dir is throwaway
   return result;
 }
@@ -181,15 +185,15 @@ function report(results) {
   const rows = [];
   for (const id of TASK_IDS) for (const arm of ARMS) {
     const rs = results.filter((r) => r.task === id && r.arm === arm);
-    rows.push(`| ${id} | ${arm} | +${median(rs.map((r) => r.added))} −${median(rs.map((r) => r.removed))} | ${tally(rs, 'check')} | ${tally(rs, 'dry')} | ${median(rs.map((r) => r.tokens))} | ${cost(rs)} | ${median(rs.map((r) => r.seconds)).toFixed(1)} | ${median(rs.map((r) => r.turns))} | ${rs.filter((r) => r.error).length} |`);
+    rows.push(`| ${id} | ${arm} | +${median(rs.map((r) => r.added))} −${median(rs.map((r) => r.removed))} | ${median(rs.map((r) => r.tests || 0))} | ${tally(rs, 'check')} | ${tally(rs, 'dry')} | ${median(rs.map((r) => r.tokens))} | ${cost(rs)} | ${median(rs.map((r) => r.seconds)).toFixed(1)} | ${median(rs.map((r) => r.turns))} | ${rs.filter((r) => r.error).length} |`);
   }
   return [
     `# A/B: ${FAKE ? 'FAKE (reference solutions, no agent)' : `${AGENT} ${MODEL}`}, ${RUNS} run(s) per cell`,
     '',
     `${new Date().toISOString().slice(0, 10)} · arms: ${ARMS.join(', ')} · medians · python checks: ${PYTHON ? pyVersion(PYTHON) : 'skipped (no Python 3)'}`,
     '',
-    `| task | arm | lines | check | DRY | tokens | cost $ | time s | ${AGENT === 'codex' ? 'steps' : 'turns'} | errors |`,
-    '|---|---|--:|:-:|:-:|--:|--:|--:|--:|--:|',
+    `| task | arm | code | tests | check | DRY | tokens | cost $ | time s | ${AGENT === 'codex' ? 'steps' : 'turns'} | errors |`,
+    '|---|---|--:|--:|:-:|:-:|--:|--:|--:|--:|--:|',
     ...rows,
     '',
     'DRY probes: ' + TASK_IDS.map((id) => JSON.parse(fs.readFileSync(path.join(TASKS, id, 'task.json'), 'utf8'))).filter((t) => t.dry).map((t) => `${t.dry.file}: ${t.dry.means}`).join('; ') + '.',
@@ -207,7 +211,7 @@ for (const id of TASK_IDS) for (const arm of ARMS) for (let i = 1; i <= RUNS; i+
   const r = once(id, arm, i, outDir);
   results.push(r);
   fs.appendFileSync(path.join(outDir, 'runs.jsonl'), JSON.stringify(r) + '\n');
-  console.log(r.error ? `error: ${r.error}` : `+${r.added} −${r.removed} check=${r.check} dry=${r.dry}`);
+  console.log(r.error ? `error: ${r.error}` : `+${r.added} −${r.removed} tests=${r.tests} check=${r.check} dry=${r.dry}`);
 }
 fs.writeFileSync(path.join(outDir, 'report.md'), report(results));
 console.log(`\n${path.relative(ROOT, path.join(outDir, 'report.md'))}`);

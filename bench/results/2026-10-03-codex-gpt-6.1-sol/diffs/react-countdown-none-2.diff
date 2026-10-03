@@ -1,0 +1,32 @@
+diff --git a/Countdown.jsx b/Countdown.jsx
+new file mode 100644
+index 0000000..4c2039f
+--- /dev/null
++++ b/Countdown.jsx
+@@ -0,0 +1,26 @@
++import { useEffect, useState } from 'react';
++
++function normalizeSeconds(seconds) {
++  return Number.isFinite(seconds) ? Math.max(0, Math.floor(seconds)) : 0;
++}
++
++export default function Countdown({ seconds }) {
++  const duration = normalizeSeconds(seconds);
++  const [remaining, setRemaining] = useState(duration);
++
++  useEffect(() => {
++    setRemaining(duration);
++    if (duration === 0) return;
++
++    const deadline = Date.now() + duration * 1000;
++    const interval = setInterval(() => {
++      const next = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
++      setRemaining(next);
++      if (next === 0) clearInterval(interval);
++    }, 1000);
++
++    return () => clearInterval(interval);
++  }, [duration]);
++
++  return <span role="timer">{remaining} seconds remaining</span>;
++}

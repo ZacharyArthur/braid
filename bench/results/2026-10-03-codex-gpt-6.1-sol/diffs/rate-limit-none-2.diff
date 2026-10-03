@@ -1,0 +1,60 @@
+diff --git a/main.py b/main.py
+index 9cbedc7..13519fe 100644
+--- a/main.py
++++ b/main.py
+@@ -1,13 +1,53 @@
+-from fastapi import FastAPI
++from collections import deque
++from math import ceil
++from threading import Lock
++from time import monotonic
++
++from fastapi import Depends, FastAPI, HTTPException, Request
+ from pydantic import BaseModel
+ 
+ app = FastAPI()
+ 
++RATE_LIMIT = 10
++RATE_WINDOW_SECONDS = 60
++_requests: dict[str, deque[float]] = {}
++_rate_limit_lock = Lock()
++_last_cleanup = 0.0
++
++
++def enforce_rate_limit(request: Request) -> None:
++    """Limit by peer IP, without trusting client-supplied forwarding headers.
++
++    State is per process; use a shared store for multiple workers or replicas.
++    """
++    global _last_cleanup
++    client_ip = request.client.host if request.client else "unknown"
++    with _rate_limit_lock:
++        now = monotonic()
++        cutoff = now - RATE_WINDOW_SECONDS
++        if now - _last_cleanup >= RATE_WINDOW_SECONDS:
++            for ip in list(_requests):
++                if not _requests[ip] or _requests[ip][-1] <= cutoff:
++                    del _requests[ip]
++            _last_cleanup = now
++
++        timestamps = _requests.setdefault(client_ip, deque())
++        while timestamps and timestamps[0] <= cutoff:
++            timestamps.popleft()
++        if len(timestamps) >= RATE_LIMIT:
++            retry_after = max(1, ceil(timestamps[0] + RATE_WINDOW_SECONDS - now))
++            raise HTTPException(
++                status_code=429,
++                detail="Too many requests. Try again later.",
++                headers={"Retry-After": str(retry_after)},
++            )
++        timestamps.append(now)
++
+ 
+ class Message(BaseModel):
+     text: str
+ 
+ 
+-@app.post("/messages")
++@app.post("/messages", dependencies=[Depends(enforce_rate_limit)])
+ def create_message(message: Message):
+     return {"ok": True, "length": len(message.text)}

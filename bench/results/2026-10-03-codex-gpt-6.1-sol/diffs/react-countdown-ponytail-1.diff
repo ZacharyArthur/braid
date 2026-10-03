@@ -1,0 +1,75 @@
+diff --git a/Countdown.jsx b/Countdown.jsx
+new file mode 100644
+index 0000000..7ca72dc
+--- /dev/null
++++ b/Countdown.jsx
+@@ -0,0 +1,22 @@
++import { useEffect, useState } from "react";
++
++export default function Countdown({ seconds = 0 }) {
++  const duration = Number.isFinite(seconds) ? Math.max(0, Math.floor(seconds)) : 0;
++  const [remaining, setRemaining] = useState(duration);
++
++  useEffect(() => {
++    setRemaining(duration);
++    if (duration === 0) return;
++
++    let left = duration;
++    const interval = setInterval(() => {
++      left -= 1;
++      setRemaining(left);
++      if (left === 0) clearInterval(interval);
++    }, 1000);
++
++    return () => clearInterval(interval);
++  }, [duration]);
++
++  return <span role="timer">{remaining} seconds remaining</span>;
++}
+diff --git a/Countdown.test.mjs b/Countdown.test.mjs
+new file mode 100644
+index 0000000..796e3ad
+--- /dev/null
++++ b/Countdown.test.mjs
+@@ -0,0 +1,41 @@
++import assert from "node:assert/strict";
++import { readFileSync } from "node:fs";
++import { runInNewContext } from "node:vm";
++
++// Exercise the effect with deterministic ticks, without installing React or a JSX compiler.
++const source = readFileSync(new URL("./Countdown.jsx", import.meta.url), "utf8")
++  .replace(/^import .*;\n/, "")
++  .replace("export default function", "function")
++  .replace(/return <span.*<\/span>;/, "return remaining;");
++
++function mount(seconds) {
++  let value, tick, cleanup;
++  const Countdown = runInNewContext(`${source}\nCountdown`, {
++    useState(initial) { value = initial; return [value, next => { value = next; }]; },
++    useEffect(effect) { cleanup = effect(); },
++    setInterval(callback, delay) { assert.equal(delay, 1000); tick = callback; return 1; },
++    clearInterval(id) { assert.equal(id, 1); tick = undefined; },
++  });
++  Countdown({ seconds });
++  return { value: () => value, tick: () => tick?.(), active: () => !!tick, unmount: () => cleanup?.() };
++}
++
++const timer = mount(2);
++assert.equal(timer.value(), 2);
++timer.tick();
++assert.equal(timer.value(), 1);
++timer.tick();
++assert.equal(timer.value(), 0);
++assert.equal(timer.active(), false);
++timer.tick();
++assert.equal(timer.value(), 0);
++const cancelled = mount(10);
++cancelled.unmount();
++assert.equal(cancelled.active(), false);
++for (const seconds of [0, -1, NaN, Infinity, undefined]) {
++  const empty = mount(seconds);
++  assert.equal(empty.value(), 0);
++  assert.equal(empty.active(), false);
++}
++assert.equal(mount(2.9).value(), 2);
++console.log("Countdown checks passed");

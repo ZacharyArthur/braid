@@ -1,0 +1,32 @@
+diff --git a/reports.js b/reports.js
+index 2f762f5..e30264a 100644
+--- a/reports.js
++++ b/reports.js
+@@ -14,4 +14,12 @@ function refundReport(rows) {
+   return lines.join('\n');
+ }
+ 
+-module.exports = { salesReport, refundReport };
++function creditReport(rows) {
++  const lines = ['Credits', '-------'];
++  for (const r of rows) lines.push(`${r.date}  ${r.amount.toFixed(2).padStart(10)}`);
++  const total = rows.reduce((sum, r) => sum + r.amount, 0);
++  lines.push(`Total       ${total.toFixed(2).padStart(10)}`);
++  return lines.join('\n');
++}
++
++module.exports = { salesReport, refundReport, creditReport };
+diff --git a/reports.test.js b/reports.test.js
+new file mode 100644
+index 0000000..87fb4c6
+--- /dev/null
++++ b/reports.test.js
+@@ -0,0 +1,8 @@
++const assert = require('node:assert/strict');
++const { creditReport } = require('./reports');
++
++assert.equal(
++  creditReport([{ date: '2026-10-03', amount: 12.5 }, { date: '2026-10-04', amount: 3 }]),
++  'Credits\n-------\n2026-10-03       12.50\n2026-10-04        3.00\nTotal            15.50'
++);
++assert.equal(creditReport([]), 'Credits\n-------\nTotal             0.00');

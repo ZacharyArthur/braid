@@ -1,0 +1,40 @@
+diff --git a/validate.py b/validate.py
+new file mode 100644
+index 0000000..afe0447
+--- /dev/null
++++ b/validate.py
+@@ -0,0 +1,34 @@
++import re
++
++
++def is_valid_email(address: str) -> bool:
++    """Validate a plain ASCII email with an unquoted local part and dotted domain.
++
++    Checks syntax only; does not verify that the mailbox exists.
++    """
++    if not isinstance(address, str) or len(address) > 254:
++        return False
++    local, separator, domain = address.rpartition("@")
++    if not separator or not 1 <= len(local) <= 64:
++        return False
++    atom = r"[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+"
++    label = r"[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?"
++    return (
++        re.fullmatch(rf"{atom}(?:\.{atom})*", local) is not None
++        and re.fullmatch(rf"{label}(?:\.{label})+", domain) is not None
++    )
++
++
++if __name__ == "__main__":
++    for address in ("user@example.com", "first.last+tag@sub.example.org"):
++        assert is_valid_email(address), address
++    for address in (
++        None, "", "user", "user@@example.com", "a..b@example.com",
++        ".user@example.com", "user.@example.com", "user@-example.com",
++        "user@example-.com", "user@example", "user@example.com\n",
++        "user name@example.com", "a" * 65 + "@example.com",
++        "user@" + "a" * 64 + ".com",
++        "a" * 64 + "@" + ".".join(["b" * 63] * 3 + ["com"]),
++    ):
++        assert not is_valid_email(address), address
++    print("Email validation checks passed.")

@@ -1,0 +1,95 @@
+diff --git a/Countdown.jsx b/Countdown.jsx
+new file mode 100644
+index 0000000..5ef3b77
+--- /dev/null
++++ b/Countdown.jsx
+@@ -0,0 +1,22 @@
++import { useEffect, useState } from 'react';
++
++export default function Countdown({ seconds }) {
++  const initialSeconds = Number.isFinite(seconds) ? Math.max(0, Math.floor(seconds)) : 0;
++  const [remaining, setRemaining] = useState(initialSeconds);
++
++  useEffect(() => {
++    setRemaining(initialSeconds);
++    if (initialSeconds === 0) return;
++
++    let next = initialSeconds;
++    const interval = setInterval(() => {
++      next -= 1;
++      setRemaining(next);
++      if (next === 0) clearInterval(interval);
++    }, 1000);
++
++    return () => clearInterval(interval);
++  }, [initialSeconds]);
++
++  return <span>{remaining}</span>;
++}
+diff --git a/Countdown.test.cjs b/Countdown.test.cjs
+new file mode 100644
+index 0000000..9dc20f1
+--- /dev/null
++++ b/Countdown.test.cjs
+@@ -0,0 +1,61 @@
++const assert = require('node:assert/strict');
++const fs = require('node:fs');
++const vm = require('node:vm');
++
++// Exercise the component's effects with controlled ticks, without installing React.
++let remaining, dependency, cleanup;
++let intervals = new Map();
++let id = 0;
++const source = fs.readFileSync(`${__dirname}/Countdown.jsx`, 'utf8')
++  .replace(/^import .*;\r?\n/, '')
++  .replace('export default function', 'function')
++  .replace('<span>{remaining}</span>', 'remaining');
++const context = {
++  useState(initial) {
++    if (remaining === undefined) remaining = initial;
++    return [remaining, (value) => { remaining = value; }];
++  },
++  useEffect(effect, [value]) {
++    if (value === dependency) return;
++    cleanup?.();
++    dependency = value;
++    cleanup = effect();
++  },
++  setInterval(callback, delay) {
++    assert.equal(delay, 1000);
++    intervals.set(++id, callback);
++    return id;
++  },
++  clearInterval(id) { intervals.delete(id); },
++};
++vm.createContext(context);
++vm.runInContext(source, context);
++const render = (seconds) => context.Countdown({ seconds });
++const tick = () => [...intervals.values()].forEach((callback) => callback());
++
++assert.equal(render(3), 3);
++tick();
++assert.equal(render(3), 2);
++tick();
++tick();
++assert.equal(render(3), 0);
++assert.equal(intervals.size, 0);
++render(5);
++assert.equal(remaining, 5);
++tick();
++assert.equal(remaining, 4);
++render(2);
++assert.equal(intervals.size, 1);
++tick();
++assert.equal(remaining, 1);
++cleanup();
++assert.equal(intervals.size, 0);
++for (const value of [-1, NaN, Infinity, undefined, '3']) {
++  render(value);
++  assert.equal(remaining, 0);
++  assert.equal(intervals.size, 0);
++}
++render(2.9);
++assert.equal(remaining, 2);
++cleanup();
++console.log('Countdown checks passed');

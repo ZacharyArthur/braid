@@ -1,0 +1,37 @@
+diff --git a/validate.py b/validate.py
+new file mode 100644
+index 0000000..cbfdf9a
+--- /dev/null
++++ b/validate.py
+@@ -0,0 +1,31 @@
++"""Practical syntax validation for common email addresses."""
++
++import re
++
++
++_LOCAL_PART = re.compile(r"[A-Za-z0-9!#$%&'*+/=?^_`{|}~.-]+", re.ASCII)
++_DOMAIN_LABEL = re.compile(r"[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?", re.ASCII)
++
++
++def is_valid_email(address: str) -> bool:
++    """Validate a common ASCII email address without checking deliverability.
++
++    Requires a dotted domain. Quoted local parts, domain literals, and
++    internationalized addresses are outside this function's scope.
++    Whitespace is rejected rather than silently stripped.
++    """
++    if not isinstance(address, str) or len(address) > 254:
++        return False
++    if address.count("@") != 1:
++        return False
++
++    local, domain = address.split("@")
++    if not 1 <= len(local) <= 64 or not _LOCAL_PART.fullmatch(local):
++        return False
++    if local.startswith(".") or local.endswith(".") or ".." in local:
++        return False
++
++    labels = domain.split(".")
++    return len(labels) >= 2 and all(
++        _DOMAIN_LABEL.fullmatch(label) is not None for label in labels
++    )

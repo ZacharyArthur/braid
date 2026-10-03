@@ -1,0 +1,82 @@
+diff --git a/Countdown.jsx b/Countdown.jsx
+new file mode 100644
+index 0000000..bee8dbf
+--- /dev/null
++++ b/Countdown.jsx
+@@ -0,0 +1,22 @@
++import { useEffect, useState } from 'react';
++
++export default function Countdown({ seconds }) {
++  const duration = Number.isFinite(seconds) ? Math.max(0, Math.floor(seconds)) : 0;
++  const [remaining, setRemaining] = useState(duration);
++
++  useEffect(() => {
++    setRemaining(duration);
++    if (duration === 0) return;
++
++    const deadline = Date.now() + duration * 1000;
++    const interval = setInterval(() => {
++      const next = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
++      setRemaining(next);
++      if (next === 0) clearInterval(interval);
++    }, 1000);
++
++    return () => clearInterval(interval);
++  }, [duration]);
++
++  return <span role="timer" aria-label="Seconds remaining">{remaining}</span>;
++}
+diff --git a/Countdown.test.cjs b/Countdown.test.cjs
+new file mode 100644
+index 0000000..49c8af9
+--- /dev/null
++++ b/Countdown.test.cjs
+@@ -0,0 +1,48 @@
++// Run with: node Countdown.test.cjs
++const assert = require('node:assert/strict');
++const fs = require('node:fs');
++const vm = require('node:vm');
++
++let now = 0;
++let remaining;
++let effect;
++let tick;
++let cleared = false;
++const context = {
++  useState: (initial) => {
++    remaining = initial;
++    return [remaining, (value) => { remaining = value; }];
++  },
++  useEffect: (callback) => { effect = callback; },
++  Date: { now: () => now },
++  setInterval: (callback) => { tick = callback; cleared = false; return 1; },
++  clearInterval: () => { cleared = true; },
++};
++const source = fs.readFileSync(`${__dirname}/Countdown.jsx`, 'utf8')
++  .replace(/^import .*;\r?\n/, '')
++  .replace('export default function', 'function')
++  .replace(/return <span[^\n]+/, 'return remaining;');
++vm.createContext(context);
++vm.runInContext(source, context);
++
++assert.equal(context.Countdown({ seconds: 3 }), 3);
++const cleanup = effect();
++now = 1000;
++tick();
++assert.equal(remaining, 2);
++now = 5000; // A delayed tick still reaches zero.
++tick();
++assert.equal(remaining, 0);
++assert.equal(cleared, true);
++cleanup();
++
++context.Countdown({ seconds: 2 });
++const resetCleanup = effect();
++assert.equal(remaining, 2);
++resetCleanup();
++assert.equal(cleared, true);
++for (const seconds of [0, -1, NaN, Infinity, undefined]) {
++  assert.equal(context.Countdown({ seconds }), 0);
++  assert.equal(effect(), undefined);
++}
++console.log('Countdown checks passed');

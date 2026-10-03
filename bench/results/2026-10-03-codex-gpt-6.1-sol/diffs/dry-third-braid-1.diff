@@ -1,0 +1,55 @@
+diff --git a/reports.js b/reports.js
+index 2f762f5..27699cd 100644
+--- a/reports.js
++++ b/reports.js
+@@ -1,17 +1,21 @@
+-function salesReport(rows) {
+-  const lines = ['Sales', '-----'];
++function report(title, rows) {
++  const lines = [title, '-'.repeat(title.length)];
+   for (const r of rows) lines.push(`${r.date}  ${r.amount.toFixed(2).padStart(10)}`);
+   const total = rows.reduce((sum, r) => sum + r.amount, 0);
+   lines.push(`Total       ${total.toFixed(2).padStart(10)}`);
+   return lines.join('\n');
+ }
+ 
++function salesReport(rows) {
++  return report('Sales', rows);
++}
++
+ function refundReport(rows) {
+-  const lines = ['Refunds', '-------'];
+-  for (const r of rows) lines.push(`${r.date}  ${r.amount.toFixed(2).padStart(10)}`);
+-  const total = rows.reduce((sum, r) => sum + r.amount, 0);
+-  lines.push(`Total       ${total.toFixed(2).padStart(10)}`);
+-  return lines.join('\n');
++  return report('Refunds', rows);
++}
++
++function creditReport(rows) {
++  return report('Credits', rows);
+ }
+ 
+-module.exports = { salesReport, refundReport };
++module.exports = { salesReport, refundReport, creditReport };
+diff --git a/reports.test.js b/reports.test.js
+new file mode 100644
+index 0000000..34e0317
+--- /dev/null
++++ b/reports.test.js
+@@ -0,0 +1,15 @@
++const assert = require('node:assert/strict');
++const { salesReport, refundReport, creditReport } = require('./reports');
++
++for (const [title, report] of [
++  ['Sales', salesReport],
++  ['Refunds', refundReport],
++  ['Credits', creditReport],
++]) {
++  assert.equal(report([]), `${title}\n${'-'.repeat(title.length)}\nTotal             0.00`);
++  assert.equal(
++    report([{ date: '2026-10-01', amount: 12.5 }, { date: '2026-10-02', amount: -2 }]),
++    `${title}\n${'-'.repeat(title.length)}\n2026-10-01       12.50\n2026-10-02       -2.00\nTotal            10.50`,
++  );
++}
++console.log('All three reports passed formatting and total checks.');

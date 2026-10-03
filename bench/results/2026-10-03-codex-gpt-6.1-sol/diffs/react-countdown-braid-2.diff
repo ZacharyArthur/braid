@@ -1,0 +1,94 @@
+diff --git a/Countdown.jsx b/Countdown.jsx
+new file mode 100644
+index 0000000..a184f5a
+--- /dev/null
++++ b/Countdown.jsx
+@@ -0,0 +1,24 @@
++import { useEffect, useState } from "react";
++
++export default function Countdown({ seconds }) {
++  const initialSeconds = Number.isFinite(seconds)
++    ? Math.max(0, Math.floor(seconds))
++    : 0;
++  const [remainingSeconds, setRemainingSeconds] = useState(initialSeconds);
++
++  useEffect(() => {
++    let remaining = initialSeconds;
++    setRemainingSeconds(remaining);
++    if (remaining === 0) return;
++
++    const interval = setInterval(() => {
++      remaining -= 1;
++      setRemainingSeconds(remaining);
++      if (remaining === 0) clearInterval(interval);
++    }, 1000);
++
++    return () => clearInterval(interval);
++  }, [initialSeconds]);
++
++  return <span role="timer">{remainingSeconds}</span>;
++}
+diff --git a/Countdown.test.cjs b/Countdown.test.cjs
+new file mode 100644
+index 0000000..5cf5f14
+--- /dev/null
++++ b/Countdown.test.cjs
+@@ -0,0 +1,58 @@
++const assert = require("node:assert/strict");
++const fs = require("node:fs");
++const vm = require("node:vm");
++
++// Exercise the component's hooks with a deterministic clock, without React tooling.
++const source = fs.readFileSync(`${__dirname}/Countdown.jsx`, "utf8")
++  .replace('import { useEffect, useState } from "react";', "")
++  .replace("export default function", "function")
++  .replace('<span role="timer">{remainingSeconds}</span>', "remainingSeconds");
++let value;
++let dependencies;
++let cleanup;
++let tick;
++const context = {
++  useState(initial) {
++    if (value === undefined) value = initial;
++    return [value, (next) => { value = next; }];
++  },
++  useEffect(effect, nextDependencies) {
++    if (!dependencies || dependencies[0] !== nextDependencies[0]) {
++      cleanup?.();
++      dependencies = nextDependencies;
++      cleanup = effect();
++    }
++  },
++  setInterval(callback, delay) {
++    assert.equal(delay, 1000);
++    tick = callback;
++    return 1;
++  },
++  clearInterval() { tick = undefined; },
++};
++vm.createContext(context);
++vm.runInContext(`${source}\nthis.Countdown = Countdown;`, context);
++
++context.Countdown({ seconds: 2 });
++assert.equal(value, 2);
++tick();
++assert.equal(value, 1);
++tick();
++assert.equal(value, 0);
++assert.equal(tick, undefined);
++
++context.Countdown({ seconds: 3.9 });
++assert.equal(value, 3);
++tick();
++assert.equal(value, 2);
++context.Countdown({ seconds: 5 });
++assert.equal(value, 5);
++cleanup();
++assert.equal(tick, undefined);
++
++for (const seconds of [0, -1, NaN, Infinity, undefined, "3"]) {
++  context.Countdown({ seconds });
++  assert.equal(value, 0);
++  assert.equal(tick, undefined);
++}
++console.log("Countdown checks passed");

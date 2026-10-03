@@ -1,0 +1,83 @@
+diff --git a/main.py b/main.py
+index 9cbedc7..03931f0 100644
+--- a/main.py
++++ b/main.py
+@@ -1,7 +1,16 @@
+-from fastapi import FastAPI
++from collections import deque
++from math import ceil
++from threading import Lock
++from time import monotonic
++
++from fastapi import FastAPI, HTTPException, Request
+ from pydantic import BaseModel
+ 
+ app = FastAPI()
++RATE_LIMIT = 10
++RATE_WINDOW = 60
++requests_by_ip = {}
++rate_lock = Lock()
+ 
+ 
+ class Message(BaseModel):
+@@ -9,5 +18,22 @@ class Message(BaseModel):
+ 
+ 
+ @app.post("/messages")
+-def create_message(message: Message):
++def create_message(message: Message, request: Request):
++    # Use the connected peer; forwarded headers are only safe behind a trusted proxy.
++    client_ip = request.client.host if request.client else "unknown"
++    with rate_lock:
++        now = monotonic()
++        for ip, timestamps in list(requests_by_ip.items()):
++            while timestamps and timestamps[0] <= now - RATE_WINDOW:
++                timestamps.popleft()
++            if not timestamps:
++                del requests_by_ip[ip]
++        timestamps = requests_by_ip.setdefault(client_ip, deque())
++        if len(timestamps) >= RATE_LIMIT:
++            raise HTTPException(
++                status_code=429,
++                detail="Too many requests",
++                headers={"Retry-After": str(ceil(timestamps[0] + RATE_WINDOW - now))},
++            )
++        timestamps.append(now)
+     return {"ok": True, "length": len(message.text)}
+diff --git a/test_main.py b/test_main.py
+new file mode 100644
+index 0000000..e196c8e
+--- /dev/null
++++ b/test_main.py
+@@ -0,0 +1,31 @@
++import unittest
++from unittest.mock import patch
++
++from fastapi.testclient import TestClient
++
++import main
++
++
++class RateLimitTest(unittest.TestCase):
++    def test_limit_is_per_ip_and_expires(self):
++        main.requests_by_ip.clear()
++        with patch("main.monotonic", return_value=100) as clock:
++            with TestClient(main.app, client=("192.0.2.1", 1234)) as client:
++                for _ in range(main.RATE_LIMIT):
++                    response = client.post("/messages", json={"text": "hello"})
++                    self.assertEqual(response.status_code, 200)
++                    self.assertEqual(response.json(), {"ok": True, "length": 5})
++                response = client.post("/messages", json={"text": "hello"})
++                self.assertEqual(response.status_code, 429)
++                self.assertEqual(response.headers["Retry-After"], "60")
++                with TestClient(main.app, client=("192.0.2.2", 1234)) as other:
++                    response = other.post("/messages", json={"text": "hello"})
++                    self.assertEqual(response.status_code, 200)
++                clock.return_value = 160
++                response = client.post("/messages", json={"text": "hello"})
++                self.assertEqual(response.status_code, 200)
++                self.assertNotIn("192.0.2.2", main.requests_by_ip)
++
++
++if __name__ == "__main__":
++    unittest.main()

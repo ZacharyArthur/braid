@@ -1,0 +1,51 @@
+diff --git a/debounce.js b/debounce.js
+new file mode 100644
+index 0000000..40bd2e5
+--- /dev/null
++++ b/debounce.js
+@@ -0,0 +1,10 @@
++function debounce(fn, delay) {
++  let timeout;
++
++  return function (...args) {
++    clearTimeout(timeout);
++    timeout = setTimeout(() => fn.apply(this, args), delay);
++  };
++}
++
++module.exports = debounce;
+diff --git a/debounce.test.js b/debounce.test.js
+new file mode 100644
+index 0000000..1eec634
+--- /dev/null
++++ b/debounce.test.js
+@@ -0,0 +1,29 @@
++const assert = require('node:assert/strict');
++const { mock } = require('node:test');
++const debounce = require('./debounce');
++
++mock.timers.enable({ apis: ['setTimeout'] });
++try {
++  const calls = [];
++  const context = {};
++  const debounced = debounce(function (...args) {
++    calls.push({ context: this, args });
++  }, 100);
++
++  debounced('first');
++  mock.timers.tick(50);
++  debounced.call(context, 'last', 42);
++  mock.timers.tick(99);
++  assert.equal(calls.length, 0);
++  mock.timers.tick(1);
++  assert.deepEqual(calls, [{ context, args: ['last', 42] }]);
++  mock.timers.tick(100);
++  assert.equal(calls.length, 1);
++
++  debounced.call(context, 'again');
++  mock.timers.tick(100);
++  assert.deepEqual(calls[1], { context, args: ['again'] });
++  console.log('Debounce checks passed');
++} finally {
++  mock.timers.reset();
++}

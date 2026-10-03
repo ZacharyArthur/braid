@@ -1,0 +1,85 @@
+diff --git a/main.py b/main.py
+index 9cbedc7..69e0016 100644
+--- a/main.py
++++ b/main.py
+@@ -1,13 +1,43 @@
+-from fastapi import FastAPI
++from collections import deque
++from math import ceil
++from threading import Lock
++from time import monotonic
++
++from fastapi import Depends, FastAPI, HTTPException, Request
+ from pydantic import BaseModel
+ 
+ app = FastAPI()
++RATE_LIMIT = 10
++RATE_WINDOW = 60
++_requests: dict[str, deque[float]] = {}
++_lock = Lock()
++
++
++def rate_limit(request: Request):
++    client = request.client.host if request.client else "unknown"
++    # ponytail: process-local storage and O(n) cleanup; use Redis for multiple workers or high traffic.
++    with _lock:
++        now = monotonic()
++        for key, timestamps in list(_requests.items()):
++            while timestamps and timestamps[0] <= now - RATE_WINDOW:
++                timestamps.popleft()
++            if not timestamps:
++                del _requests[key]
++        timestamps = _requests.setdefault(client, deque())
++        if len(timestamps) >= RATE_LIMIT:
++            retry_after = max(1, ceil(timestamps[0] + RATE_WINDOW - now))
++            raise HTTPException(
++                status_code=429,
++                detail="Too many requests",
++                headers={"Retry-After": str(retry_after)},
++            )
++        timestamps.append(now)
+ 
+ 
+ class Message(BaseModel):
+     text: str
+ 
+ 
+-@app.post("/messages")
++@app.post("/messages", dependencies=[Depends(rate_limit)])
+ def create_message(message: Message):
+     return {"ok": True, "length": len(message.text)}
+diff --git a/test_main.py b/test_main.py
+new file mode 100644
+index 0000000..6b09bc9
+--- /dev/null
++++ b/test_main.py
+@@ -0,0 +1,29 @@
++import unittest
++from unittest.mock import patch
++
++from fastapi.testclient import TestClient
++
++import main
++
++
++class RateLimitTest(unittest.TestCase):
++    def test_limit_is_per_client_and_expires(self):
++        main._requests.clear()
++        self.addCleanup(main._requests.clear)
++        with patch("main.monotonic", return_value=100) as clock:
++            with TestClient(main.app, client=("192.0.2.1", 1234)) as client:
++                for _ in range(main.RATE_LIMIT):
++                    response = client.post("/messages", json={"text": "hello"})
++                    self.assertEqual(response.status_code, 200)
++                    self.assertEqual(response.json(), {"ok": True, "length": 5})
++                response = client.post("/messages", json={"text": "hello"})
++                self.assertEqual(response.status_code, 429)
++                self.assertEqual(response.headers["Retry-After"], "60")
++                with TestClient(main.app, client=("192.0.2.2", 1234)) as other:
++                    self.assertEqual(other.post("/messages", json={"text": "hi"}).status_code, 200)
++                clock.return_value = 100 + main.RATE_WINDOW
++                self.assertEqual(client.post("/messages", json={"text": "hi"}).status_code, 200)
++
++
++if __name__ == "__main__":
++    unittest.main()

@@ -1,0 +1,32 @@
+diff --git a/sum_sales.py b/sum_sales.py
+new file mode 100644
+index 0000000..d36034b
+--- /dev/null
++++ b/sum_sales.py
+@@ -0,0 +1,8 @@
++import csv
++from decimal import Decimal
++
++
++with open("sales.csv", newline="", encoding="utf-8-sig") as sales:
++    total = sum((Decimal(row["amount"]) for row in csv.DictReader(sales)), Decimal("0"))
++
++print(total)
+diff --git a/test_sum_sales.py b/test_sum_sales.py
+new file mode 100644
+index 0000000..58953a8
+--- /dev/null
++++ b/test_sum_sales.py
+@@ -0,0 +1,12 @@
++from contextlib import redirect_stdout
++from io import StringIO
++from pathlib import Path
++import runpy
++from unittest.mock import mock_open, patch
++
++
++script = Path(__file__).with_name("sum_sales.py").resolve()
++output = StringIO()
++with patch("builtins.open", mock_open(read_data="amount\n0.10\n0.20\n")), redirect_stdout(output):
++    runpy.run_path(str(script))
++assert output.getvalue().strip() == "0.30", output.getvalue()

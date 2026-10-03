@@ -1,0 +1,99 @@
+diff --git a/Countdown.jsx b/Countdown.jsx
+new file mode 100644
+index 0000000..cf04254
+--- /dev/null
++++ b/Countdown.jsx
+@@ -0,0 +1,27 @@
++import { useEffect, useState } from 'react';
++
++export default function Countdown({ seconds = 0 }) {
++  const initialSeconds = Number.isFinite(seconds)
++    ? Math.max(0, Math.floor(seconds))
++    : 0;
++  const [remaining, setRemaining] = useState(initialSeconds);
++
++  useEffect(() => {
++    setRemaining(initialSeconds);
++    if (initialSeconds === 0) return;
++
++    const interval = setInterval(() => {
++      setRemaining((current) => {
++        if (current <= 1) {
++          clearInterval(interval);
++          return 0;
++        }
++        return current - 1;
++      });
++    }, 1000);
++
++    return () => clearInterval(interval);
++  }, [initialSeconds]);
++
++  return <span role="timer">{remaining} seconds remaining</span>;
++}
+diff --git a/Countdown.test.cjs b/Countdown.test.cjs
+new file mode 100644
+index 0000000..92c0490
+--- /dev/null
++++ b/Countdown.test.cjs
+@@ -0,0 +1,60 @@
++const assert = require('node:assert/strict');
++const fs = require('node:fs');
++const vm = require('node:vm');
++
++// Exercise the component's hooks without installing React or a JSX toolchain.
++const source = fs.readFileSync(`${__dirname}/Countdown.jsx`, 'utf8')
++  .replace(/^import .*;\n/, '')
++  .replace('export default function', 'function')
++  .replace(/return <span.*<\/span>;/, 'return remaining;');
++
++let remaining;
++let effect;
++let tick;
++let active = false;
++const context = {
++  useState(initial) {
++    remaining ??= initial;
++    return [remaining, (value) => {
++      remaining = typeof value === 'function' ? value(remaining) : value;
++    }];
++  },
++  useEffect(callback) { effect = callback; },
++  setInterval(callback, delay) {
++    assert.equal(delay, 1000);
++    tick = callback;
++    active = true;
++    return 1;
++  },
++  clearInterval() { active = false; },
++};
++vm.createContext(context);
++vm.runInContext(`${source}\nthis.Countdown = Countdown;`, context);
++
++context.Countdown({ seconds: 2 });
++let cleanup = effect();
++tick();
++assert.equal(remaining, 1);
++tick();
++assert.equal(remaining, 0);
++assert.equal(active, false);
++cleanup();
++
++context.Countdown({ seconds: 5 });
++cleanup = effect();
++assert.equal(remaining, 5);
++assert.equal(active, true);
++cleanup();
++assert.equal(active, false);
++
++for (const seconds of [0, -3, NaN, Infinity, undefined]) {
++  context.Countdown({ seconds });
++  assert.equal(effect(), undefined);
++  assert.equal(remaining, 0);
++  assert.equal(active, false);
++}
++context.Countdown({ seconds: 2.9 });
++cleanup = effect();
++assert.equal(remaining, 2);
++cleanup();
++console.log('Countdown checks passed');

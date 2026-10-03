@@ -1,0 +1,117 @@
+diff --git a/main.py b/main.py
+index 9cbedc7..a8cc97d 100644
+--- a/main.py
++++ b/main.py
+@@ -1,13 +1,51 @@
+-from fastapi import FastAPI
++from collections import deque
++from math import ceil
++from threading import Lock
++from time import monotonic
++
++from fastapi import Depends, FastAPI, HTTPException, Request
+ from pydantic import BaseModel
+ 
+ app = FastAPI()
+ 
++# Per-process, sliding-window limit. Use a shared store for multiple workers.
++MESSAGE_RATE_LIMIT = 10
++MESSAGE_RATE_WINDOW_SECONDS = 60
++_message_requests: dict[str, deque[float]] = {}
++_rate_limit_lock = Lock()
++
++
++def limit_message_requests(request: Request) -> None:
++    # Use the peer address; do not trust user-supplied forwarding headers here.
++    client_ip = request.client.host if request.client else "unknown"
++    with _rate_limit_lock:
++        now = monotonic()
++        cutoff = now - MESSAGE_RATE_WINDOW_SECONDS
++        # Remove expired entries, including clients that have stopped sending.
++        for key in list(_message_requests):
++            timestamps = _message_requests[key]
++            while timestamps and timestamps[0] <= cutoff:
++                timestamps.popleft()
++            if not timestamps:
++                del _message_requests[key]
++
++        timestamps = _message_requests.setdefault(client_ip, deque())
++        if len(timestamps) >= MESSAGE_RATE_LIMIT:
++            retry_after = max(
++                1, ceil(timestamps[0] + MESSAGE_RATE_WINDOW_SECONDS - now)
++            )
++            raise HTTPException(
++                status_code=429,
++                detail="Too many requests. Please try again later.",
++                headers={"Retry-After": str(retry_after)},
++            )
++        timestamps.append(now)
++
+ 
+ class Message(BaseModel):
+     text: str
+ 
+ 
+-@app.post("/messages")
++@app.post("/messages", dependencies=[Depends(limit_message_requests)])
+ def create_message(message: Message):
+     return {"ok": True, "length": len(message.text)}
+diff --git a/test_main.py b/test_main.py
+new file mode 100644
+index 0000000..986f74e
+--- /dev/null
++++ b/test_main.py
+@@ -0,0 +1,53 @@
++import unittest
++from unittest.mock import patch
++
++from fastapi.testclient import TestClient
++
++import main
++
++
++class MessageRateLimitTests(unittest.TestCase):
++    def setUp(self):
++        main._message_requests.clear()
++        self.client = TestClient(main.app)
++        self.clock = patch("main.monotonic", return_value=100.0)
++        self.now = self.clock.start()
++        self.addCleanup(self.clock.stop)
++
++    def send(self, client=None, **kwargs):
++        return (client or self.client).post(
++            "/messages", json={"text": "hello"}, **kwargs
++        )
++
++    def test_limit_and_window_expiry(self):
++        for _ in range(main.MESSAGE_RATE_LIMIT):
++            response = self.send()
++            self.assertEqual(response.status_code, 200)
++            self.assertEqual(response.json(), {"ok": True, "length": 5})
++        self.now.return_value = 100.1
++        response = self.send()
++        self.assertEqual(response.status_code, 429)
++        self.assertEqual(response.headers["Retry-After"], "60")
++        self.now.return_value = 160.0
++        self.assertEqual(self.send().status_code, 200)
++
++    def test_clients_have_separate_limits_and_cannot_spoof_headers(self):
++        for _ in range(main.MESSAGE_RATE_LIMIT):
++            self.send()
++        self.assertEqual(
++            self.send(headers={"X-Forwarded-For": "different-client"}).status_code,
++            429,
++        )
++        other = TestClient(main.app, client=("192.0.2.2", 12345))
++        self.assertEqual(self.send(other).status_code, 200)
++
++    def test_inactive_clients_are_removed(self):
++        self.send()
++        self.now.return_value = 160.0
++        other = TestClient(main.app, client=("192.0.2.2", 12345))
++        self.send(other)
++        self.assertNotIn("testclient", main._message_requests)
++
++
++if __name__ == "__main__":
++    unittest.main()
