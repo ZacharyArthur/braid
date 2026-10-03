@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // braid A/B benchmark: the same tasks through Claude Code with braid, ponytail, or no plugin.
 //
-//   node bench/ab.cjs [--model sonnet] [--runs 3] [--tasks a,b] [--arms braid,ponytail,none] [--fake]
+//   node bench/ab.cjs [--model sonnet] [--runs 3] [--tasks a,b] [--arms braid,ponytail,none] [--label x] [--fake]
 //
 // Each run: copy bench/tasks/<task>/files into a fresh temp git repo, run `claude -p` there
 // with only that arm's plugin (--setting-sources project,local skips your installed plugins;
@@ -139,7 +139,7 @@ function report(results) {
   ].join('\n') + '\n';
 }
 
-const stamp = `${new Date().toISOString().slice(0, 10)}-${FAKE ? 'fake' : MODEL}`;
+const stamp = [new Date().toISOString().slice(0, 10), FAKE ? 'fake' : MODEL, opt('label')].filter(Boolean).join('-');
 const outDir = path.join(__dirname, 'results', stamp);
 fs.rmSync(outDir, { recursive: true, force: true });
 fs.mkdirSync(path.join(outDir, 'diffs'), { recursive: true });

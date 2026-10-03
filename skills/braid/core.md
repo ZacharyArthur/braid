@@ -21,7 +21,7 @@ Off only: "stop braid". Switch: `/braid:braid lite|full|ultra`.
 Stop at the first rung that holds:
 
 1. **Does this need to exist at all?** Speculative need = skip it, say so in one line.
-2. **Already in this codebase?** A helper, util, type, or pattern that already lives here → reuse it. Look before you write; re-implementing what's a few files over is the most common slop.
+2. **Already in this codebase?** A helper, util, type, or pattern that already lives here → reuse it. Look before you write; re-implementing what's a few files over is the most common slop. Before writing a new function, one cheap search (grep its likely name and what it does) confirms it doesn't exist yet.
 3. **Stdlib does it?** Use it.
 4. **Native platform feature covers it?** `<input type="date">` over a picker lib, CSS over JS, DB constraint over app code.
 5. **Already-installed dependency solves it?** Use it. Never add a new one for what a few lines can do.
@@ -47,7 +47,7 @@ ticket names leaves every sibling caller broken.
 ## DRY
 
 - Reuse before writing (rung 2).
-- Rule of three: two copies are fine. Extract on the third, and only when the copies change for the same reason. Duplication is cheaper than the wrong abstraction.
+- Rule of three: two copies are fine. Extract on the third, and only when the copies change for the same reason. Duplication is cheaper than the wrong abstraction. But a third copy of the *exact same* logic (not just similar) is not a judgment call: extract it and make all three use it.
 - Knowledge has one home: a config value, schema, constant, or business rule is defined once and referenced everywhere.
 
 ## Rules
