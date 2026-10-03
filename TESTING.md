@@ -57,6 +57,6 @@ node bench/ab.cjs --model sonnet --runs 3
 
 `--tasks dry-reuse,dry-third` and `--arms braid,ponytail` narrow it down; `--model haiku --runs 1` is a cheap smoke test.
 
-It records, per run: lines added/removed, whether the task's check passes, the DRY probe, tokens, cost and time; the report shows medians. Results land in `bench/results/<date>-<model>/` (`report.md`, `runs.jsonl`, one `.diff` per run). The two Python checks need Python 3; without it they show `skipped`.
+It records, per run: lines added/removed, whether the task's check passes, the DRY probe, tokens, cost and time; the report shows medians. Results land in `bench/results/<date>-<model>/` (`report.md`, `runs.jsonl`, one `.diff` per run). The two Python checks use Python 3 from PATH or, failing that, `uv python find`; without either they show `skipped`. The script deletes its temp runs, the ponytail checkout and the session stubs Claude leaves in `~/.claude/projects` when it finishes.
 
 Tasks: five from ponytail's benchmark (prompts verbatim, MIT, plus one line naming the file to write) and two braid tasks, `dry-reuse` (an existing helper should be reused) and `dry-third` (a third near-copy should trigger one shared function). braid should match ponytail on size and checks, and win the DRY column.

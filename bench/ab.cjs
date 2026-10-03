@@ -31,7 +31,10 @@ const run = (cmd, argv, cwd) => execFileSync(cmd, argv, { cwd, stdio: ['ignore',
 const git = (cwd, ...argv) => run('git', ['-c', 'user.name=bench', '-c', 'user.email=bench@local', ...argv], cwd);
 
 // Python checks need a real interpreter; the Windows Store stub prints "Python was not found".
-const PYTHON = ['python3', 'python'].find((p) => /^Python 3/.test(spawnSync(p, ['--version']).stdout?.toString() || ''));
+// Fall back to one uv manages, and put it first on PATH so the agents can run Python too.
+const PYTHON = ['python3', 'python'].find((p) => /^Python 3/.test(spawnSync(p, ['--version']).stdout?.toString() || ''))
+  || spawnSync('uv', ['python', 'find']).stdout?.toString().trim() || null;
+const ENV = { ...process.env, PATH: PYTHON && path.isAbsolute(PYTHON) ? path.dirname(PYTHON) + path.delimiter + process.env.PATH : process.env.PATH };
 
 // ponytail at the commit braid is derived from: the pin lives only in UPSTREAM.md.
 function ponytailDir() {
@@ -49,10 +52,10 @@ const PLUGIN = { braid: () => ROOT, ponytail: ponytailDir, none: () => null };
 function claude(task, arm, cwd) {
   const plugin = PLUGIN[arm]();
   const prompt = [task.prompt, task.interface].filter(Boolean).join('\n\n');
-  const argv = ['-p', prompt, '--model', MODEL, '--output-format', 'json', '--setting-sources', 'project,local',
+  const argv = ['-p', prompt, '--model', MODEL, '--output-format', 'json', '--setting-sources', 'project,local', '--no-session-persistence',
     '--permission-mode', 'acceptEdits', '--allowedTools', 'Bash(node:*)', 'Bash(python:*)', 'Bash(python3:*)',
     ...(plugin ? ['--plugin-dir', plugin] : [])];
-  const r = spawnSync('claude', argv, { cwd, timeout: 600000, maxBuffer: 64 << 20 });
+  const r = spawnSync('claude', argv, { cwd, env: ENV, timeout: 600000, maxBuffer: 64 << 20 });
   const out = JSON.parse(r.stdout.toString() || '{}');
   const u = out.usage || {};
   return {
@@ -68,7 +71,7 @@ function check(task, dir, cwd) {
   const file = path.join(dir, task.check);
   const cmd = file.endsWith('.py') ? PYTHON : process.execPath;
   if (!cmd) return 'skipped';
-  return spawnSync(cmd, [file], { cwd, timeout: 30000 }).status === 0;
+  return spawnSync(cmd, [file], { cwd, env: ENV, timeout: 30000 }).status === 0;
 }
 
 function dry(task, cwd) {
@@ -100,7 +103,9 @@ function once(id, arm, i, outDir) {
     const [a, r] = line.split('\t');
     added += Number(a) || 0; removed += Number(r) || 0;
   }
-  return { task: id, arm, run: i, ...agent, added, removed, check: check(task, dir, cwd), dry: dry(task, cwd) };
+  const result = { task: id, arm, run: i, ...agent, added, removed, check: check(task, dir, cwd), dry: dry(task, cwd) };
+  fs.rmSync(cwd, { recursive: true, force: true }); // the diff is saved; the run dir is throwaway
+  return result;
 }
 
 const median = (xs) => { const s = [...xs].sort((a, b) => a - b); return s.length ? s[Math.floor((s.length - 1) / 2)] : 0; };
@@ -145,3 +150,11 @@ for (const id of TASK_IDS) for (const arm of ARMS) for (let i = 1; i <= RUNS; i+
 }
 fs.writeFileSync(path.join(outDir, 'report.md'), report(results));
 console.log(`\n${path.relative(ROOT, path.join(outDir, 'report.md'))}`);
+
+// Leave nothing behind: the temp work dir (runs, ponytail checkout) and the session stubs Claude
+// writes for each run dir even with --no-session-persistence (~/.claude/projects/<cwd-as-name>).
+fs.rmSync(WORK, { recursive: true, force: true });
+const projects = path.join(os.homedir(), '.claude', 'projects');
+for (const d of fs.existsSync(projects) ? fs.readdirSync(projects) : []) {
+  if (d.includes('braid-bench-runs')) fs.rmSync(path.join(projects, d), { recursive: true, force: true });
+}
