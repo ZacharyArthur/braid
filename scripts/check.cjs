@@ -67,6 +67,12 @@ for (const dir of skillDirs) {
   if (desc.length > 1024) fail(`${file}: description ${desc.length} > 1024 chars`);
   const modelInvocable = fm['disable-model-invocation'] !== 'true';
   if (modelInvocable && desc.length > 300) fail(`${file}: model-invocable description ${desc.length} > 300 chars`);
+  // User-only skills: Codex needs the policy file, ZCode (no flag) needs the description to say so.
+  if (!modelInvocable) {
+    const yaml = `skills/${dir}/agents/openai.yaml`;
+    if (!exists(yaml) || !/allow_implicit_invocation:\s*false/.test(read(yaml))) fail(`${yaml}: user-only skill needs allow_implicit_invocation: false`);
+    if (!desc.includes('Only when the user explicitly invokes it.')) fail(`${file}: user-only description must say "Only when the user explicitly invokes it."`);
+  }
 }
 
 // Hook smoke test, run from a copy under a `"type": "module"` package.json: the

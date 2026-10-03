@@ -1,0 +1,5 @@
+interface:
+  display_name: "Braid Audit"
+  short_description: "Repo audit for over-engineering"
+policy:
+  allow_implicit_invocation: false

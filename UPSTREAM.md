@@ -19,3 +19,6 @@ Update a row: `gh api repos/<owner>/<repo>/compare/<sha>...HEAD --jq '.files[] |
 | `humanizer` | vendored | blader/humanizer | SKILL.md, agents/openai.yaml | 225a6f39ac85f76ee48dbad772ea4abe4ed6c9d8 | MIT |
 | `security-audit` | vendored | cloudflare/security-audit-skill | skills/security-audit | c1c8a8c1471069fb0e188eeaff69b8e8db6564a8 | MIT |
 | `systematic-debugging` | vendored | obra/superpowers | skills/systematic-debugging (minus CREATION-LOG, test-*.md) | 8ca22dba9a94f28898bbce59f2537ff4d87c747d | MIT |
+| `review` | derived | DietrichGebert/ponytail | skills/ponytail-review | 54e00c3e29dec545ccc8183703853e1223f9ab9d | MIT |
+| `audit` | derived | DietrichGebert/ponytail | skills/ponytail-audit | 54e00c3e29dec545ccc8183703853e1223f9ab9d | MIT |
+| `debt` | derived | DietrichGebert/ponytail | skills/ponytail-debt | 54e00c3e29dec545ccc8183703853e1223f9ab9d | MIT |
