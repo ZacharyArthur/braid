@@ -1,0 +1,9 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "braid",
+  "description": "Clean-code harness for AI coding agents: YAGNI > KISS > DRY, plus grilling, specs, wayfinding and reviews.",
+  "owner": { "name": "Zachary Arthur", "url": "https://github.com/ZacharyArthur" },
+  "plugins": [
+    { "name": "braid", "description": "Clean-code harness for AI coding agents: YAGNI > KISS > DRY, plus grilling, specs, wayfinding and reviews.", "source": "./", "category": "productivity" }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "name": "braid",
+  "version": "0.1.0",
+  "description": "Clean-code harness for AI coding agents: YAGNI > KISS > DRY, plus grilling, specs, wayfinding and reviews.",
+  "author": { "name": "Zachary Arthur", "url": "https://github.com/ZacharyArthur" },
+  "homepage": "https://github.com/ZacharyArthur/braid",
+  "repository": "https://github.com/ZacharyArthur/braid",
+  "license": "MIT",
+  "keywords": ["yagni", "kiss", "dry", "clean-code", "spec-driven", "grilling"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Braid",
+    "shortDescription": "YAGNI > KISS > DRY coding harness",
+    "longDescription": "Clean-code harness for AI coding agents: YAGNI > KISS > DRY, plus grilling, specs, wayfinding and reviews.",
+    "developerName": "Zachary Arthur",
+    "category": "Productivity",
+    "capabilities": ["Instructions", "Lifecycle hooks"],
+    "websiteURL": "https://github.com/ZacharyArthur/braid"
+  }
+}

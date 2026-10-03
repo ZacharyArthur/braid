@@ -1,0 +1,12 @@
+{
+  "name": "braid",
+  "interface": { "displayName": "Braid" },
+  "plugins": [
+    {
+      "name": "braid",
+      "source": { "source": "url", "url": "https://github.com/ZacharyArthur/braid.git", "ref": "main" },
+      "policy": { "installation": "AVAILABLE", "authentication": "ON_INSTALL" },
+      "category": "Productivity"
+    }
+  ]
+}
