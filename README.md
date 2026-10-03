@@ -4,7 +4,7 @@ Clean-code harness for AI coding agents. Three strands: **YAGNI > KISS > DRY**.
 
 A plugin for **Claude Code**, **Codex** and **ZCode**: an always-on core that keeps generated code minimal, plus a workflow for grilling plans, writing specs, mapping repos, handing off and reviewing.
 
-> Status: under construction. See [PLAN.md](PLAN.md).
+> Status: under construction. Decisions: [braid/routes/v1.md](braid/routes/v1.md) and [braid/adr/](braid/adr/). Remaining work: [braid/changes/ship-v1/](braid/changes/ship-v1/tasks.md).
 
 ## Install
 

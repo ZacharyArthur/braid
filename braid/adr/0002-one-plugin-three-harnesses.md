@@ -1,0 +1,3 @@
+# One plugin, one skills folder, three thin manifests
+
+braid ships as a single plugin for Claude Code, Codex and ZCode: one `skills/` folder, `.claude-plugin/`, `.codex-plugin/` and `.zcode-plugin/` manifests, and one Claude-format `hooks/hooks.json`. We chose one plugin over a marketplace of toggleable bundles because user-only skills cost no always-on tokens anyway. User-only is expressed three ways because each harness differs: `disable-model-invocation` (Claude Code), `agents/openai.yaml` policy (Codex), and a description suffix (ZCode has no flag but lets users toggle skills off). `scripts/check.cjs` enforces all three.
