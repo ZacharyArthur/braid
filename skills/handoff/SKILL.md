@@ -43,8 +43,8 @@ What's left is session state: that goes in the handoff.
 2. <then>
 3. <then>
 
-## Run and verify
-<exact commands; which ones passed at the end of this session>
+## Verified
+<which AGENTS.md checks passed at the end of this session; the commands live there>
 
 ## Gotchas
 - <dead ends tried and why they failed>

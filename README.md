@@ -28,7 +28,7 @@ codex plugin add braid@braid
 
 Then run `codex`, open `/hooks`, review and trust braid's hooks, and start a new thread.
 
-**ZCode:** add `ZacharyArthur/braid` as a GitHub plugin marketplace source and enable braid. ZCode has no "user-invoked only" flag, so every enabled skill's description costs context. Switch off the ones you don't use in Settings → Skills; good candidates are `humanizer`, `security-audit`, `systematic-debugging`, `design`, `adhd`, `grill-me` and `grill-with-docs`.
+**ZCode:** add `ZacharyArthur/braid` as a GitHub plugin marketplace source and enable braid. ZCode has no "user-invoked only" flag, so every enabled skill's description costs context. Switch off the ones you don't use in Settings → Skills; good candidates are `humanizer`, `security-audit`, `systematic-debugging`, `design`, `standards`, `adhd`, `grill-me` and `grill-with-docs`.
 
 ## What's in it
 
@@ -40,6 +40,7 @@ Then run `codex`, open `/hooks`, review and trust braid's hooks, and start a new
 | `wayfind` | A route of decisions for an effort too big for one session (`braid/routes/`) |
 | `spec` | `propose` a change from the conversation, `apply` its tasks, `archive` it into the specs, or `discover` specs for an existing codebase (`braid/specs/`, `braid/changes/`) |
 | `map` | A short repo map in `braid/map.md`, read instead of re-exploring |
+| `standards` | The project's `AGENTS.md`: exact lint/type/test/dead-code/validation commands, conventions, git workflow (and a `CLAUDE.md` that imports it) |
 | `domain-modeling` | Glossary and ADRs in `braid/` |
 | `handoff` | `braid/HANDOFF.md` for whoever picks this up next |
 | `review` / `audit` | Over-engineering review of a diff / the whole repo |

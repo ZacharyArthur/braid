@@ -34,8 +34,7 @@ Sample, don't read everything:
 
 <one or two lines: what this is, for whom>
 
-## Run and verify
-<exact commands: install, run, test, lint>
+Commands and conventions: see `AGENTS.md`.
 
 ## Entry points
 - `<path>`: <what starts here>
@@ -49,9 +48,6 @@ Sample, don't read everything:
 ### <flow name>
 1. `<file>:<function>` <step>
 2. ...
-
-## Conventions
-- <how this codebase does X; the one way to follow>
 
 ## Gotchas
 - <looks wrong but is intentional / easy to break / surprising>
@@ -68,5 +64,6 @@ Rules:
 
 - One line per module job. Name where things live; don't explain how they work.
 - The diagram shows module dependencies, ≤15 nodes. Skip it for single-module repos.
-- Behavior belongs in `braid/specs/`, terms in `braid/GLOSSARY.md`, decisions in `braid/adr/`. Link them, never copy.
+- Behavior belongs in `braid/specs/`, terms in `braid/GLOSSARY.md`, decisions in `braid/adr/`, commands and conventions in `AGENTS.md`. Link them, never copy.
+- No `AGENTS.md`? End with: "No AGENTS.md: `/braid:standards` sets one up."
 - Always rewrite the header with the current short SHA and date. The session hook uses it to report how stale the map is.

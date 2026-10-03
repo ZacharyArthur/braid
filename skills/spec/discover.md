@@ -29,4 +29,5 @@ Write specs for an existing codebase by asking the user what its code is
    violates, the evidence. No tasks yet; `/braid:spec propose fix-<name>`
    fills them in later.
 7. **Report:** specs written, mismatches queued, and the next uncovered
-   capabilities for the following run.
+   capabilities for the following run. No `AGENTS.md`? Add: "No AGENTS.md:
+   `/braid:standards` sets one up."

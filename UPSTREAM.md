@@ -28,3 +28,4 @@ Update a row: `gh api repos/<owner>/<repo>/compare/<sha>...HEAD --jq '.files[] |
 | `handoff` | clean-room | mattpocock/skills | skills/productivity/handoff | - | MIT (idea only) |
 | `xreview` | clean-room | - | - | - | - |
 | `design` | clean-room | pbakaus/impeccable, Leonxlnx/taste-skill, nextlevelbuilder/ui-ux-pro-max-skill | - | - | Apache-2.0 / MIT (ideas only) |
+| `standards` | clean-room | - | - | - | - |

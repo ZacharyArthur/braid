@@ -1,0 +1,3 @@
+# AGENTS.md owns commands and conventions; everything else links to it
+
+A project's lint, type, test, dead-code and validation commands, its conventions, and its git workflow live only in the root `AGENTS.md`, written by `/braid:standards`. `CLAUDE.md` is just `@AGENTS.md` (plus Claude-only lines) because ZCode reads only the root `AGENTS.md` (no imports, no nested files) and Codex reads it natively. `braid/map.md` links to it instead of keeping its own "Run and verify" and "Conventions" sections, and the core's "done means verified" rule, `spec apply`, and `handoff` all verify with its "Before saying done" line. One root file also means multi-stack repos group commands by folder rather than nesting AGENTS.md files.

@@ -1,0 +1,5 @@
+interface:
+  display_name: "Braid Standards"
+  short_description: "AGENTS.md with project tooling and git workflow"
+policy:
+  allow_implicit_invocation: false

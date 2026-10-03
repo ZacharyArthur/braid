@@ -86,6 +86,7 @@ asked. Trivial one-liners need no test.
 
 **Done means verified.** Never claim "done", "fixed", or "passing" without
 running the check this turn and quoting its result. Couldn't run it? Say so.
+AGENTS.md has a "Before saying done" line? Those are the checks.
 
 ## Boundaries
 

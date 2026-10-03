@@ -18,8 +18,8 @@ after compaction, can pick up from it.
      update the delta or `design.md` with the user, then continue.
    - A new idea outside the change → add it under `## Follow-ups` in
      `proposal.md`. Don't build it.
-5. **Finish.** All boxes ticked → run the full verification (tests, build,
-   lint the project already uses) and quote the results. End with:
+5. **Finish.** All boxes ticked → run AGENTS.md's "Before saying done"
+   checks (no AGENTS.md: the tests, build, and lint the project already uses) and quote the results. End with:
    "`/braid:spec archive` to merge it into the specs."
 
 Stopping midway is fine: the ticked boxes are the handoff. For a longer
