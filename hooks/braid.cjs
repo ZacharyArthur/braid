@@ -100,7 +100,7 @@ function pointers(cwd) {
   if (routes.length) lines.push(`Active route: ${routes.join(', ')}. See braid/routes/.`);
 
   const map = path.join(dir, 'map.md');
-  if (fs.existsSync(map)) lines.push(`Repo map: braid/map.md${staleness(cwd, map, 'built')}. Read it before broad exploration.`);
+  if (fs.existsSync(map)) lines.push(`Repo map: braid/map.md${staleness(cwd, map, 'built')}. Read it before writing code here; it says what already exists.`);
 
   const handoff = path.join(dir, 'HANDOFF.md');
   if (fs.existsSync(handoff)) lines.push(`Handoff: braid/HANDOFF.md${staleness(cwd, handoff, 'written')}. Read it first.`);
