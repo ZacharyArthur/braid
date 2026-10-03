@@ -1,6 +1,7 @@
 ---
 name: systematic-debugging
-description: Use when encountering any bug, test failure, or unexpected behavior, before proposing fixes
+description: Use when encountering any bug, test failure, or unexpected behavior, before proposing fixes. Only when the user explicitly invokes it.
+disable-model-invocation: true
 ---
 
 # Systematic Debugging
@@ -174,7 +175,7 @@ You MUST complete each phase before proceeding to the next.
    - Automated test if possible
    - One-off test script if no framework
    - MUST have before fixing
-   - Use the `superpowers:test-driven-development` skill for writing proper failing tests
+   - Write a proper failing test first
 
 2. **Implement Single Fix**
    - Address the root cause identified

@@ -1,0 +1,5 @@
+interface:
+  display_name: "Security Audit"
+  short_description: "Multi-phase security audit with verified findings"
+policy:
+  allow_implicit_invocation: false

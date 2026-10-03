@@ -40,7 +40,7 @@ Interim record of the design grilling (2026-10-02). Folds into `braid/adr/` + `b
 |---|---|---|
 | `braid` (core, modes, drift) | derived: ponytail | model |
 | `grilling` | vendored: mattpocock (rounds version) | model |
-| `domain-modeling` | vendored: mattpocock, paths → `braid/adr/`, `braid/glossary.md` | model |
+| `domain-modeling` | vendored: mattpocock, paths → `braid/adr/`, `braid/GLOSSARY.md` | model |
 | `map` | clean-room: graphify-inspired | model |
 | `grill-me`, `grill-with-docs` | vendored aliases | user |
 | `review`, `audit`, `debt` | derived: ponytail; flag YAGNI/KISS/DRY, rule of three | user |
@@ -66,7 +66,7 @@ braid/
   changes/archive/<date>-<name>/
   routes/<effort>.md              # wayfind: Destination / Decided / Open / Fog / Out of scope
   adr/                            # domain-modeling ADRs
-  glossary.md
+  GLOSSARY.md
   map.md                          # repo map, ≤150 lines, one Mermaid module diagram, header = built-at SHA
   reviews/<date>-<scope>.md       # xreview prompts
   HANDOFF.md                      # 80–120 line snapshot, overwritten, header = date + SHA
