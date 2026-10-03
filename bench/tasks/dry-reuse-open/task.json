@@ -1,0 +1,6 @@
+{
+  "source": "braid",
+  "prompt": "Add a `categoryUrl(name)` function to categories.js that returns the category's page URL, `/category/<slug>`. Export it.",
+  "check": "check.cjs",
+  "dry": { "file": "categories.js", "pattern": "require\\(['\"]\\./utils/text", "min": 1, "means": "reuses utils/text.js slugify (the prompt doesn't spell out the slug algorithm)" }
+}

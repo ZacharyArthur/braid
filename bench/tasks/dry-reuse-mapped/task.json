@@ -1,0 +1,6 @@
+{
+  "source": "braid",
+  "prompt": "Add a `categoryUrl(name)` function to categories.js that returns `/category/<slug>`, where the slug is the name lowercased, with punctuation removed and words joined by hyphens. Export it.",
+  "check": "check.cjs",
+  "dry": { "file": "categories.js", "pattern": "require\\(['\"]\\./utils/text", "min": 1, "means": "reuses utils/text.js slugify (repo has braid/map.md)" }
+}
