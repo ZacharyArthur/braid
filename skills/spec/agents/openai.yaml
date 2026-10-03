@@ -1,0 +1,5 @@
+interface:
+  display_name: "Braid Spec"
+  short_description: "Propose, apply, archive, discover specs"
+policy:
+  allow_implicit_invocation: false

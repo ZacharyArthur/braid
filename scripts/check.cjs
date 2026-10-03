@@ -93,6 +93,8 @@ let alwaysOn = 0;
     fs.mkdirSync(path.join(proj, 'changes', 'add-x'), { recursive: true });
     fs.mkdirSync(path.join(proj, 'routes'), { recursive: true });
     fs.writeFileSync(path.join(proj, 'changes', 'add-x', 'tasks.md'), '- [x] one\n- [ ] two\n');
+    fs.mkdirSync(path.join(proj, 'changes', 'fix-y'));
+    fs.writeFileSync(path.join(proj, 'changes', 'fix-y', 'proposal.md'), '## Why\n');
     fs.writeFileSync(path.join(proj, 'routes', 'v1.md'), '## Open\n- [ ] pick a db\n');
     fs.writeFileSync(path.join(proj, 'map.md'), '<!-- braid:map sha=abc1234 -->\n');
     fs.writeFileSync(path.join(proj, 'HANDOFF.md'), '<!-- braid:handoff sha=abc1234 -->\n');
@@ -110,7 +112,8 @@ let alwaysOn = 0;
     alwaysOn += Buffer.byteLength(start);
     expect(start.includes('BRAID ACTIVE — level: full'), 'default level is not full');
     expect(start.includes('**full**') && !start.includes('**lite**'), 'level table not filtered');
-    expect(start.includes('add-x (1/2 tasks)'), 'active change pointer missing');
+    expect(start.includes('Active change: add-x (1/2 tasks).'), 'active change pointer missing or includes queued');
+    expect(start.includes('Queued proposals: fix-y.'), 'queued proposal pointer missing');
     expect(start.includes('v1 (1 open)'), 'route pointer missing');
     expect(start.includes('braid/map.md (built at abc1234') && start.includes('HANDOFF.md (written at'), 'map/handoff pointer missing');
     expect(hook('prompt', { prompt: '/braid:braid lite' }).includes('BRAID LEVEL: lite'), 'level switch not confirmed');
@@ -144,6 +147,13 @@ for (const row of rows) {
   if (!exists(`skills/${skill}/SKILL.md`)) fail(`UPSTREAM.md: skills/${skill} does not exist`);
   if (!['vendored', 'derived', 'clean-room'].includes(kind)) fail(`UPSTREAM.md: ${skill} has unknown kind "${kind}"`);
   if (kind === 'vendored' && !exists(`skills/${skill}/LICENSE`)) fail(`skills/${skill}: vendored without LICENSE`);
+  // braid's own skills stay small: each markdown file ≤ ~2k tokens.
+  if (kind !== 'vendored' && exists(`skills/${skill}`)) {
+    for (const f of fs.readdirSync(path.join(root, 'skills', skill)).filter((f) => f.endsWith('.md'))) {
+      const size = fs.statSync(path.join(root, 'skills', skill, f)).size;
+      if (size > 8000) fail(`skills/${skill}/${f}: ${size} bytes > 8000 (~2k tokens)`);
+    }
+  }
 }
 
 if (errors.length) {

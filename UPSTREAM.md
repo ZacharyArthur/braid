@@ -22,3 +22,8 @@ Update a row: `gh api repos/<owner>/<repo>/compare/<sha>...HEAD --jq '.files[] |
 | `review` | derived | DietrichGebert/ponytail | skills/ponytail-review | 54e00c3e29dec545ccc8183703853e1223f9ab9d | MIT |
 | `audit` | derived | DietrichGebert/ponytail | skills/ponytail-audit | 54e00c3e29dec545ccc8183703853e1223f9ab9d | MIT |
 | `debt` | derived | DietrichGebert/ponytail | skills/ponytail-debt | 54e00c3e29dec545ccc8183703853e1223f9ab9d | MIT |
+| `map` | clean-room | Graphify-Labs/graphify | - | - | Apache-2.0 (idea only) |
+| `spec` | derived | Fission-AI/openspec | docs/concepts.md, src/core/templates/workflows | 2500d6da971336167548b53731a35b2127df35ac | MIT |
+| `wayfind` | clean-room | mattpocock/skills | skills/engineering/wayfinder | - | MIT (idea only) |
+| `handoff` | clean-room | mattpocock/skills | skills/productivity/handoff | - | MIT (idea only) |
+| `xreview` | clean-room | - | - | - | - |

@@ -1,0 +1,5 @@
+interface:
+  display_name: "Braid Cross-Review"
+  short_description: "Review prompt for another model"
+policy:
+  allow_implicit_invocation: false

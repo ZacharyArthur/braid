@@ -81,12 +81,17 @@ function pointers(cwd) {
   const lines = [];
   const ls = (d) => { try { return fs.readdirSync(path.join(dir, d), { withFileTypes: true }); } catch { return []; } };
 
-  const changes = ls('changes').filter((e) => e.isDirectory() && e.name !== 'archive').map((e) => {
+  // A change with tasks is active; one without (e.g. a fix queued by spec discover) is only queued.
+  const changes = [], queued = [];
+  for (const e of ls('changes')) {
+    if (!e.isDirectory() || e.name === 'archive') continue;
     const tasks = tryRead(path.join(dir, 'changes', e.name, 'tasks.md')) || '';
     const done = count(tasks, /^\s*- \[x\]/gim);
-    return `${e.name} (${done}/${done + count(tasks, /^\s*- \[ \]/gm)} tasks)`;
-  });
+    const total = done + count(tasks, /^\s*- \[ \]/gm);
+    if (total) changes.push(`${e.name} (${done}/${total} tasks)`); else queued.push(e.name);
+  }
   if (changes.length) lines.push(`Active change: ${changes.join(', ')}. Re-read its braid/changes/<name>/tasks.md before editing code; tick tasks as they finish.`);
+  if (queued.length) lines.push(`Queued proposals: ${queued.join(', ')}. Not started; /braid:spec propose <name> plans one.`);
 
   const routes = ls('routes').filter((e) => e.isFile() && e.name.endsWith('.md')).flatMap((e) => {
     const open = count(tryRead(path.join(dir, 'routes', e.name)) || '', /^\s*- \[ \]/gm);

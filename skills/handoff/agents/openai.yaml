@@ -1,0 +1,5 @@
+interface:
+  display_name: "Braid Handoff"
+  short_description: "Snapshot for the next implementor"
+policy:
+  allow_implicit_invocation: false
