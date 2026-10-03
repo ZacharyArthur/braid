@@ -10,7 +10,7 @@
 - [x] 3.1 TESTING.md manual checklist
 - [x] 3.2 GitHub Actions: `node scripts/check.cjs` on windows-latest and ubuntu-latest
 - [ ] 3.3 README: Codex and ZCode install, ZCode skills to toggle off
-- [ ] 3.4 A/B: `node bench/ab.cjs --model sonnet --runs 3` (harness built and verified with --fake; run pending)
+- [ ] 3.4 A/B: first Sonnet run done (bench/results/2026-10-03-sonnet): braid not yet better than ponytail on DRY; iterate core wording, rerun
 - [ ] 3.5 CHANGELOG.md; manifests to 1.0.0
 - [ ] 3.6 Create public `ZacharyArthur/braid`, push, tag v1.0.0 (ask the user first)
 - [ ] 3.7 Verify: `node scripts/check.cjs`, then `/braid:spec archive`

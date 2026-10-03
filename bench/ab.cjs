@@ -63,6 +63,9 @@ function claude(task, arm, cwd) {
     tokens: (u.input_tokens || 0) + (u.cache_creation_input_tokens || 0) + (u.cache_read_input_tokens || 0) + (u.output_tokens || 0),
     cost: out.total_cost_usd || 0,
     seconds: (out.duration_ms || 0) / 1000,
+    turns: out.num_turns || 0,
+    denied: (out.permission_denials || []).map((d) => d.tool_name).join(',') || null,
+    reply: String(out.result || '').slice(0, 300), // why a run wrote no file, if it didn't
   };
 }
 
@@ -93,7 +96,7 @@ function once(id, arm, i, outDir) {
   git(cwd, 'commit', '--quiet', '--allow-empty', '-m', 'fixture');
 
   const agent = !FAKE ? claude(task, arm, cwd)
-    : (arm !== 'none' && fs.cpSync(path.join(dir, 'solution'), cwd, { recursive: true }), { error: null, tokens: 0, cost: 0, seconds: 0 });
+    : (arm !== 'none' && fs.cpSync(path.join(dir, 'solution'), cwd, { recursive: true }), { error: null, tokens: 0, cost: 0, seconds: 0, turns: 0, denied: null, reply: '' });
 
   git(cwd, 'add', '-A');
   const diff = git(cwd, 'diff', '--cached');
@@ -120,15 +123,15 @@ function report(results) {
   const rows = [];
   for (const id of TASK_IDS) for (const arm of ARMS) {
     const rs = results.filter((r) => r.task === id && r.arm === arm);
-    rows.push(`| ${id} | ${arm} | +${median(rs.map((r) => r.added))} −${median(rs.map((r) => r.removed))} | ${tally(rs, 'check')} | ${tally(rs, 'dry')} | ${median(rs.map((r) => r.tokens))} | ${median(rs.map((r) => r.cost)).toFixed(4)} | ${median(rs.map((r) => r.seconds)).toFixed(1)} | ${rs.filter((r) => r.error).length} |`);
+    rows.push(`| ${id} | ${arm} | +${median(rs.map((r) => r.added))} −${median(rs.map((r) => r.removed))} | ${tally(rs, 'check')} | ${tally(rs, 'dry')} | ${median(rs.map((r) => r.tokens))} | ${median(rs.map((r) => r.cost)).toFixed(4)} | ${median(rs.map((r) => r.seconds)).toFixed(1)} | ${median(rs.map((r) => r.turns))} | ${rs.filter((r) => r.error).length} |`);
   }
   return [
     `# A/B: ${FAKE ? 'FAKE (reference solutions, no Claude)' : MODEL}, ${RUNS} run(s) per cell`,
     '',
     `${new Date().toISOString().slice(0, 10)} · arms: ${ARMS.join(', ')} · medians · python checks: ${PYTHON || 'skipped (no Python 3)'}`,
     '',
-    '| task | arm | lines | check | DRY | tokens | cost $ | time s | errors |',
-    '|---|---|--:|:-:|:-:|--:|--:|--:|--:|',
+    '| task | arm | lines | check | DRY | tokens | cost $ | time s | turns | errors |',
+    '|---|---|--:|:-:|:-:|--:|--:|--:|--:|--:|',
     ...rows,
     '',
     'DRY probes: ' + TASK_IDS.map((id) => JSON.parse(fs.readFileSync(path.join(TASKS, id, 'task.json'), 'utf8'))).filter((t) => t.dry).map((t) => t.dry.means).join('; ') + '.',
