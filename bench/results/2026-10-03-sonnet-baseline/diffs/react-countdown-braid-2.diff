@@ -1,0 +1,34 @@
+diff --git a/Countdown.jsx b/Countdown.jsx
+new file mode 100644
+index 0000000..71e64b4
+--- /dev/null
++++ b/Countdown.jsx
+@@ -0,0 +1,28 @@
++import { useState, useEffect } from "react";
++
++export default function Countdown({ seconds }) {
++  const [remaining, setRemaining] = useState(seconds);
++
++  useEffect(() => {
++    setRemaining(seconds);
++  }, [seconds]);
++
++  useEffect(() => {
++    if (remaining <= 0) return;
++    const id = setInterval(() => {
++      setRemaining((prev) => prev - 1);
++    }, 1000);
++    return () => clearInterval(id);
++  }, [remaining]);
++
++  const minutes = Math.floor(remaining / 60);
++  const secs = remaining % 60;
++
++  return (
++    <div>
++      {remaining > 0
++        ? `${minutes}:${secs.toString().padStart(2, "0")}`
++        : "Time's up!"}
++    </div>
++  );
++}

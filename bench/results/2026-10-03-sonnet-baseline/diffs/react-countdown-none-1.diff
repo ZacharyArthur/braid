@@ -1,0 +1,76 @@
+diff --git a/Countdown.jsx b/Countdown.jsx
+new file mode 100644
+index 0000000..c6cbf11
+--- /dev/null
++++ b/Countdown.jsx
+@@ -0,0 +1,70 @@
++import { useState, useEffect, useRef, useCallback } from "react";
++
++function formatTime(totalSeconds) {
++  const minutes = Math.floor(totalSeconds / 60);
++  const seconds = totalSeconds % 60;
++  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
++}
++
++export default function Countdown({ seconds = 60, onComplete }) {
++  const [secondsLeft, setSecondsLeft] = useState(seconds);
++  const [isRunning, setIsRunning] = useState(false);
++  const intervalRef = useRef(null);
++
++  useEffect(() => {
++    setSecondsLeft(seconds);
++    setIsRunning(false);
++  }, [seconds]);
++
++  useEffect(() => {
++    if (!isRunning) return;
++
++    intervalRef.current = setInterval(() => {
++      setSecondsLeft((prev) => {
++        if (prev <= 1) {
++          clearInterval(intervalRef.current);
++          setIsRunning(false);
++          onComplete?.();
++          return 0;
++        }
++        return prev - 1;
++      });
++    }, 1000);
++
++    return () => clearInterval(intervalRef.current);
++  }, [isRunning, onComplete]);
++
++  const handleStart = useCallback(() => {
++    if (secondsLeft > 0) setIsRunning(true);
++  }, [secondsLeft]);
++
++  const handlePause = useCallback(() => {
++    setIsRunning(false);
++  }, []);
++
++  const handleReset = useCallback(() => {
++    setIsRunning(false);
++    setSecondsLeft(seconds);
++  }, [seconds]);
++
++  const isFinished = secondsLeft === 0;
++
++  return (
++    <div>
++      <div style={{ fontSize: "2rem", fontFamily: "monospace" }}>
++        {formatTime(secondsLeft)}
++      </div>
++      <div>
++        {!isRunning ? (
++          <button onClick={handleStart} disabled={isFinished}>
++            Start
++          </button>
++        ) : (
++          <button onClick={handlePause}>Pause</button>
++        )}
++        <button onClick={handleReset}>Reset</button>
++      </div>
++      {isFinished && <div>Time's up!</div>}
++    </div>
++  );
++}

@@ -1,0 +1,21 @@
+diff --git a/validate.py b/validate.py
+new file mode 100644
+index 0000000..65e9af2
+--- /dev/null
++++ b/validate.py
+@@ -0,0 +1,15 @@
++import re
++
++_EMAIL_RE = re.compile(
++    r"^[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+"
++    r"(?:\.[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+)*"
++    r"@"
++    r"(?:[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?\.)+"
++    r"[A-Za-z]{2,}$"
++)
++
++
++def is_valid_email(address: str) -> bool:
++    if not isinstance(address, str) or len(address) > 254:
++        return False
++    return bool(_EMAIL_RE.match(address))

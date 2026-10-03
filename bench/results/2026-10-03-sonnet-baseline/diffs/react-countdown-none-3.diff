@@ -1,0 +1,55 @@
+diff --git a/Countdown.jsx b/Countdown.jsx
+new file mode 100644
+index 0000000..a25b53e
+--- /dev/null
++++ b/Countdown.jsx
+@@ -0,0 +1,49 @@
++import { useEffect, useRef, useState } from 'react';
++
++function formatTime(totalSeconds) {
++  const minutes = Math.floor(totalSeconds / 60);
++  const seconds = totalSeconds % 60;
++  return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
++}
++
++export default function Countdown({ seconds }) {
++  const [secondsLeft, setSecondsLeft] = useState(seconds);
++  const intervalRef = useRef(null);
++
++  useEffect(() => {
++    setSecondsLeft(seconds);
++  }, [seconds]);
++
++  useEffect(() => {
++    if (secondsLeft <= 0) {
++      clearInterval(intervalRef.current);
++      return;
++    }
++
++    intervalRef.current = setInterval(() => {
++      setSecondsLeft((prev) => {
++        if (prev <= 1) {
++          clearInterval(intervalRef.current);
++          return 0;
++        }
++        return prev - 1;
++      });
++    }, 1000);
++
++    return () => clearInterval(intervalRef.current);
++  }, [secondsLeft > 0]);
++
++  const isFinished = secondsLeft <= 0;
++
++  const handleReset = () => {
++    setSecondsLeft(seconds);
++  };
++
++  return (
++    <div className="countdown">
++      <div className="countdown-time">{formatTime(secondsLeft)}</div>
++      {isFinished && <div className="countdown-message">Time's up!</div>}
++      <button onClick={handleReset}>Reset</button>
++    </div>
++  );
++}

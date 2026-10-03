@@ -1,0 +1,23 @@
+diff --git a/validate.py b/validate.py
+new file mode 100644
+index 0000000..88da4ee
+--- /dev/null
++++ b/validate.py
+@@ -0,0 +1,17 @@
++import re
++
++_EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
++
++
++def is_valid_email(address: str) -> bool:
++    return bool(_EMAIL_RE.match(address))
++
++
++if __name__ == "__main__":
++    assert is_valid_email("a@b.com")
++    assert is_valid_email("first.last+tag@sub.domain.co")
++    assert not is_valid_email("no-at-sign.com")
++    assert not is_valid_email("a@b")
++    assert not is_valid_email("a @b.com")
++    assert not is_valid_email("")
++    print("ok")

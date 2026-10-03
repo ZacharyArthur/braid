@@ -1,0 +1,75 @@
+diff --git a/Countdown.jsx b/Countdown.jsx
+new file mode 100644
+index 0000000..bdb8d73
+--- /dev/null
++++ b/Countdown.jsx
+@@ -0,0 +1,69 @@
++import { useState, useEffect, useRef, useCallback } from "react";
++
++function formatTime(totalSeconds) {
++  const minutes = Math.floor(totalSeconds / 60);
++  const seconds = totalSeconds % 60;
++  return `${minutes}:${String(seconds).padStart(2, "0")}`;
++}
++
++export default function Countdown({ seconds }) {
++  const [remaining, setRemaining] = useState(seconds);
++  const [isRunning, setIsRunning] = useState(false);
++  const intervalRef = useRef(null);
++
++  useEffect(() => {
++    setRemaining(seconds);
++    setIsRunning(false);
++  }, [seconds]);
++
++  useEffect(() => {
++    if (!isRunning) return;
++
++    intervalRef.current = setInterval(() => {
++      setRemaining((prev) => {
++        if (prev <= 1) {
++          clearInterval(intervalRef.current);
++          setIsRunning(false);
++          return 0;
++        }
++        return prev - 1;
++      });
++    }, 1000);
++
++    return () => clearInterval(intervalRef.current);
++  }, [isRunning]);
++
++  const handleStart = useCallback(() => {
++    if (remaining > 0) setIsRunning(true);
++  }, [remaining]);
++
++  const handlePause = useCallback(() => {
++    setIsRunning(false);
++  }, []);
++
++  const handleReset = useCallback(() => {
++    setIsRunning(false);
++    setRemaining(seconds);
++  }, [seconds]);
++
++  const isFinished = remaining === 0;
++
++  return (
++    <div className="countdown">
++      <div className="countdown-time" aria-live="polite">
++        {formatTime(remaining)}
++      </div>
++      <div className="countdown-controls">
++        {!isRunning ? (
++          <button onClick={handleStart} disabled={isFinished}>
++            Start
++          </button>
++        ) : (
++          <button onClick={handlePause}>Pause</button>
++        )}
++        <button onClick={handleReset}>Reset</button>
++      </div>
++      {isFinished && <div className="countdown-done">Time's up!</div>}
++    </div>
++  );
++}

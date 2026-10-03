@@ -1,0 +1,36 @@
+diff --git a/main.py b/main.py
+index 9cbedc7..6eef8dc 100644
+--- a/main.py
++++ b/main.py
+@@ -1,13 +1,29 @@
+-from fastapi import FastAPI
++import time
++from collections import defaultdict
++
++from fastapi import Depends, FastAPI, HTTPException, Request
+ from pydantic import BaseModel
+ 
+ app = FastAPI()
+ 
++RATE_LIMIT = 5  # requests
++RATE_WINDOW = 10  # seconds
++_request_log: dict[str, list[float]] = defaultdict(list)
++
++
++def rate_limit(request: Request) -> None:
++    now = time.monotonic()
++    log = _request_log[request.client.host]
++    log[:] = [t for t in log if now - t < RATE_WINDOW]
++    if len(log) >= RATE_LIMIT:
++        raise HTTPException(status_code=429, detail="Too many requests")
++    log.append(now)
++
+ 
+ class Message(BaseModel):
+     text: str
+ 
+ 
+-@app.post("/messages")
++@app.post("/messages", dependencies=[Depends(rate_limit)])
+ def create_message(message: Message):
+     return {"ok": True, "length": len(message.text)}

@@ -1,0 +1,65 @@
+diff --git a/main.py b/main.py
+index 9cbedc7..863c9b0 100644
+--- a/main.py
++++ b/main.py
+@@ -1,13 +1,35 @@
+-from fastapi import FastAPI
++import time
++from collections import defaultdict, deque
++
++from fastapi import FastAPI, HTTPException, Request
+ from pydantic import BaseModel
+ 
+ app = FastAPI()
+ 
++RATE_LIMIT = 5  # requests
++RATE_WINDOW = 60  # seconds
++# ponytail: in-memory per-IP limiter, resets on restart and won't share state
++# across multiple worker processes; swap for a Redis-backed limiter if you
++# scale past one process.
++_hits: dict[str, deque] = defaultdict(deque)
++
++
++def check_rate_limit(request: Request) -> None:
++    ip = request.client.host
++    now = time.monotonic()
++    hits = _hits[ip]
++    while hits and now - hits[0] > RATE_WINDOW:
++        hits.popleft()
++    if len(hits) >= RATE_LIMIT:
++        raise HTTPException(status_code=429, detail="Too many requests")
++    hits.append(now)
++
+ 
+ class Message(BaseModel):
+     text: str
+ 
+ 
+ @app.post("/messages")
+-def create_message(message: Message):
++def create_message(message: Message, request: Request):
++    check_rate_limit(request)
+     return {"ok": True, "length": len(message.text)}
+diff --git a/test_rate_limit.py b/test_rate_limit.py
+new file mode 100644
+index 0000000..3b80c06
+--- /dev/null
++++ b/test_rate_limit.py
+@@ -0,0 +1,17 @@
++from fastapi.testclient import TestClient
++from main import app, RATE_LIMIT
++
++client = TestClient(app)
++
++
++def test_rate_limit_blocks_after_limit():
++    for _ in range(RATE_LIMIT):
++        r = client.post("/messages", json={"text": "hi"})
++        assert r.status_code == 200
++    r = client.post("/messages", json={"text": "hi"})
++    assert r.status_code == 429
++
++
++if __name__ == "__main__":
++    test_rate_limit_blocks_after_limit()
++    print("ok")

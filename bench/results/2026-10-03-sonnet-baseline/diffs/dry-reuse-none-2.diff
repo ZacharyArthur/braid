@@ -1,0 +1,20 @@
+diff --git a/categories.js b/categories.js
+index bd65639..24374a9 100644
+--- a/categories.js
++++ b/categories.js
+@@ -4,4 +4,14 @@ function allCategories() {
+   return [...CATEGORIES];
+ }
+ 
+-module.exports = { allCategories };
++function categoryUrl(name) {
++  const slug = name
++    .toLowerCase()
++    .replace(/[^\w\s]/g, '')
++    .trim()
++    .split(/\s+/)
++    .join('-');
++  return `/category/${slug}`;
++}
++
++module.exports = { allCategories, categoryUrl };

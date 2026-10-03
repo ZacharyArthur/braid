@@ -1,0 +1,34 @@
+diff --git a/reports.js b/reports.js
+index 2f762f5..aa9ebdf 100644
+--- a/reports.js
++++ b/reports.js
+@@ -1,17 +1,21 @@
+-function salesReport(rows) {
+-  const lines = ['Sales', '-----'];
++function buildReport(title, rows) {
++  const lines = [title, '-'.repeat(title.length)];
+   for (const r of rows) lines.push(`${r.date}  ${r.amount.toFixed(2).padStart(10)}`);
+   const total = rows.reduce((sum, r) => sum + r.amount, 0);
+   lines.push(`Total       ${total.toFixed(2).padStart(10)}`);
+   return lines.join('\n');
+ }
+ 
++function salesReport(rows) {
++  return buildReport('Sales', rows);
++}
++
+ function refundReport(rows) {
+-  const lines = ['Refunds', '-------'];
+-  for (const r of rows) lines.push(`${r.date}  ${r.amount.toFixed(2).padStart(10)}`);
+-  const total = rows.reduce((sum, r) => sum + r.amount, 0);
+-  lines.push(`Total       ${total.toFixed(2).padStart(10)}`);
+-  return lines.join('\n');
++  return buildReport('Refunds', rows);
++}
++
++function creditReport(rows) {
++  return buildReport('Credits', rows);
+ }
+ 
+-module.exports = { salesReport, refundReport };
++module.exports = { salesReport, refundReport, creditReport };

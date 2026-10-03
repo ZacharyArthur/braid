@@ -1,0 +1,12 @@
+diff --git a/sum_sales.py b/sum_sales.py
+new file mode 100644
+index 0000000..eab63db
+--- /dev/null
++++ b/sum_sales.py
+@@ -0,0 +1,6 @@
++import csv
++
++with open("sales.csv", newline="") as f:
++    total = sum(float(row["amount"]) for row in csv.DictReader(f))
++
++print(total)
