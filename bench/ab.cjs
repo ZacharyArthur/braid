@@ -17,7 +17,10 @@ const { execFileSync, spawnSync } = require('node:child_process');
 
 const ROOT = path.resolve(__dirname, '..');
 const TASKS = path.join(__dirname, 'tasks');
-const WORK = path.join(os.tmpdir(), 'braid-bench');
+// Runs must live outside the home folder: Claude Code loads every CLAUDE.md above the working
+// dir, and a home-level one (e.g. C:\Users\me\CLAUDE.md) makes agents treat home as the project.
+const WORK = process.env.BRAID_BENCH_DIR ||
+  (process.platform === 'win32' ? path.join(path.parse(os.homedir()).root, 'braid-bench') : path.join(os.tmpdir(), 'braid-bench'));
 
 const args = process.argv.slice(2);
 const opt = (name, dflt) => { const i = args.indexOf(`--${name}`); return i < 0 ? dflt : args[i + 1]; };
