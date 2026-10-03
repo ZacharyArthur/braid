@@ -1,0 +1,1 @@
+{ "source": "ponytail", "prompt": "Add rate limiting to my FastAPI endpoint so users can't spam it.", "interface": "The app is in `main.py`." }

@@ -1,0 +1,6 @@
+{
+  "source": "braid",
+  "prompt": "Add a `creditReport(rows)` to reports.js, formatted the same way as the other two reports, titled 'Credits'. Export it.",
+  "check": "check.cjs",
+  "dry": { "file": "reports.js", "pattern": "padStart\\(10\\)", "max": 2, "means": "the third copy triggered one shared formatter" }
+}

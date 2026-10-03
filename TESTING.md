@@ -43,4 +43,20 @@ Install from the plugin marketplace (GitHub source `ZacharyArthur/braid`).
 
 ## A/B against ponytail
 
-Pick 5 tasks from ponytail's benchmark set. Run each three ways (braid, ponytail, neither) on the same model, in fresh sessions. Record per run: diff size (lines), whether the tests pass, total tokens. braid should match ponytail on size and tests, and do better on duplication.
+`bench/ab.cjs` runs every task in `bench/tasks/` through Claude Code three ways: braid, ponytail (at the commit braid is pinned to in UPSTREAM.md), and no plugin. Each run gets a fresh temp git repo and loads only its own plugin: `--setting-sources project,local` skips your installed plugins, `--plugin-dir` adds one. Nothing you have installed changes.
+
+```bash
+node bench/ab.cjs --fake
+```
+
+`--fake` costs nothing: it applies each task's reference solution instead of calling Claude, to prove the harness and the checks work. Then the real thing (63 runs at the defaults; roughly $5-15 of usage on Sonnet):
+
+```bash
+node bench/ab.cjs --model sonnet --runs 3
+```
+
+`--tasks dry-reuse,dry-third` and `--arms braid,ponytail` narrow it down; `--model haiku --runs 1` is a cheap smoke test.
+
+It records, per run: lines added/removed, whether the task's check passes, the DRY probe, tokens, cost and time; the report shows medians. Results land in `bench/results/<date>-<model>/` (`report.md`, `runs.jsonl`, one `.diff` per run). The two Python checks need Python 3; without it they show `skipped`.
+
+Tasks: five from ponytail's benchmark (prompts verbatim, MIT, plus one line naming the file to write) and two braid tasks, `dry-reuse` (an existing helper should be reused) and `dry-third` (a third near-copy should trigger one shared function). braid should match ponytail on size and checks, and win the DRY column.

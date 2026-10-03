@@ -1,0 +1,1 @@
+{ "source": "ponytail", "prompt": "Write me a Python function that validates email addresses.", "interface": "Write it to `validate.py` as `is_valid_email(address) -> bool`.", "check": "check.py" }

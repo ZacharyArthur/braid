@@ -1,0 +1,1 @@
+{ "source": "ponytail", "prompt": "Write a reusable debounce function in vanilla JavaScript: debounce(fn, delay) returns a debounced version of fn that delays calling it until delay ms after the last call.", "interface": "Write it to `debounce.js` and export it with `module.exports = debounce`.", "check": "check.cjs" }

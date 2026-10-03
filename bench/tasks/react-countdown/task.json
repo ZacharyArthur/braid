@@ -1,0 +1,1 @@
+{ "source": "ponytail", "prompt": "Build me a countdown timer component in React that counts down from a given number of seconds.", "interface": "Write it to `Countdown.jsx`." }

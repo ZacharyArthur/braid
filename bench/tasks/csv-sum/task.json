@@ -1,0 +1,1 @@
+{ "source": "ponytail", "prompt": "Write Python code that reads sales.csv and sums the 'amount' column.", "interface": "Write it to `sum_sales.py`; running `python sum_sales.py` prints the total.", "check": "check.py" }
