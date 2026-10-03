@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-// braid repo check: manifests, skill frontmatter, upstream provenance. Run: node scripts/check.cjs
+// braid repo check: manifests, skill frontmatter, hook behavior, always-on budget, upstream provenance.
+// Run: node scripts/check.cjs
 'use strict';
 const fs = require('node:fs');
 const path = require('node:path');
@@ -68,6 +69,68 @@ for (const dir of skillDirs) {
   if (modelInvocable && desc.length > 300) fail(`${file}: model-invocable description ${desc.length} > 300 chars`);
 }
 
+// Hook smoke test, run from a copy under a `"type": "module"` package.json: the
+// .cjs extension must keep it CommonJS. Walks level switching, drift, pointers, off.
+const { execFileSync } = require('node:child_process');
+const os = require('node:os');
+let alwaysOn = 0;
+{
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'braid-check-'));
+  try {
+    const plugin = path.join(tmp, 'esm', 'plugin');
+    fs.mkdirSync(plugin, { recursive: true });
+    fs.writeFileSync(path.join(tmp, 'esm', 'package.json'), '{"type":"module"}');
+    fs.cpSync(path.join(root, 'hooks'), path.join(plugin, 'hooks'), { recursive: true });
+    fs.cpSync(path.join(root, 'skills'), path.join(plugin, 'skills'), { recursive: true });
+    // A project with every pointer present: active change, open route, map, handoff.
+    const proj = path.join(tmp, 'proj', 'braid');
+    fs.mkdirSync(path.join(proj, 'changes', 'add-x'), { recursive: true });
+    fs.mkdirSync(path.join(proj, 'routes'), { recursive: true });
+    fs.writeFileSync(path.join(proj, 'changes', 'add-x', 'tasks.md'), '- [x] one\n- [ ] two\n');
+    fs.writeFileSync(path.join(proj, 'routes', 'v1.md'), '## Open\n- [ ] pick a db\n');
+    fs.writeFileSync(path.join(proj, 'map.md'), '<!-- braid:map sha=abc1234 -->\n');
+    fs.writeFileSync(path.join(proj, 'HANDOFF.md'), '<!-- braid:handoff sha=abc1234 -->\n');
+
+    const hook = (event, input) => {
+      const out = execFileSync(process.execPath, [path.join(plugin, 'hooks', 'braid.cjs'), event], {
+        input: JSON.stringify({ session_id: 'check', cwd: path.dirname(proj), ...input }),
+        env: { ...process.env, CLAUDE_PLUGIN_DATA: path.join(tmp, 'data') },
+      }).toString();
+      return out ? JSON.parse(out).hookSpecificOutput.additionalContext : '';
+    };
+    const expect = (cond, msg) => { if (!cond) fail(`hook: ${msg}`); };
+
+    const start = hook('session', { source: 'startup' });
+    alwaysOn += Buffer.byteLength(start);
+    expect(start.includes('BRAID ACTIVE — level: full'), 'default level is not full');
+    expect(start.includes('**full**') && !start.includes('**lite**'), 'level table not filtered');
+    expect(start.includes('add-x (1/2 tasks)'), 'active change pointer missing');
+    expect(start.includes('v1 (1 open)'), 'route pointer missing');
+    expect(start.includes('braid/map.md (built at abc1234') && start.includes('HANDOFF.md (written at'), 'map/handoff pointer missing');
+    expect(hook('prompt', { prompt: '/braid:braid lite' }).includes('BRAID LEVEL: lite'), 'level switch not confirmed');
+    expect(hook('session', { source: 'compact' }).includes('level: lite'), 'level lost across compaction');
+    expect(hook('subagent', {}).includes('level: lite'), 'subagent not injected');
+    expect(hook('prompt', { prompt: 'fix the bug' }) === '', 'drift reminder on by default');
+    hook('prompt', { prompt: '/braid:braid drift on' });
+    expect(hook('prompt', { prompt: 'fix the bug' }).startsWith('braid: lite'), 'drift reminder missing');
+    expect(hook('prompt', { prompt: '/braid:spec propose' }) === 'braid: lite · YAGNI > KISS > DRY · ladder first · done means verified', 'other braid skills misread as level commands');
+    hook('prompt', { prompt: 'stop braid' });
+    expect(hook('session', { source: 'compact' }) === '', 'still injecting after "stop braid"');
+  } catch (e) {
+    fail(`hook: ${e.message}`);
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+}
+
+// Always-on budget: worst-case session injection + model-invocable skill descriptions, bytes/4.
+for (const dir of skillDirs) {
+  const fm = exists(`skills/${dir}/SKILL.md`) && frontmatter(read(`skills/${dir}/SKILL.md`));
+  if (fm && fm['disable-model-invocation'] !== 'true') alwaysOn += (fm.name + fm.description).length;
+}
+const tokens = Math.round(alwaysOn / 4);
+if (tokens > 2500) fail(`always-on budget ~${tokens} tokens > 2500`);
+
 // UPSTREAM.md rows point at real skills; vendored ones carry their LICENSE.
 const rows = read('UPSTREAM.md').split(/\r?\n/).filter((l) => /^\|\s*`?[a-z0-9]/.test(l));
 for (const row of rows) {
@@ -81,4 +144,4 @@ if (errors.length) {
   console.error(errors.map((e) => `✗ ${e}`).join('\n'));
   process.exit(1);
 }
-console.log(`✓ ${manifests.length} manifests, ${skillDirs.length} skills, ${rows.length} upstream rows`);
+console.log(`✓ ${manifests.length} manifests, ${skillDirs.length} skills, ${rows.length} upstream rows, hook ok, always-on ~${tokens} tokens`);

@@ -16,7 +16,7 @@ Interim record of the design grilling (2026-10-02). Folds into `braid/adr/` + `b
 
 - One plugin, one public repo `ZacharyArthur/braid` that is its own marketplace for all three harnesses.
 - Shared `skills/<name>/SKILL.md`; thin manifests: `.claude-plugin/`, `.codex-plugin/` + `.agents/plugins/marketplace.json`, `.zcode-plugin/` (ZCode marketplace path TBD at milestone 7).
-- Hooks: Claude Code and Codex share `hooks/claude-codex.json`; ZCode reads `hooks/hooks.json` (`timeoutMs`/`args` schema). Both call one Node script.
+- Hooks: one `hooks/hooks.json` (Claude format) for all three: Claude Code and ZCode load it by default, Codex via its manifest. ZCode's `command` type takes the same shell string and expands `${CLAUDE_PLUGIN_ROOT}`; verify at milestone 7, split only if ZCode rejects it. One script: `hooks/braid.cjs session|prompt|subagent`.
 - Hook scripts: `.cjs` (immune to a parent `"type": "module"`), stdlib only, no package.json. Requires Node ≥ 18; without Node the hook fails silently and the core skill's broad description is the fallback.
 - MIT license. semver + git tags + hand-written CHANGELOG; v1.0.0 at launch; `braid/` layout is a stable public format from day one. major = renamed/removed skill or `braid/` layout change, minor = new skill/verb, patch = wording/upstream sync.
 
@@ -29,7 +29,7 @@ Interim record of the design grilling (2026-10-02). Folds into `braid/adr/` + `b
 | Model-invocable description | ≤ 300 chars |
 | Total always-on | ~2–2.5k tokens |
 
-- `core.md` keeps everything load-bearing: ladder, rules, output pattern, root-cause bug fixes, one-check rule, **when-NOT-to-be-lazy in full**. Flavor text (intensity examples, hardware paragraph, rationale) moves to the `braid` skill body (≤ ~500 tokens, broad triggers incl. scripting/sysadmin/SRE/IaC).
+- `skills/braid/core.md` (inside the skill so ZCode's folder import carries it) keeps everything load-bearing: ladder, rules, output pattern, root-cause bug fixes, one-check rule, **when-NOT-to-be-lazy in full**. Flavor text (intensity examples, hardware paragraph, rationale) moves to the `braid` skill body (≤ ~500 tokens, broad triggers incl. scripting/sysadmin/SRE/IaC).
 - Modes lite/full/ultra kept via a slim mode tracker (UserPromptSubmit), state in the plugin data dir keyed by session. Anti-drift one-liner per prompt: ships **off**, toggle `/braid:braid drift on|off`. No statusline.
 - Clean-room skill bodies capped at ~1.5–2k tokens; no reference subfolders in v1.
 - ZCode has no user-only flag: user-invoked descriptions end "Only when the user explicitly invokes it."; README lists which to toggle off in ZCode.

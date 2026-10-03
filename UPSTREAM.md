@@ -10,3 +10,4 @@ Update a row: `gh api repos/<owner>/<repo>/compare/<sha>...HEAD --jq '.files[] |
 
 | Skill | Kind | Repo | Path | SHA | License |
 |---|---|---|---|---|---|
+| `braid` | derived | DietrichGebert/ponytail | skills/ponytail/SKILL.md, hooks/ | 54e00c3e29dec545ccc8183703853e1223f9ab9d | MIT |

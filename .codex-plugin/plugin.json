@@ -8,6 +8,7 @@
   "license": "MIT",
   "keywords": ["yagni", "kiss", "dry", "clean-code", "spec-driven", "grilling"],
   "skills": "./skills/",
+  "hooks": "./hooks/hooks.json",
   "interface": {
     "displayName": "Braid",
     "shortDescription": "YAGNI > KISS > DRY coding harness",
