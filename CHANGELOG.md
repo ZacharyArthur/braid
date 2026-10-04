@@ -2,7 +2,7 @@
 
 All notable changes to braid. Versions follow semver: major = a skill renamed or removed, or the `braid/` layout changed; minor = a new skill or verb; patch = wording and upstream syncs.
 
-## [Unreleased]
+## [1.0.1] - 2026-10-04
 
 - `wayfind` description no longer contains `<effort>`, which claude.ai's plugin sync rejects as an XML tag; `check.cjs` now catches tag-like text in descriptions.
 
