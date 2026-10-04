@@ -112,8 +112,13 @@ let alwaysOn = 0;
     alwaysOn += Buffer.byteLength(start);
     expect(start.includes('BRAID ACTIVE — level: full'), 'default level is not full');
     expect(start.includes('**full**') && !start.includes('**lite**'), 'level table not filtered');
-    expect(start.includes('Active change: add-x (1/2 tasks).'), 'active change pointer missing or includes queued');
-    expect(start.includes('Queued proposals: fix-y.'), 'queued proposal pointer missing');
+    expect(start.includes('Active change: braid/changes/add-x (1/2 tasks).'), 'active change pointer missing or includes queued');
+    expect(start.includes('Queued proposals: braid/changes/fix-y.'), 'queued proposal pointer missing');
+    // An OpenSpec project (no braid/ folder): its changes get the same pointer.
+    const ospec = path.join(tmp, 'ospec', 'openspec', 'changes', 'add-z');
+    fs.mkdirSync(ospec, { recursive: true });
+    fs.writeFileSync(path.join(ospec, 'tasks.md'), '## 1. Do\n- [ ] 1.1 one\n');
+    expect(hook('session', { source: 'startup', cwd: path.join(tmp, 'ospec') }).includes('Active change: openspec/changes/add-z (0/1 tasks).'), 'OpenSpec change pointer missing');
     expect(start.includes('v1 (1 open)'), 'route pointer missing');
     expect(start.includes('braid/map.md (built at abc1234') && start.includes('HANDOFF.md (written at'), 'map/handoff pointer missing');
     expect(hook('prompt', { prompt: '/braid:braid lite' }).includes('BRAID LEVEL: lite'), 'level switch not confirmed');

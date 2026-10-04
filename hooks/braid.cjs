@@ -77,23 +77,25 @@ function count(text, re) { return (text.match(re) || []).length; }
 
 function pointers(cwd) {
   const dir = path.join(cwd, 'braid');
-  if (!fs.existsSync(dir)) return [];
   const lines = [];
-  const ls = (d) => { try { return fs.readdirSync(path.join(dir, d), { withFileTypes: true }); } catch { return []; } };
+  const ls = (rel) => { try { return fs.readdirSync(path.join(cwd, rel), { withFileTypes: true }); } catch { return []; } };
 
-  // A change with tasks is active; one without (e.g. a fix queued by spec discover) is only queued.
+  // Changes live in braid/changes, or openspec/changes in an OpenSpec project (same tasks.md
+  // checkboxes). A change with tasks is active; one without (e.g. queued by spec discover) is queued.
   const changes = [], queued = [];
-  for (const e of ls('changes')) {
-    if (!e.isDirectory() || e.name === 'archive') continue;
-    const tasks = tryRead(path.join(dir, 'changes', e.name, 'tasks.md')) || '';
-    const done = count(tasks, /^\s*- \[x\]/gim);
-    const total = done + count(tasks, /^\s*- \[ \]/gm);
-    if (total) changes.push(`${e.name} (${done}/${total} tasks)`); else queued.push(e.name);
+  for (const root of ['braid/changes', 'openspec/changes']) {
+    for (const e of ls(root)) {
+      if (!e.isDirectory() || e.name === 'archive') continue;
+      const tasks = tryRead(path.join(cwd, root, e.name, 'tasks.md')) || '';
+      const done = count(tasks, /^\s*- \[x\]/gim);
+      const total = done + count(tasks, /^\s*- \[ \]/gm);
+      if (total) changes.push(`${root}/${e.name} (${done}/${total} tasks)`); else queued.push(`${root}/${e.name}`);
+    }
   }
-  if (changes.length) lines.push(`Active change: ${changes.join(', ')}. Re-read its braid/changes/<name>/tasks.md before editing code; tick tasks as they finish.`);
+  if (changes.length) lines.push(`Active change: ${changes.join(', ')}. Re-read its tasks.md before editing code; tick tasks as they finish.`);
   if (queued.length) lines.push(`Queued proposals: ${queued.join(', ')}. Not started; /braid:spec propose <name> plans one.`);
 
-  const routes = ls('routes').filter((e) => e.isFile() && e.name.endsWith('.md')).flatMap((e) => {
+  const routes = ls('braid/routes').filter((e) => e.isFile() && e.name.endsWith('.md')).flatMap((e) => {
     const open = count(tryRead(path.join(dir, 'routes', e.name)) || '', /^\s*- \[ \]/gm);
     return open ? [`${e.name.slice(0, -3)} (${open} open)`] : [];
   });

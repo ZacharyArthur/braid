@@ -38,9 +38,9 @@ Then run `codex`, open `/hooks`, review and trust braid's hooks, and start a new
 |---|---|
 | `grilling` | Interview you about a plan, a round of questions at a time, until it's settled. Aliases: `grill-me`, `grill-with-docs` (also writes ADRs and glossary) |
 | `wayfind` | A route of decisions for an effort too big for one session (`braid/routes/`) |
-| `spec` | `propose` a change from the conversation, `apply` its tasks, `archive` it into the specs, or `discover` specs for an existing codebase (`braid/specs/`, `braid/changes/`) |
+| `spec` | `propose` a change from the conversation, `apply` its tasks, `archive` it into the specs, or `discover` specs for an existing codebase (`braid/specs/`, `braid/changes/`; works on `openspec/` in OpenSpec projects and defers to other spec frameworks) |
 | `map` | A short repo map in `braid/map.md`, read instead of re-exploring |
-| `standards` | The project's `AGENTS.md`: exact lint/type/test/dead-code/validation commands, conventions, git workflow (and a `CLAUDE.md` that imports it) |
+| `standards` | The project's `AGENTS.md`: priorities, stack, exact lint/type/test/dead-code/validation commands, quality gate, conventions, spec workflow, git workflow, plus optional invariants, dev environment and security (and a `CLAUDE.md` that imports it) |
 | `domain-modeling` | Glossary and ADRs in `braid/` |
 | `handoff` | `braid/HANDOFF.md` for whoever picks this up next |
 | `review` / `audit` | Over-engineering review of a diff / the whole repo |

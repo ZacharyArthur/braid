@@ -11,11 +11,34 @@ metadata:
 Specs say what the system must do. Changes say what is about to change. Both
 live in `braid/`, on disk, so they survive sessions and compaction.
 
+## Which framework
+
+1. **AGENTS.md says** (`Specs: <framework> (<dir>)` in its Workflow section) → use that.
+2. **Otherwise detect:** `openspec/` → OpenSpec; `braid/specs` or `braid/changes`
+   → braid; `.specify/` or `specs/NNN-*/` → Spec Kit; `.kiro/specs/` → Kiro;
+   `.bmad-core/` → BMAD; `.agent-os/`, `.taskmaster/` → Agent OS, Taskmaster.
+   Nothing → braid. More than one → ask.
+3. **The user explicitly asks for braid's workflow** → braid, whatever is present.
+
+**OpenSpec:** every verb works on `openspec/specs/` and `openspec/changes/`
+instead of `braid/`, in OpenSpec's formats (the ones below, plus `## RENAMED
+Requirements` deltas: `- FROM: ### Requirement: <old>` / `- TO: ### Requirement:
+<new>`). Follow `openspec/config.yaml`: its context and any sections it
+requires in an artifact. `openspec` CLI installed → use `openspec validate` and
+`openspec archive <id>`; otherwise edit the files. Only specs and changes move:
+ADRs, glossary, map, routes, and handoff stay in `braid/`.
+
+**Any other framework:** ask once: follow it (recommended: point to its own
+commands and step aside; braid's core rules still govern the code), run braid's
+workflow alongside it, or migrate to braid. Record the answer in AGENTS.md's
+Workflow section (`/braid:standards workflow`) so nobody asks again.
+
 ## Route
 
 Read the verb's file in this folder and follow it: `propose.md`, `apply.md`,
 `archive.md`, `discover.md`. No verb: an active change exists → ask apply or
-archive; none → `propose`.
+archive; none → `propose`. Paths below say `braid/`; under OpenSpec read
+`openspec/` for specs and changes.
 
 ## Layout
 
