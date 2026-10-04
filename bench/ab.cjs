@@ -24,15 +24,21 @@ const ROOT = path.resolve(__dirname, '..');
 const TASKS = path.join(__dirname, 'tasks');
 // Runs must live outside the home folder: Claude Code loads every CLAUDE.md above the working
 // dir, and a home-level one (e.g. C:\Users\me\CLAUDE.md) makes agents treat home as the project.
-const WORK = process.env.BRAID_BENCH_DIR ||
-  (process.platform === 'win32' ? path.join(path.parse(os.homedir()).root, 'braid-bench') : path.join(os.tmpdir(), 'braid-bench'));
+// Each invocation owns one unique folder under braid-bench/ and deletes only that, so concurrent
+// runs never collide and BRAID_BENCH_DIR (the parent to use) is never itself deleted.
+const RUN_ID = `run-${process.pid}-${Date.now()}`;
+const WORK = path.join(process.env.BRAID_BENCH_DIR ||
+  (process.platform === 'win32' ? path.parse(os.homedir()).root : os.tmpdir()), 'braid-bench', RUN_ID);
 
 const args = process.argv.slice(2);
 const opt = (name, dflt) => { const i = args.indexOf(`--${name}`); return i < 0 ? dflt : args[i + 1]; };
 const FAKE = args.includes('--fake');
 const AGENT = opt('agent', 'claude');
-const codexDefaultModel = () => (fs.readFileSync(path.join(os.homedir(), '.codex', 'config.toml'), 'utf8').match(/^model\s*=\s*"([^"]+)"/m) || [])[1];
-const MODEL = opt('model', AGENT === 'codex' ? codexDefaultModel() : 'sonnet');
+const codexDefaultModel = () => {
+  try { return fs.readFileSync(path.join(os.homedir(), '.codex', 'config.toml'), 'utf8').match(/^model\s*=\s*"([^"]+)"/m)?.[1]; }
+  catch { return undefined; } // no config: let Codex pick its own default
+};
+const MODEL = opt('model') ?? (AGENT === 'codex' ? codexDefaultModel() : 'sonnet');
 const RUNS = Number(opt('runs', FAKE ? 1 : 3));
 const ARMS = opt('arms', 'braid,ponytail,none').split(',');
 const TASK_IDS = opt('tasks', fs.readdirSync(TASKS).join(',')).split(',');
@@ -201,8 +207,12 @@ function report(results) {
   ].join('\n') + '\n';
 }
 
-const stamp = [new Date().toISOString().slice(0, 10), FAKE ? 'fake' : `${AGENT}-${MODEL}`, opt('label')].filter(Boolean).join('-');
-const outDir = path.join(__dirname, 'results', stamp);
+// The results folder is rebuilt on every run, so its name may only ever resolve inside bench/results.
+const RESULTS = path.join(__dirname, 'results');
+const stamp = [new Date().toISOString().slice(0, 10), FAKE ? 'fake' : `${AGENT}-${MODEL || 'default'}`, opt('label')]
+  .filter(Boolean).join('-').replace(/[^\w.-]+/g, '_').replace(/\.{2,}/g, '.');
+const outDir = path.join(RESULTS, stamp);
+if (path.dirname(outDir) !== RESULTS) throw new Error(`refusing results dir outside bench/results: ${stamp}`);
 fs.rmSync(outDir, { recursive: true, force: true });
 fs.mkdirSync(path.join(outDir, 'diffs'), { recursive: true });
 const results = [];
@@ -216,10 +226,12 @@ for (const id of TASK_IDS) for (const arm of ARMS) for (let i = 1; i <= RUNS; i+
 fs.writeFileSync(path.join(outDir, 'report.md'), report(results));
 console.log(`\n${path.relative(ROOT, path.join(outDir, 'report.md'))}`);
 
-// Leave nothing behind: the work dir (runs, ponytail checkout, hook state) and the session stubs
-// Claude writes for each run dir even with --no-session-persistence (~/.claude/projects/<cwd-as-name>).
+// Leave nothing behind: this run's work dir (runs, ponytail checkout, hook state), braid-bench/ if
+// that leaves it empty, and the session stubs Claude writes for this run's dirs even with
+// --no-session-persistence (~/.claude/projects/<cwd-as-name>, which contains RUN_ID).
 fs.rmSync(WORK, { recursive: true, force: true });
+try { fs.rmdirSync(path.dirname(WORK)); } catch {} // only succeeds when empty
 const projects = path.join(os.homedir(), '.claude', 'projects');
 for (const d of fs.existsSync(projects) ? fs.readdirSync(projects) : []) {
-  if (d.includes('braid-bench-runs')) fs.rmSync(path.join(projects, d), { recursive: true, force: true });
+  if (d.includes(RUN_ID)) fs.rmSync(path.join(projects, d), { recursive: true, force: true });
 }

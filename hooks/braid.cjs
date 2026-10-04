@@ -25,11 +25,14 @@ const EVENT_NAME = { session: 'SessionStart', prompt: 'UserPromptSubmit', subage
 // --- session state: { mode, drift, adhd } keyed by session id ---
 
 function statePath(sid) {
-  return path.join(SESSIONS, String(sid || 'default').replace(/[^\w-]/g, '_') + '.json');
+  return path.join(SESSIONS, String(sid).replace(/[^\w-]/g, '_') + '.json');
 }
+// No session id → defaults, never a shared file one session could switch off for another.
+// Each field is validated on its own, so a hand-edited or stale file can't inject odd values.
 function load(sid) {
-  try { return { mode: 'full', ...JSON.parse(fs.readFileSync(statePath(sid), 'utf8')) }; }
-  catch { return { mode: 'full' }; }
+  let s = {};
+  if (sid) try { s = JSON.parse(fs.readFileSync(statePath(sid), 'utf8')) || {}; } catch {}
+  return { mode: [...LEVELS, 'off'].includes(s.mode) ? s.mode : 'full', drift: s.drift === true, adhd: s.adhd === true };
 }
 function save(sid, st) {
   fs.mkdirSync(SESSIONS, { recursive: true });
@@ -61,7 +64,7 @@ function core(mode) {
 
 function git(cwd, args) {
   try {
-    return execFileSync('git', args, { cwd, timeout: 2000, stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
+    return execFileSync('git', args, { cwd, timeout: 1000, stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
   } catch { return null; }
 }
 
@@ -74,6 +77,8 @@ function staleness(cwd, file, verb) {
 }
 
 function count(text, re) { return (text.match(re) || []).length; }
+// Pointer lines stay short however busy the repo is: name a few, count the rest.
+const few = (items, max = 3) => items.slice(0, max).join(', ') + (items.length > max ? ` and ${items.length - max} more` : '');
 
 function pointers(cwd) {
   const dir = path.join(cwd, 'braid');
@@ -92,14 +97,14 @@ function pointers(cwd) {
       if (total) changes.push(`${root}/${e.name} (${done}/${total} tasks)`); else queued.push(`${root}/${e.name}`);
     }
   }
-  if (changes.length) lines.push(`Active change: ${changes.join(', ')}. Re-read its tasks.md before editing code; tick tasks as they finish.`);
-  if (queued.length) lines.push(`Queued proposals: ${queued.join(', ')}. Not started; /braid:spec propose <name> plans one.`);
+  if (changes.length) lines.push(`Active change: ${few(changes)}. Re-read its tasks.md before editing code; tick tasks as they finish.`);
+  if (queued.length) lines.push(`Queued proposals: ${few(queued)}. Not started; /braid:spec propose <name> plans one.`);
 
   const routes = ls('braid/routes').filter((e) => e.isFile() && e.name.endsWith('.md')).flatMap((e) => {
     const open = count(tryRead(path.join(dir, 'routes', e.name)) || '', /^\s*- \[ \]/gm);
     return open ? [`${e.name.slice(0, -3)} (${open} open)`] : [];
   });
-  if (routes.length) lines.push(`Active route: ${routes.join(', ')}. See braid/routes/.`);
+  if (routes.length) lines.push(`Active route: ${few(routes)}. See braid/routes/.`);
 
   const map = path.join(dir, 'map.md');
   if (fs.existsSync(map)) lines.push(`Repo map: braid/map.md${staleness(cwd, map, 'built')}. Read it before writing code here; it says what already exists.`);
@@ -148,7 +153,7 @@ function onPrompt(input, st, sid) {
   if (/^[/$@](?:braid:)?adhd\b/.test(prompt)) { st.adhd = true; changed = true; }
   else if (/^(stop adhd mode|normal mode)[.!]?$/.test(prompt)) { st.adhd = false; changed = true; }
 
-  if (changed) save(sid, st);
+  if (changed && sid) save(sid, st);
   if (st.drift && st.mode !== 'off' && !cmd) out.push(`braid: ${st.mode} · YAGNI > KISS > DRY · ladder first · done means verified`);
   return out.join('\n');
 }

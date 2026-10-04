@@ -8,7 +8,7 @@ A plugin for **Claude Code**, **Codex** and **ZCode**: an always-on core that ke
 
 ## Install
 
-Requires Node ≥ 18 for the always-on hook. Without Node, braid still works through its skills, with weaker always-on behavior.
+Requires Node ≥ 18 on the PATH for the always-on hook. Without it the skills still work, but the core rules only load when a skill is invoked, and each hook call shows a harmless "node: command not found" error until Node is installed.
 
 **Claude Code**
 
@@ -56,11 +56,11 @@ Only `braid`, `grilling`, `domain-modeling` and `map` load on their own; the res
 
 ## Benchmarks
 
-Same tasks, same model, three arms: braid, [ponytail](https://github.com/DietrichGebert/ponytail), no plugin. Every check passed in every arm on both agents. Totals across all runs:
+Same tasks, same model, three arms: braid, [ponytail](https://github.com/DietrichGebert/ponytail), no plugin. Every task with a check (5 of 7) passed it in every arm on both agents. Totals across all runs:
 
 | | braid | ponytail | none |
 |---|--:|--:|--:|
-| **Claude Code** (Sonnet, 21 runs/arm): code lines | **306** | 288 | 396 |
+| **Claude Code** (Sonnet, 21 runs/arm): code lines | **306** | 288 (+56 test) | 396 |
 | ↳ third copy turned into one shared function | **3/3** | 0/3 | 0/3 |
 | ↳ cost vs no plugin | +39% | +18% | - |
 | **Codex** (gpt-6.1-sol, 27 runs/arm): code lines | **415** | 409 | 461 |

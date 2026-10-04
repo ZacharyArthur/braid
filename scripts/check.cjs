@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// braid repo check: manifests, skill frontmatter, hook behavior, always-on budget, upstream provenance.
+// braid repo check: manifests, hooks.json, skill frontmatter, hook behavior, always-on budget, provenance and licenses.
 // Run: node scripts/check.cjs
 'use strict';
 const fs = require('node:fs');
@@ -27,6 +27,27 @@ for (const m of ['.claude-plugin/marketplace.json', '.agents/plugins/marketplace
   try { JSON.parse(read(m)); } catch (e) { fail(`${m}: ${e.message}`); }
 }
 if (versions.size > 1) fail(`manifest versions differ: ${[...versions].join(', ')}`);
+const version = [...versions][0];
+if (!/^\d+\.\d+\.\d+$/.test(version || '')) fail(`manifest version "${version}" is not x.y.z`);
+else if (!read('CHANGELOG.md').includes(`## [${version}]`)) fail(`CHANGELOG.md: no "## [${version}]" entry for the manifest version`);
+
+// Paths a manifest points at must exist (Claude Code and ZCode use the defaults: skills/, hooks/hooks.json).
+const codex = (() => { try { return JSON.parse(read('.codex-plugin/plugin.json')); } catch { return {}; } })();
+for (const key of ['skills', 'hooks']) if (!codex[key] || !exists(codex[key])) fail(`.codex-plugin/plugin.json: ${key} "${codex[key]}" does not exist`);
+
+// hooks/hooks.json is what every harness actually loads: each event must run this hook with its argument.
+try {
+  const { hooks } = JSON.parse(read('hooks/hooks.json'));
+  for (const [event, arg] of [['SessionStart', 'session'], ['UserPromptSubmit', 'prompt'], ['SubagentStart', 'subagent']]) {
+    const cmds = (hooks[event] || []).flatMap((g) => g.hooks || []);
+    if (!cmds.some((h) => h.type === 'command' && h.command === `node "\${CLAUDE_PLUGIN_ROOT}/hooks/braid.cjs" ${arg}` && h.timeout > 0 && h.timeout <= 10)) {
+      fail(`hooks/hooks.json: ${event} must run node "\${CLAUDE_PLUGIN_ROOT}/hooks/braid.cjs" ${arg} with a timeout of 1-10 s`);
+    }
+  }
+  if (!/startup/.test(hooks.SessionStart?.[0]?.matcher) || !/compact/.test(hooks.SessionStart?.[0]?.matcher)) fail('hooks/hooks.json: SessionStart must match startup and compact');
+} catch (e) {
+  fail(`hooks/hooks.json: ${e.message}`);
+}
 
 // Minimal frontmatter reader: `key: value`, quoted values, and `|` / `>` block scalars.
 function frontmatter(text) {
@@ -130,6 +151,36 @@ let alwaysOn = 0;
     expect(hook('prompt', { prompt: '/braid:spec propose' }) === 'braid: lite · YAGNI > KISS > DRY · ladder first · done means verified', 'other braid skills misread as level commands');
     hook('prompt', { prompt: 'stop braid' });
     expect(hook('session', { source: 'compact' }) === '', 'still injecting after "stop braid"');
+
+    // No session id: nothing is shared between id-less sessions, so one can't switch another off.
+    hook('prompt', { session_id: undefined, prompt: 'stop braid' });
+    expect(hook('session', { session_id: undefined, source: 'startup' }).includes('level: full'), 'id-less sessions share state');
+    // A state file with invalid fields falls back field by field.
+    fs.mkdirSync(path.join(tmp, 'data', 'sessions'), { recursive: true });
+    fs.writeFileSync(path.join(tmp, 'data', 'sessions', 'bad.json'), '{"mode":"bogus","adhd":"false","drift":1}');
+    const bad = hook('session', { session_id: 'bad', source: 'startup' });
+    expect(bad.includes('level: full') && !bad.includes('ADHD'), 'invalid state fields not rejected');
+    // A busy repo: pointer lines stay capped (a few names, then "and N more").
+    const busy = path.join(tmp, 'busy', 'braid', 'changes');
+    for (let i = 0; i < 40; i++) {
+      fs.mkdirSync(path.join(busy, `change-${i}`), { recursive: true });
+      if (i % 2) fs.writeFileSync(path.join(busy, `change-${i}`, 'tasks.md'), '- [ ] t\n');
+    }
+    const busyOut = hook('session', { session_id: 'busy', source: 'startup', cwd: path.join(tmp, 'busy') });
+    const pointerLines = busyOut.slice(busyOut.indexOf('## Project state')).split('\n').filter((l) => l.startsWith('- '));
+    expect(pointerLines.length <= 5 && pointerLines.every((l) => l.length <= 300) && busyOut.includes('and 17 more'), `pointer lines not capped: ${pointerLines.map((l) => l.length)}`);
+
+    // Windows can swallow a hook's stdin so it never closes: the hook must still answer and exit
+    // well inside the harness's 5 s timeout. A child keeps the pipe open and times the hook.
+    const probe = execFileSync(process.execPath, ['-e', `
+      const c = require('node:child_process').spawn(process.execPath, [process.argv[1], 'session'], { stdio: ['pipe', 'pipe', 'ignore'], env: { ...process.env, CLAUDE_PLUGIN_DATA: process.argv[2] } });
+      let out = ''; const t = Date.now();
+      c.stdout.on('data', (d) => { out += d; });
+      c.on('exit', () => { console.log(JSON.stringify({ ms: Date.now() - t, bytes: out.length })); process.exit(0); });
+      setTimeout(() => { console.log(JSON.stringify({ ms: -1 })); c.kill(); process.exit(0); }, 4000);`,
+      path.join(plugin, 'hooks', 'braid.cjs'), path.join(tmp, 'data')]).toString();
+    const { ms, bytes } = JSON.parse(probe);
+    expect(ms >= 0 && ms < 3000 && bytes > 0, `hook with open stdin: ${ms < 0 ? 'still running after 4 s' : `${ms} ms, ${bytes} bytes`}`);
   } catch (e) {
     fail(`hook: ${e.message}`);
   } finally {
@@ -145,10 +196,14 @@ for (const dir of skillDirs) {
 const tokens = Math.round(alwaysOn / 4);
 if (tokens > 2500) fail(`always-on budget ~${tokens} tokens > 2500`);
 
-// UPSTREAM.md rows point at real skills; vendored ones carry their LICENSE.
+// UPSTREAM.md: one row per skill; vendored ones carry their LICENSE, derived ones' upstream
+// notice is in the root LICENSE.
 const rows = read('UPSTREAM.md').split(/\r?\n/).filter((l) => /^\|\s*`?[a-z0-9]/.test(l));
+const rowSkills = rows.map((r) => r.split('|')[1].trim().replace(/`/g, ''));
+for (const dir of skillDirs) if (!rowSkills.includes(dir)) fail(`UPSTREAM.md: no row for skills/${dir}`);
 for (const row of rows) {
-  const [skill, kind] = row.split('|').slice(1).map((c) => c.trim().replace(/`/g, ''));
+  const [skill, kind, repo] = row.split('|').slice(1).map((c) => c.trim().replace(/`/g, ''));
+  if (kind === 'derived' && !read('LICENSE').includes(`https://github.com/${repo}`)) fail(`LICENSE: derived from ${repo} but carries no notice for it`);
   if (!exists(`skills/${skill}/SKILL.md`)) fail(`UPSTREAM.md: skills/${skill} does not exist`);
   if (!['vendored', 'derived', 'clean-room'].includes(kind)) fail(`UPSTREAM.md: ${skill} has unknown kind "${kind}"`);
   if (kind === 'vendored' && !exists(`skills/${skill}/LICENSE`)) fail(`skills/${skill}: vendored without LICENSE`);
@@ -162,7 +217,7 @@ for (const row of rows) {
 }
 
 if (errors.length) {
-  console.error(errors.map((e) => `✗ ${e}`).join('\n'));
+  console.error([...new Set(errors)].map((e) => `✗ ${e}`).join('\n'));
   process.exit(1);
 }
 console.log(`✓ ${manifests.length} manifests, ${skillDirs.length} skills, ${rows.length} upstream rows, hook ok, always-on ~${tokens} tokens`);

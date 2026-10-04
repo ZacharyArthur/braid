@@ -16,7 +16,7 @@ In a new session:
 - [ ] `/braid:braid drift on` → the next prompt carries a `braid: lite · ...` line; `drift off` removes it
 - [ ] Spawn a subagent and ask it for its braid level → **lite**
 - [ ] `/braid:adhd`, then `/compact` → answers stay ADHD-shaped; "stop adhd mode" ends it
-- [ ] In a project: `/braid:spec propose add-something` → `braid/changes/add-something/` with `tasks.md`; a new session shows "Active change: add-something (0/N tasks)"
+- [ ] In a project: `/braid:spec propose add-something` → `braid/changes/add-something/` with `tasks.md`; a new session shows "Active change: braid/changes/add-something (0/N tasks)"
 - [ ] "stop braid", then `/compact` → no braid rules in context
 - [ ] `/braid:humanizer` and `/braid:security-audit` appear in the `/` menu; ask "make this sound less AI" without the command → humanizer does **not** auto-load
 
@@ -61,8 +61,8 @@ node bench/ab.cjs --agent claude --model sonnet --runs 3
 node bench/ab.cjs --agent codex --runs 3
 ```
 
-`--tasks dry-reuse,dry-third`, `--arms braid,ponytail` and `--label <name>` narrow and name a run; `--model haiku --runs 1` is a cheap smoke test. Two runs at once need separate work dirs: set `BRAID_BENCH_DIR` for one of them.
+`--tasks dry-reuse,dry-third`, `--arms braid,ponytail` and `--label <name>` narrow and name a run; `--model haiku --runs 1` is a cheap smoke test. Each invocation works in its own `braid-bench/run-<pid>-<time>/` folder and deletes only that, so runs can go in parallel; `BRAID_BENCH_DIR` moves the parent folder.
 
 Per run it records code lines added/removed and test lines (counted apart: a test the core rules asked for isn't bloat), whether the task's check passes, the DRY probe, tokens, cost (Claude only; Codex bills your plan), time, and turns or tool steps; the report shows medians. Results land in `bench/results/<date>-<agent>-<model>[-label]/` (`report.md`, `runs.jsonl`, one `.diff` per run), with home paths, user name and host name redacted. Python checks use Python 3 from PATH or `uv python find`, else they show `skipped`. Runs happen in `C:\braid-bench` on Windows (`$TMPDIR/braid-bench` elsewhere) so a home-level `CLAUDE.md` can't leak in; when done, the script deletes the work dir and the session stubs Claude leaves in `~/.claude/projects`.
 
-Tasks: five from ponytail's benchmark (prompts verbatim, MIT, plus one line naming the file to write) and braid's DRY tasks: `dry-third` (a third exact copy should become one shared function), `dry-reuse` (an existing helper should be reused, with the slug algorithm spelled out in the prompt), `dry-reuse-open` (same, prompt just says "slug") and `dry-reuse-mapped` (spelled out, repo has `braid/map.md`).
+Tasks: five from ponytail's benchmark (prompts verbatim from its `benchmarks/promptfooconfig.yaml` at the pinned commit, MIT, plus one line naming the file to write) and braid's DRY tasks: `dry-third` (a third exact copy should become one shared function), `dry-reuse` (an existing helper should be reused, with the slug algorithm spelled out in the prompt), `dry-reuse-open` (same, prompt just says "slug") and `dry-reuse-mapped` (spelled out, repo has `braid/map.md`).
