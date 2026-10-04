@@ -8,7 +8,13 @@
   - pass: core at full (`BRAID ACTIVE — level: full`); `/braid:braid lite` + `/compact` → lite (re-injected `level: lite`); drift on → next prompt carries `braid: lite · ...`, drift off → gone; subagent → lite (SubagentStart `BRAID ACTIVE — level: lite`); `/braid:adhd` + `/compact` → still ADHD-shaped, "stop adhd mode" → normal prose; `/braid:spec propose add-something` in a scratch repo → `braid/changes/add-something/` (proposal.md, specs/, tasks.md), new session's Project state: `Active change: braid/changes/add-something (0/2 tasks)`; "stop braid" → `BRAID OFF for this session.`, after `/compact` no BRAID ACTIVE, core rules or Project state in context (only the compaction summary's paraphrase); `/braid:humanizer` and `/braid:security-audit` in the `/` menu, "make this sound less AI" → no skill loaded
 - [ ] 2.2 Codex: install from the marketplace; hooks fire; `$spec` works
 - [ ] 2.3 ZCode: install from `.claude-plugin/marketplace.json`; confirm the shared hooks.json loads (route records the evidence so far)
-  - session start: `BRAID ACTIVE — level: full`; Project state lists ship-v1 (7/12 tasks); all braid skills present, user-only ones suffixed "Only when the user explicitly invokes it."; no PONYTAIL context
+  - install: plugin enabled from the GitHub marketplace, no hooks.json error; SessionStart + UserPromptSubmit registered, SubagentStart dropped with a non-blocking "not supported by this ZCode runtime" warning
+  - session start: `BRAID ACTIVE — level: full`, Project state lists ship-v1, all skills present with user-only ones suffixed "Only when the user explicitly invokes it."
+  - hook input (debug-logged in the installed copy): `session_id` in stdin equals `CLAUDE_SESSION_ID` and stays the same across compact; state lands in ZCode's plugin data folder; UserPromptSubmit output reaches the model (drift on/off and the drift line work when typed as plain text)
+  - skill picker: sends `[$braid](<path>) lite` raw, so picker commands never parsed; fixed in braid.cjs with a check.cjs case (live proof pending the plugin update)
+  - compaction: SessionStart never fires on compact (logged with the matcher on and off, explicit and auto compact; ZCode source runs it once per runtime), so core rules aren't re-injected; documented in README and TESTING, fix options in routes/v1.md
+  - restart: SessionStart `resume` fires twice, under the real id (saved state) and a fresh one (default level), so a stray `level: full` banner can appear
+  - pending: picker `drift off` after the update, `/braid:spec propose add-something`, Settings → Skills toggle, humanizer not auto-loading
 
 ## 3. Release
 - [x] 3.1 TESTING.md manual checklist

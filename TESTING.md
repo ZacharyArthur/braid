@@ -39,7 +39,8 @@ Run `codex`, open `/hooks`, review and trust braid's hooks, start a new thread.
 Install from the plugin marketplace (GitHub source `ZacharyArthur/braid`).
 
 - [ ] Plugin loads; note any hooks.json error (if ZCode rejects the shared file, it needs its own)
-- [ ] Core injected at session start; level survives compaction
+- [ ] Core injected at session start
+- [ ] After `/compact`: core rules are NOT re-injected (ZCode never fires SessionStart on compact) — the level survives only as the summary's paraphrase; with `drift on` the drift line still restates it on every prompt
 - [ ] Skills listed in Settings → Skills; toggling one off removes it
 
 ## A/B against ponytail

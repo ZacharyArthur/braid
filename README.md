@@ -28,7 +28,7 @@ codex plugin add braid@braid
 
 Then run `codex`, open `/hooks`, review and trust braid's hooks, and start a new thread.
 
-**ZCode:** add `ZacharyArthur/braid` as a GitHub plugin marketplace source and enable braid. ZCode has no "user-invoked only" flag, so every enabled skill's description costs context. Switch off the ones you don't use in Settings → Skills; good candidates are `humanizer`, `security-audit`, `systematic-debugging`, `design`, `standards`, `adhd`, `grill-me` and `grill-with-docs`.
+**ZCode:** add `ZacharyArthur/braid` as a GitHub plugin marketplace source and enable braid. ZCode has no "user-invoked only" flag, so every enabled skill's description costs context. Switch off the ones you don't use in Settings → Skills; good candidates are `humanizer`, `security-audit`, `systematic-debugging`, `design`, `standards`, `adhd`, `grill-me` and `grill-with-docs`. One gap to know about: ZCode never fires SessionStart on compact, so after a `/compact` the core rules are not re-injected — only the summary's paraphrase remains. `/braid:braid drift on` partly makes up for it: the drift line restates the mode on every prompt.
 
 ## What's in it
 

@@ -150,6 +150,10 @@ let alwaysOn = 0;
     expect(hook('prompt', { prompt: 'fix the bug' }) === '', 'drift reminder on by default');
     hook('prompt', { prompt: '/braid:braid drift on' });
     expect(hook('prompt', { prompt: 'fix the bug' }).startsWith('braid: lite'), 'drift reminder missing');
+    // ZCode's skill picker delivers commands as raw "[$braid](<path>) args" links.
+    hook('prompt', { prompt: '[$braid](C:\\x\\skills\\braid\\SKILL.md) drift off' });
+    expect(hook('prompt', { prompt: 'fix the bug' }) === '', 'ZCode picker link form not parsed');
+    hook('prompt', { prompt: '/braid:braid drift on' });
     expect(hook('prompt', { prompt: '/braid:spec propose' }) === 'braid: lite · YAGNI > KISS > DRY · ladder first · done means verified', 'other braid skills misread as level commands');
     hook('prompt', { prompt: 'stop braid' });
     expect(hook('session', { source: 'compact' }) === '', 'still injecting after "stop braid"');
