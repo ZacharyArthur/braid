@@ -77,8 +77,9 @@ function staleness(cwd, file, verb) {
 }
 
 function count(text, re) { return (text.match(re) || []).length; }
-// Pointer lines stay short however busy the repo is: name a few, count the rest.
+// Pointer lines stay short however busy the repo is: name a few, count the rest, clip long names.
 const few = (items, max = 3) => items.slice(0, max).join(', ') + (items.length > max ? ` and ${items.length - max} more` : '');
+const clip = (name, max = 40) => { const c = [...name]; return c.length > max ? c.slice(0, max - 1).join('') + '…' : name; };
 
 function pointers(cwd) {
   const dir = path.join(cwd, 'braid');
@@ -94,7 +95,7 @@ function pointers(cwd) {
       const tasks = tryRead(path.join(cwd, root, e.name, 'tasks.md')) || '';
       const done = count(tasks, /^\s*- \[x\]/gim);
       const total = done + count(tasks, /^\s*- \[ \]/gm);
-      if (total) changes.push(`${root}/${e.name} (${done}/${total} tasks)`); else queued.push(`${root}/${e.name}`);
+      if (total) changes.push(`${root}/${clip(e.name)} (${done}/${total} tasks)`); else queued.push(`${root}/${clip(e.name)}`);
     }
   }
   if (changes.length) lines.push(`Active change: ${few(changes)}. Re-read its tasks.md before editing code; tick tasks as they finish.`);
@@ -102,7 +103,7 @@ function pointers(cwd) {
 
   const routes = ls('braid/routes').filter((e) => e.isFile() && e.name.endsWith('.md')).flatMap((e) => {
     const open = count(tryRead(path.join(dir, 'routes', e.name)) || '', /^\s*- \[ \]/gm);
-    return open ? [`${e.name.slice(0, -3)} (${open} open)`] : [];
+    return open ? [`${clip(e.name.slice(0, -3))} (${open} open)`] : [];
   });
   if (routes.length) lines.push(`Active route: ${few(routes)}. See braid/routes/.`);
 

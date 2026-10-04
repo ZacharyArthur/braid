@@ -39,12 +39,15 @@ for (const key of ['skills', 'hooks']) if (!codex[key] || !exists(codex[key])) f
 try {
   const { hooks } = JSON.parse(read('hooks/hooks.json'));
   for (const [event, arg] of [['SessionStart', 'session'], ['UserPromptSubmit', 'prompt'], ['SubagentStart', 'subagent']]) {
-    const cmds = (hooks[event] || []).flatMap((g) => g.hooks || []);
-    if (!cmds.some((h) => h.type === 'command' && h.command === `node "\${CLAUDE_PLUGIN_ROOT}/hooks/braid.cjs" ${arg}` && h.timeout > 0 && h.timeout <= 10)) {
-      fail(`hooks/hooks.json: ${event} must run node "\${CLAUDE_PLUGIN_ROOT}/hooks/braid.cjs" ${arg} with a timeout of 1-10 s`);
+    const runs = (g) => (g.hooks || []).some((h) => h.type === 'command' && h.command === `node "\${CLAUDE_PLUGIN_ROOT}/hooks/braid.cjs" ${arg}` && h.timeout > 0 && h.timeout <= 10);
+    const groups = (hooks[event] || []).filter(runs);
+    if (!groups.length) fail(`hooks/hooks.json: ${event} must run node "\${CLAUDE_PLUGIN_ROOT}/hooks/braid.cjs" ${arg} with a timeout of 1-10 s`);
+    // The group running the session hook must fire for every session source (matchers are regexes).
+    if (event === 'SessionStart') {
+      const fires = (src) => groups.some((g) => { if (!g.matcher || g.matcher === '*') return true; try { return new RegExp(`^(?:${g.matcher})$`).test(src); } catch { return false; } });
+      for (const src of ['startup', 'resume', 'clear', 'compact']) if (!fires(src)) fail(`hooks/hooks.json: SessionStart hook does not fire on "${src}"`);
     }
   }
-  if (!/startup/.test(hooks.SessionStart?.[0]?.matcher) || !/compact/.test(hooks.SessionStart?.[0]?.matcher)) fail('hooks/hooks.json: SessionStart must match startup and compact');
 } catch (e) {
   fail(`hooks/hooks.json: ${e.message}`);
 }
@@ -130,7 +133,6 @@ let alwaysOn = 0;
     const expect = (cond, msg) => { if (!cond) fail(`hook: ${msg}`); };
 
     const start = hook('session', { source: 'startup' });
-    alwaysOn += Buffer.byteLength(start);
     expect(start.includes('BRAID ACTIVE — level: full'), 'default level is not full');
     expect(start.includes('**full**') && !start.includes('**lite**'), 'level table not filtered');
     expect(start.includes('Active change: braid/changes/add-x (1/2 tasks).'), 'active change pointer missing or includes queued');
@@ -170,6 +172,25 @@ let alwaysOn = 0;
     const pointerLines = busyOut.slice(busyOut.indexOf('## Project state')).split('\n').filter((l) => l.startsWith('- '));
     expect(pointerLines.length <= 5 && pointerLines.every((l) => l.length <= 300) && busyOut.includes('and 17 more'), `pointer lines not capped: ${pointerLines.map((l) => l.length)}`);
 
+    // The budget is measured on the worst case: every pointer present, every list full, and
+    // names far past the clip length in 3-byte characters (braid/ and openspec/ changes both).
+    const worst = path.join(tmp, 'worst');
+    const long = (i) => `${i}-${'漢'.repeat(80)}`;
+    for (let i = 0; i < 4; i++) {
+      for (const root of ['braid', 'openspec']) {
+        fs.mkdirSync(path.join(worst, root, 'changes', long(i)), { recursive: true });
+        fs.writeFileSync(path.join(worst, root, 'changes', long(i), 'tasks.md'), '- [ ] t\n');
+        fs.mkdirSync(path.join(worst, root, 'changes', `q${long(i)}`));
+      }
+      fs.mkdirSync(path.join(worst, 'braid', 'routes'), { recursive: true });
+      fs.writeFileSync(path.join(worst, 'braid', 'routes', `${long(i)}.md`), '- [ ] open\n');
+    }
+    fs.writeFileSync(path.join(worst, 'braid', 'map.md'), '<!-- braid:map sha=abc1234 -->\n');
+    fs.writeFileSync(path.join(worst, 'braid', 'HANDOFF.md'), '<!-- braid:handoff sha=abc1234 -->\n');
+    const worstOut = hook('session', { session_id: 'worst', source: 'startup', cwd: worst });
+    expect(worstOut.includes('…') && worstOut.includes('Handoff:'), 'worst-case fixture not exercised');
+    alwaysOn += Buffer.byteLength(worstOut);
+
     // Windows can swallow a hook's stdin so it never closes: the hook must still answer and exit
     // well inside the harness's 5 s timeout. A child keeps the pipe open and times the hook.
     const probe = execFileSync(process.execPath, ['-e', `
@@ -197,13 +218,15 @@ const tokens = Math.round(alwaysOn / 4);
 if (tokens > 2500) fail(`always-on budget ~${tokens} tokens > 2500`);
 
 // UPSTREAM.md: one row per skill; vendored ones carry their LICENSE, derived ones' upstream
-// notice is in the root LICENSE.
+// notice (copyright line and permission text, not just a link) is in THIRD-PARTY-NOTICES.
+const notices = exists('THIRD-PARTY-NOTICES') ? read('THIRD-PARTY-NOTICES').split(/^---$/m) : [];
+const hasNotice = (repo) => notices.some((s) => s.includes(`https://github.com/${repo}`) && /^Copyright \(c\) \d{4} \S/m.test(s) && s.includes('Permission is hereby granted'));
 const rows = read('UPSTREAM.md').split(/\r?\n/).filter((l) => /^\|\s*`?[a-z0-9]/.test(l));
 const rowSkills = rows.map((r) => r.split('|')[1].trim().replace(/`/g, ''));
 for (const dir of skillDirs) if (!rowSkills.includes(dir)) fail(`UPSTREAM.md: no row for skills/${dir}`);
 for (const row of rows) {
   const [skill, kind, repo] = row.split('|').slice(1).map((c) => c.trim().replace(/`/g, ''));
-  if (kind === 'derived' && !read('LICENSE').includes(`https://github.com/${repo}`)) fail(`LICENSE: derived from ${repo} but carries no notice for it`);
+  if (kind === 'derived' && !hasNotice(repo)) fail(`THIRD-PARTY-NOTICES: derived from ${repo} but carries no copyright notice for it`);
   if (!exists(`skills/${skill}/SKILL.md`)) fail(`UPSTREAM.md: skills/${skill} does not exist`);
   if (!['vendored', 'derived', 'clean-room'].includes(kind)) fail(`UPSTREAM.md: ${skill} has unknown kind "${kind}"`);
   if (kind === 'vendored' && !exists(`skills/${skill}/LICENSE`)) fail(`skills/${skill}: vendored without LICENSE`);

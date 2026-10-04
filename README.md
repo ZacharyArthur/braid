@@ -8,7 +8,7 @@ A plugin for **Claude Code**, **Codex** and **ZCode**: an always-on core that ke
 
 ## Install
 
-Requires Node ≥ 18 on the PATH for the always-on hook. Without it the skills still work, but the core rules only load when a skill is invoked, and each hook call shows a harmless "node: command not found" error until Node is installed.
+Requires Node ≥ 18 on the PATH for the always-on hook. Without it the skills still work, but the core rules only load when a skill is invoked, and each hook call shows a harmless "node not found" error (the exact wording depends on your shell) until Node is installed.
 
 **Claude Code**
 
@@ -56,7 +56,7 @@ Only `braid`, `grilling`, `domain-modeling` and `map` load on their own; the res
 
 ## Benchmarks
 
-Same tasks, same model, three arms: braid, [ponytail](https://github.com/DietrichGebert/ponytail), no plugin. Every task with a check (5 of 7) passed it in every arm on both agents. Totals across all runs:
+Same tasks, same model, three arms: braid, [ponytail](https://github.com/DietrichGebert/ponytail), no plugin. Every task with a check (5 of 7 on Claude, 7 of 9 on Codex) passed it in every arm on both agents. Totals across all runs:
 
 | | braid | ponytail | none |
 |---|--:|--:|--:|
@@ -74,7 +74,7 @@ Don't run braid alongside [ponytail](https://github.com/DietrichGebert/ponytail)
 
 ## Credits
 
-braid stands on these projects. Vendored files keep their upstream `LICENSE`; see [UPSTREAM.md](UPSTREAM.md) for pinned sources.
+braid stands on these projects. Vendored files keep their upstream `LICENSE`, notices for derived code are in [THIRD-PARTY-NOTICES](THIRD-PARTY-NOTICES); see [UPSTREAM.md](UPSTREAM.md) for pinned sources.
 
 **Vendored:** [ponytail](https://github.com/DietrichGebert/ponytail) (core, derived), [mattpocock/skills](https://github.com/mattpocock/skills), [i-have-adhd](https://github.com/ayghri/i-have-adhd), [humanizer](https://github.com/blader/humanizer), [cloudflare/security-audit-skill](https://github.com/cloudflare/security-audit-skill), [superpowers](https://github.com/obra/superpowers).
 

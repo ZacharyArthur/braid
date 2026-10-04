@@ -12,7 +12,7 @@
 //           or ponytail's own instruction builder.
 // --fake skips the agent: it applies the task's reference solution (arms braid, ponytail) or
 // nothing (arm none), to test the harness and the checks without spending tokens.
-// Results: bench/results/<date>-<agent>-<model>[-label]/ (report.md, runs.jsonl, one .diff per run),
+// Results: bench/results/<date>-<agent>-<model>[-label][-n]/ (report.md, runs.jsonl, one .diff per run),
 // with home paths, user name and host name redacted.
 'use strict';
 const fs = require('node:fs');
@@ -42,6 +42,10 @@ const MODEL = opt('model') ?? (AGENT === 'codex' ? codexDefaultModel() : 'sonnet
 const RUNS = Number(opt('runs', FAKE ? 1 : 3));
 const ARMS = opt('arms', 'braid,ponytail,none').split(',');
 const TASK_IDS = opt('tasks', fs.readdirSync(TASKS).join(',')).split(',');
+// Arms and task ids become folder names that get deleted: only known values, never a path.
+for (const [kind, values, known] of [['agent', [AGENT], ['claude', 'codex']], ['arm', ARMS, ['braid', 'ponytail', 'none']], ['task', TASK_IDS, fs.readdirSync(TASKS)]]) {
+  for (const v of values) if (!known.includes(v)) throw new Error(`unknown ${kind} "${v}" (known: ${known.join(', ')})`);
+}
 
 const run = (cmd, argv, cwd) => execFileSync(cmd, argv, { cwd, stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 64 << 20 }).toString();
 const git = (cwd, ...argv) => run('git', ['-c', 'user.name=bench', '-c', 'user.email=bench@local', ...argv], cwd);
@@ -207,14 +211,20 @@ function report(results) {
   ].join('\n') + '\n';
 }
 
-// The results folder is rebuilt on every run, so its name may only ever resolve inside bench/results.
+// Each invocation owns a new results folder inside bench/results: an existing one (an earlier or
+// parallel run) is never touched; the name gets -2, -3, ... instead. mkdir is atomic, so two runs
+// can't claim the same one.
 const RESULTS = path.join(__dirname, 'results');
 const stamp = [new Date().toISOString().slice(0, 10), FAKE ? 'fake' : `${AGENT}-${MODEL || 'default'}`, opt('label')]
   .filter(Boolean).join('-').replace(/[^\w.-]+/g, '_').replace(/\.{2,}/g, '.');
-const outDir = path.join(RESULTS, stamp);
-if (path.dirname(outDir) !== RESULTS) throw new Error(`refusing results dir outside bench/results: ${stamp}`);
-fs.rmSync(outDir, { recursive: true, force: true });
-fs.mkdirSync(path.join(outDir, 'diffs'), { recursive: true });
+if (path.dirname(path.join(RESULTS, stamp)) !== RESULTS) throw new Error(`refusing results dir outside bench/results: ${stamp}`);
+fs.mkdirSync(RESULTS, { recursive: true });
+let outDir;
+for (let n = 1; !outDir; n++) {
+  const dir = path.join(RESULTS, n === 1 ? stamp : `${stamp}-${n}`);
+  try { fs.mkdirSync(dir); outDir = dir; } catch (e) { if (e.code !== 'EEXIST') throw e; }
+}
+fs.mkdirSync(path.join(outDir, 'diffs'));
 const results = [];
 for (const id of TASK_IDS) for (const arm of ARMS) for (let i = 1; i <= RUNS; i++) {
   process.stdout.write(`${id} / ${arm} / ${i} ... `);
