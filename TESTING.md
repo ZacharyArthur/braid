@@ -41,7 +41,8 @@ Install from the plugin marketplace (GitHub source `ZacharyArthur/braid`).
 - [ ] Plugin loads; note any hooks.json error (if ZCode rejects the shared file, it needs its own)
 - [ ] Core injected at session start
 - [ ] After `/compact`: core rules are NOT re-injected (ZCode never fires SessionStart on compact) — the level survives only as the summary's paraphrase; with `drift on` the drift line still restates it on every prompt
-- [ ] Skills listed in Settings → Skills; toggling one off removes it
+- [ ] Skills listed in Settings → Skills (plugin skills have no switch there)
+- [ ] `/braid:spec propose add-something` → `braid/changes/add-something/`; a new session's Project state shows it
 
 ## A/B against ponytail
 
