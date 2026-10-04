@@ -89,6 +89,8 @@ for (const dir of skillDirs) {
   const desc = fm.description || '';
   if (!desc) fail(`${file}: missing description`);
   if (desc.length > 1024) fail(`${file}: description ${desc.length} > 1024 chars`);
+  // claude.ai's plugin sync rejects tag-like text in descriptions and strips the angle brackets.
+  if (/<\/?[a-z][\w-]*>/i.test(desc)) fail(`${file}: description contains an XML-like tag (claude.ai sync rejects it)`);
   const modelInvocable = fm['disable-model-invocation'] !== 'true';
   if (modelInvocable && desc.length > 300) fail(`${file}: model-invocable description ${desc.length} > 300 chars`);
   // User-only skills: Codex needs the policy file, ZCode (no flag) needs the description to say so.

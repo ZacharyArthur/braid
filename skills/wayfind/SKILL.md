@@ -1,6 +1,6 @@
 ---
 name: wayfind
-description: "Find the way through an effort too big or foggy for one session: a route of decisions in braid/routes/<effort>.md, settled a round at a time by grilling, until it is clear enough to spec. Only when the user explicitly invokes it."
+description: "Find the way through an effort too big or foggy for one session: a route of decisions in braid/routes/, settled a round at a time by grilling, until it is clear enough to spec. Only when the user explicitly invokes it."
 disable-model-invocation: true
 argument-hint: "[effort name or idea]"
 license: MIT
