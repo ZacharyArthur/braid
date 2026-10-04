@@ -6,7 +6,14 @@
 ## 2. Harness installs
 - [x] 2.1 Claude Code: run the TESTING.md checklist (core at full, `/braid:braid lite` survives `/compact`, "stop braid", `/braid:spec propose`)
   - pass: core at full (`BRAID ACTIVE — level: full`); `/braid:braid lite` + `/compact` → lite (re-injected `level: lite`); drift on → next prompt carries `braid: lite · ...`, drift off → gone; subagent → lite (SubagentStart `BRAID ACTIVE — level: lite`); `/braid:adhd` + `/compact` → still ADHD-shaped, "stop adhd mode" → normal prose; `/braid:spec propose add-something` in a scratch repo → `braid/changes/add-something/` (proposal.md, specs/, tasks.md), new session's Project state: `Active change: braid/changes/add-something (0/2 tasks)`; "stop braid" → `BRAID OFF for this session.`, after `/compact` no BRAID ACTIVE, core rules or Project state in context (only the compaction summary's paraphrase); `/braid:humanizer` and `/braid:security-audit` in the `/` menu, "make this sound less AI" → no skill loaded
-- [ ] 2.2 Codex: install from the marketplace; hooks fire; `$spec` works
+- [x] 2.2 Codex: install from the marketplace; hooks fire; `$spec` works
+  - session start: `BRAID ACTIVE — level: full` and `Active change: braid/changes/ship-v1 (9/12 tasks)` in developer context; no PONYTAIL context
+  - skill picker: sends `[$braid:braid](<path>) lite` (same link form as ZCode), parsed by the picker fix: `BRAID LEVEL: lite`, `BRAID DRIFT REMINDER: on/off`; the drift line appears on the next plain prompt and is gone after drift off
+  - resume and compaction: both re-inject a fresh `BRAID ACTIVE — level: lite` block with core rules and Project state (SessionStart `resume` and `compact` fire, unlike ZCode)
+  - subagent: `BRAID ACTIVE — level: lite` from SubagentStart, no Project state
+  - user-only: "make this sound less AI" → no humanizer loaded
+  - "stop braid" → `BRAID OFF for this session.`; after compaction no BRAID ACTIVE, core rules or Project state
+  - `$spec propose add-something3` in a scratch repo → proposal.md, specs/, tasks.md (0/2); a new session reports that change at 0/2 with the pointer's checklist guidance (Codex declines to quote developer context verbatim)
 - [x] 2.3 ZCode: install from `.claude-plugin/marketplace.json`; confirm the shared hooks.json loads (route records the evidence so far)
   - install: plugin enabled from the GitHub marketplace, no hooks.json error; SessionStart + UserPromptSubmit registered, SubagentStart dropped with a non-blocking "not supported by this ZCode runtime" warning
   - session start: `BRAID ACTIVE — level: full`, Project state lists ship-v1, all skills present with user-only ones suffixed "Only when the user explicitly invokes it."

@@ -136,7 +136,7 @@ function onSession(input, st) {
 }
 
 function onPrompt(input, st, sid) {
-  // ZCode's skill picker delivers invocations raw: "[$braid](<path>) lite" — normalize to "$braid lite".
+  // ZCode's and Codex's skill pickers deliver invocations raw: "[$braid](<path>) lite" — normalize to "$braid lite".
   const prompt = String(input.prompt || '').trim().toLowerCase().replace(/^\[(\$[\w:-]+)\]\([^)]+\)\s*/, '$1 ');
   const out = [];
   let changed = false;
