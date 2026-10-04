@@ -12,3 +12,6 @@ Plugin repo only: `skills/design/`, `README.md`, `TESTING.md`, `CHANGELOG.md`, `
 
 ## Out of scope
 Everything under "Out of scope" in `braid/routes/v1.md`.
+
+## Archive note
+3.6 is archived unticked on purpose: the repo is public and pushed, and the v1.0.0 tag is applied to the archive commit itself, so it can only land after this move.
