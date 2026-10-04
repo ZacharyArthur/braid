@@ -4,7 +4,7 @@ Clean-code harness for AI coding agents. Three strands: **YAGNI > KISS > DRY**.
 
 A plugin for **Claude Code**, **Codex** and **ZCode**: an always-on core that keeps generated code minimal, plus a workflow for grilling plans, writing specs, mapping repos, handing off and reviewing.
 
-> Status: under construction. Decisions: [braid/routes/v1.md](braid/routes/v1.md) and [braid/adr/](braid/adr/). Remaining work: [braid/changes/ship-v1/](braid/changes/ship-v1/tasks.md).
+> Status: v1 release candidate. Decisions: [braid/routes/v1.md](braid/routes/v1.md) and [braid/adr/](braid/adr/). Remaining work: [braid/changes/ship-v1/](braid/changes/ship-v1/tasks.md).
 
 ## Install
 
@@ -53,6 +53,20 @@ Then run `codex`, open `/hooks`, review and trust braid's hooks, and start a new
 | `adhd` | Action-first answers; stays on until "stop adhd mode" |
 
 Only `braid`, `grilling`, `domain-modeling` and `map` load on their own; the rest wait for you to call them.
+
+## Benchmarks
+
+Same tasks, same model, three arms: braid, [ponytail](https://github.com/DietrichGebert/ponytail), no plugin. Every check passed in every arm on both agents. Totals across all runs:
+
+| | braid | ponytail | none |
+|---|--:|--:|--:|
+| **Claude Code** (Sonnet, 21 runs/arm): code lines | **306** | 288 | 396 |
+| ↳ third copy turned into one shared function | **3/3** | 0/3 | 0/3 |
+| ↳ cost vs no plugin | +39% | +18% | - |
+| **Codex** (gpt-6.1-sol, 27 runs/arm): code lines | **415** | 409 | 461 |
+| ↳ third copy turned into one shared function | **3/3** | 1/3 | 0/3 |
+
+Codex also writes test files under the "one runnable check" rule, counted separately (braid 395 test lines, ponytail 314, none 53). One known gap: when a prompt spells out an algorithm, Claude implements it inline instead of reusing the existing helper, whatever the rules or the repo map say; describe the outcome instead and every arm reuses. Details and how to rerun: [TESTING.md](TESTING.md), raw results in [bench/results/](bench/results/).
 
 ## Conflicts
 
