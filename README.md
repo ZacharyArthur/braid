@@ -30,6 +30,8 @@ Then run `codex`, open `/hooks`, review and trust braid's hooks, and start a new
 
 **ZCode:** add `ZacharyArthur/braid` as a GitHub plugin marketplace source and enable braid. Two gaps to know about. ZCode has no "user-invoked only" flag, and its Settings can't switch off a plugin's skills one at a time, so every braid skill's description costs context and the user-only ones, such as `humanizer`, can load when a prompt matches them. And ZCode never fires SessionStart on compact, so after a `/compact` the core rules are not re-injected; only the summary's paraphrase remains. `/braid:braid drift on` partly makes up for it: the drift line restates the mode on every prompt.
 
+**Updating:** in Claude Code, run `claude plugin marketplace update braid`, then `claude plugin update braid@braid`. In Codex, `codex plugin marketplace upgrade braid` updates the plugin too. In ZCode, sync the marketplace, then uninstall and reinstall braid; updating alone keeps the old cached copy.
+
 ## What's in it
 
 **Always on:** the core rules (YAGNI > KISS > DRY), injected each session and after compaction, plus one-line pointers to the active change, route, repo map and handoff. About 1.5k tokens. Level: `/braid:braid lite|full|ultra`; off: "stop braid".
