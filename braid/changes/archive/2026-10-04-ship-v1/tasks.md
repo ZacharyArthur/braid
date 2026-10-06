@@ -1,9 +1,11 @@
 ## 1. Design skill
+
 - [x] 1.1 Clean-room `skills/design/SKILL.md` (≤ 8 KB): KISS/YAGNI for UI, AI-slop tells, pre-ship checks; Codex yaml; UPSTREAM row
 
 - [x] 1.2 `/braid:standards` (AGENTS.md owner) + map/spec/handoff/core touch points
 
 ## 2. Harness installs
+
 - [x] 2.1 Claude Code: run the TESTING.md checklist (core at full, `/braid:braid lite` survives `/compact`, "stop braid", `/braid:spec propose`)
   - pass: core at full (`BRAID ACTIVE — level: full`); `/braid:braid lite` + `/compact` → lite (re-injected `level: lite`); drift on → next prompt carries `braid: lite · ...`, drift off → gone; subagent → lite (SubagentStart `BRAID ACTIVE — level: lite`); `/braid:adhd` + `/compact` → still ADHD-shaped, "stop adhd mode" → normal prose; `/braid:spec propose add-something` in a scratch repo → `braid/changes/add-something/` (proposal.md, specs/, tasks.md), new session's Project state: `Active change: braid/changes/add-something (0/2 tasks)`; "stop braid" → `BRAID OFF for this session.`, after `/compact` no BRAID ACTIVE, core rules or Project state in context (only the compaction summary's paraphrase); `/braid:humanizer` and `/braid:security-audit` in the `/` menu, "make this sound less AI" → no skill loaded
 - [x] 2.2 Codex: install from the marketplace; hooks fire; `$spec` works
@@ -25,6 +27,7 @@
   - skills: Settings → Skills renders no switch for plugin skills (ZCode source: `SkillsSection.tsx`), and ZCode reads no user-only frontmatter; "make this sound less AI" auto-loaded humanizer. README, TESTING and ADR 0002 corrected
 
 ## 3. Release
+
 - [x] 3.1 TESTING.md manual checklist
 - [x] 3.2 GitHub Actions: `node scripts/check.cjs` on windows-latest and ubuntu-latest
 - [x] 3.3 README: Codex and ZCode install, ZCode skills to toggle off

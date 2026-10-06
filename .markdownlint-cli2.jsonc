@@ -1,0 +1,16 @@
+// House style: one line per paragraph, compact tables, skills open with prose,
+// <placeholders> read raw by agents, bold labels in the README.
+// Vendored skills stay verbatim (UPSTREAM.md), so they aren't linted.
+{
+  "config": {
+    "MD013": false,
+    "MD060": false,
+    "MD041": false,
+    "MD033": false,
+    "MD036": false
+  },
+  "globs": ["*.md", "braid/**/*.md", "skills/**/*.md"],
+  "ignores": [
+    "skills/{adhd,domain-modeling,grill-me,grill-with-docs,grilling,humanizer,security-audit,systematic-debugging}/**"
+  ]
+}

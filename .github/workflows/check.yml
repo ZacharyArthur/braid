@@ -20,3 +20,14 @@ jobs:
         with:
           node-version: '18' # the minimum braid claims
       - run: node scripts/check.cjs
+
+  # Lint output doesn't depend on the OS; the tools need a newer Node than braid's floor.
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+      - run: npx --yes markdownlint-cli2@0.23.3
+      - run: npx --yes @biomejs/biome@2.5.15 check --error-on-warnings

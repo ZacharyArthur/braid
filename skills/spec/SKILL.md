@@ -42,7 +42,7 @@ archive; none → `propose`. Paths below say `braid/`; under OpenSpec read
 
 ## Layout
 
-```
+```text
 braid/
   specs/<domain>/spec.md            # source of truth: intended behavior now
   changes/<name>/
