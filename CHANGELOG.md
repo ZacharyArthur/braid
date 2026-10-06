@@ -2,6 +2,15 @@
 
 All notable changes to braid. Versions follow semver: major = a skill renamed or removed, or the `braid/` layout changed; minor = a new skill or verb; patch = wording and upstream syncs.
 
+## [1.1.0] - 2026-10-05
+
+- New `skill`: write a skill that stays small and triggers right (interview, minimal draft, cross-harness frontmatter checks, a fresh-subagent test run); hands off to Anthropic's `skill-creator` for evals.
+- New `help`: what each skill does and how to invoke it in Claude Code, Codex and ZCode; `help <skill>` for one in depth. `check.cjs` fails if a skill is missing from it.
+- `scripts/upstream.cjs` reports how far each pinned upstream has moved and what changed under its path; UPSTREAM.md documents the sync workflow per kind, including clean-room sources (their SHA is the commit last reviewed). New `CONTRIBUTING.md` for adding a skill.
+- Ideas from ponytail (rewritten, per ADR 0008): `review` and `audit` number their findings so you can say "fix 2 and 5"; `review` greps the whole tree, tests and string references included, before a `delete:` finding; `debt`'s grep skips `.git`, `node_modules`, `dist` and `build`.
+- Hook: a mid-session level switch confirms with that level's definition, not just its name. Bare `/braid:braid` after "stop braid" switches back on at full instead of reporting "ACTIVE — level: off"; switching back on, bare or with a level, re-sends the core and project pointers.
+- Repo standards: root `AGENTS.md` (`CLAUDE.md` imports it); markdownlint-cli2 and Biome via `npx`, a lint job in CI.
+
 ## [1.0.1] - 2026-10-04
 
 - `wayfind` description no longer contains `<effort>`, which claude.ai's plugin sync rejects as an XML tag; `check.cjs` now catches tag-like text in descriptions.
