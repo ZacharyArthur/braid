@@ -1,0 +1,5 @@
+interface:
+  display_name: "Braid Help"
+  short_description: "What each braid skill does and how to call it"
+policy:
+  allow_implicit_invocation: false

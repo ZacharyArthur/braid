@@ -13,12 +13,13 @@ what to cut, what replaces it. The diff's best outcome is getting shorter.
 
 ## Format
 
-`L<line>: <tag> <what>. <replacement>.`, or `<file>:L<line>: ...` for
-multi-file diffs. Rank biggest cut first.
+`<N>. L<line>: <tag> <what>. <replacement>.`, or `<N>. <file>:L<line>: ...`
+for multi-file diffs. Rank biggest cut first and number across the whole
+report, so the user can say "fix 2 and 5".
 
 Tags, YAGNI first:
 
-- `delete:` dead code, unused flexibility, speculative feature. Replacement: nothing.
+- `delete:` dead code, unused flexibility, speculative feature. Replacement: nothing. Before calling anything dead, grep the whole tree for it, tests, fixtures and string or dynamic references included.
 - `yagni:` abstraction with one implementation, config nobody sets, layer with one caller, a shared helper whose callers pass flags to make it behave differently (the wrong abstraction: inline it).
 - `stdlib:` hand-rolled thing the standard library ships. Name the function.
 - `native:` dependency or code doing what the platform already does. Name the feature.
@@ -31,15 +32,15 @@ Tags, YAGNI first:
 ❌ "This EmailValidator class might be more complex than necessary, have you
 considered whether all these validation rules are needed at this stage?"
 
-✅ `L12-38: stdlib: 27-line validator class. "@" in email, 1 line, real validation is the confirmation mail.`
+✅ `1. L12-38: stdlib: 27-line validator class. "@" in email, 1 line, real validation is the confirmation mail.`
 
-✅ `repo.py:L88: yagni: AbstractRepository with one implementation. Inline it until a second one exists.`
+✅ `2. repo.py:L88: yagni: AbstractRepository with one implementation. Inline it until a second one exists.`
 
-✅ `L40-66: kiss: four nested ifs. Early returns, same logic, flat.`
+✅ `3. L40-66: kiss: four nested ifs. Early returns, same logic, flat.`
 
-✅ `api.ts:L9: dry: re-implements slugify from utils/text.ts:14. Import it.`
+✅ `4. api.ts:L9: dry: re-implements slugify from utils/text.ts:14. Import it.`
 
-✅ `L3, L57: dry: tax rate 0.0825 hard-coded twice. One TAX_RATE constant.`
+✅ `5. L3, L57: dry: tax rate 0.0825 hard-coded twice. One TAX_RATE constant.`
 
 ## Scoring
 

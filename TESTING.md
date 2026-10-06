@@ -2,6 +2,8 @@
 
 `node scripts/check.cjs` covers manifests, frontmatter, the hook's behavior and the token budget; CI runs it on Windows and Ubuntu. What it can't cover is each harness actually loading the plugin. Run this checklist once per release, with ponytail disabled so it can't mask results.
 
+First, `node scripts/upstream.cjs`: sync or consciously skip anything it flags ([UPSTREAM.md](UPSTREAM.md#syncing)).
+
 ## Claude Code
 
 ```bash
@@ -18,7 +20,8 @@ In a new session:
 - [ ] `/braid:adhd`, then `/compact` → answers stay ADHD-shaped; "stop adhd mode" ends it
 - [ ] In a project: `/braid:spec propose add-something` → `braid/changes/add-something/` with `tasks.md`; a new session shows "Active change: braid/changes/add-something (0/N tasks)"
 - [ ] "stop braid", then `/compact` → no braid rules in context
-- [ ] `/braid:humanizer` and `/braid:security-audit` appear in the `/` menu; ask "make this sound less AI" without the command → humanizer does **not** auto-load
+- [ ] Then bare `/braid:braid` → back at **full**, with the core and its Project state re-sent
+- [ ] `/braid:humanizer`, `/braid:security-audit`, `/braid:help` and `/braid:skill` appear in the `/` menu; ask "make this sound less AI" without the command → humanizer does **not** auto-load
 
 ## Codex
 
@@ -31,6 +34,7 @@ Run `codex`, open `/hooks`, review and trust braid's hooks, start a new thread.
 
 - [ ] Core injected (ask for the braid level)
 - [ ] `$braid lite` confirms **lite**; resume that same thread later (`codex resume`) and ask again → still **lite** (proves UserPromptSubmit fires and Codex sends a session id)
+- [ ] "stop braid", then bare `$braid` → back at **full**, core re-sent
 - [ ] `$spec propose add-something` works
 - [ ] User-only skills don't auto-trigger
 
@@ -60,6 +64,7 @@ node bench/ab.cjs --fake
 ```bash
 node bench/ab.cjs --agent claude --model sonnet --runs 3
 ```
+
 ```bash
 node bench/ab.cjs --agent codex --runs 3
 ```

@@ -1,0 +1,5 @@
+interface:
+  display_name: "Braid Skill"
+  short_description: "Create a small skill that triggers right"
+policy:
+  allow_implicit_invocation: false

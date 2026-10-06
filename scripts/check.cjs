@@ -24,28 +24,63 @@ for (const m of manifests) {
   }
 }
 for (const m of ['.claude-plugin/marketplace.json', '.agents/plugins/marketplace.json']) {
-  try { JSON.parse(read(m)); } catch (e) { fail(`${m}: ${e.message}`); }
+  try {
+    JSON.parse(read(m));
+  } catch (e) {
+    fail(`${m}: ${e.message}`);
+  }
 }
 if (versions.size > 1) fail(`manifest versions differ: ${[...versions].join(', ')}`);
 const version = [...versions][0];
 if (!/^\d+\.\d+\.\d+$/.test(version || '')) fail(`manifest version "${version}" is not x.y.z`);
-else if (!read('CHANGELOG.md').includes(`## [${version}]`)) fail(`CHANGELOG.md: no "## [${version}]" entry for the manifest version`);
+else if (!read('CHANGELOG.md').includes(`## [${version}]`))
+  fail(`CHANGELOG.md: no "## [${version}]" entry for the manifest version`);
 
 // Paths a manifest points at must exist (Claude Code and ZCode use the defaults: skills/, hooks/hooks.json).
-const codex = (() => { try { return JSON.parse(read('.codex-plugin/plugin.json')); } catch { return {}; } })();
-for (const key of ['skills', 'hooks']) if (!codex[key] || !exists(codex[key])) fail(`.codex-plugin/plugin.json: ${key} "${codex[key]}" does not exist`);
+const codex = (() => {
+  try {
+    return JSON.parse(read('.codex-plugin/plugin.json'));
+  } catch {
+    return {};
+  }
+})();
+for (const key of ['skills', 'hooks'])
+  if (!codex[key] || !exists(codex[key])) fail(`.codex-plugin/plugin.json: ${key} "${codex[key]}" does not exist`);
 
 // hooks/hooks.json is what every harness actually loads: each event must run this hook with its argument.
 try {
   const { hooks } = JSON.parse(read('hooks/hooks.json'));
-  for (const [event, arg] of [['SessionStart', 'session'], ['UserPromptSubmit', 'prompt'], ['SubagentStart', 'subagent']]) {
-    const runs = (g) => (g.hooks || []).some((h) => h.type === 'command' && h.command === `node "\${CLAUDE_PLUGIN_ROOT}/hooks/braid.cjs" ${arg}` && h.timeout > 0 && h.timeout <= 10);
+  for (const [event, arg] of [
+    ['SessionStart', 'session'],
+    ['UserPromptSubmit', 'prompt'],
+    ['SubagentStart', 'subagent'],
+  ]) {
+    const runs = (g) =>
+      (g.hooks || []).some(
+        (h) =>
+          h.type === 'command' &&
+          h.command === `node "\${CLAUDE_PLUGIN_ROOT}/hooks/braid.cjs" ${arg}` &&
+          h.timeout > 0 &&
+          h.timeout <= 10,
+      );
     const groups = (hooks[event] || []).filter(runs);
-    if (!groups.length) fail(`hooks/hooks.json: ${event} must run node "\${CLAUDE_PLUGIN_ROOT}/hooks/braid.cjs" ${arg} with a timeout of 1-10 s`);
+    if (!groups.length)
+      fail(
+        `hooks/hooks.json: ${event} must run node "\${CLAUDE_PLUGIN_ROOT}/hooks/braid.cjs" ${arg} with a timeout of 1-10 s`,
+      );
     // The group running the session hook must fire for every session source (matchers are regexes).
     if (event === 'SessionStart') {
-      const fires = (src) => groups.some((g) => { if (!g.matcher || g.matcher === '*') return true; try { return new RegExp(`^(?:${g.matcher})$`).test(src); } catch { return false; } });
-      for (const src of ['startup', 'resume', 'clear', 'compact']) if (!fires(src)) fail(`hooks/hooks.json: SessionStart hook does not fire on "${src}"`);
+      const fires = (src) =>
+        groups.some((g) => {
+          if (!g.matcher || g.matcher === '*') return true;
+          try {
+            return new RegExp(`^(?:${g.matcher})$`).test(src);
+          } catch {
+            return false;
+          }
+        });
+      for (const src of ['startup', 'resume', 'clear', 'compact'])
+        if (!fires(src)) fail(`hooks/hooks.json: SessionStart hook does not fire on "${src}"`);
     }
   }
 } catch (e) {
@@ -67,7 +102,8 @@ function frontmatter(text) {
       while (i + 1 < lines.length && /^(\s+|$)/.test(lines[i + 1])) block.push(lines[++i].trim());
       val = block.join(' ').trim();
     } else {
-      val = val.replace(/^(['"])(.*)\1$/, '$2');
+      // A quoted value, or a plain one; either may carry a trailing ` # comment`.
+      val = val.replace(/^(['"])(.*)\1\s*(?:#.*)?$|\s+#.*$/, '$2');
     }
     out[key] = val;
   }
@@ -77,13 +113,22 @@ function frontmatter(text) {
 // Skills: ZCode name regex, name matches folder, description limits.
 const NAME = /^[a-z0-9][a-z0-9._-]{0,127}$/;
 const skillDirs = exists('skills')
-  ? fs.readdirSync(path.join(root, 'skills'), { withFileTypes: true }).filter((d) => d.isDirectory()).map((d) => d.name)
+  ? fs
+      .readdirSync(path.join(root, 'skills'), { withFileTypes: true })
+      .filter((d) => d.isDirectory())
+      .map((d) => d.name)
   : [];
 for (const dir of skillDirs) {
   const file = `skills/${dir}/SKILL.md`;
-  if (!exists(file)) { fail(`${file}: missing`); continue; }
+  if (!exists(file)) {
+    fail(`${file}: missing`);
+    continue;
+  }
   const fm = frontmatter(read(file));
-  if (!fm) { fail(`${file}: no frontmatter`); continue; }
+  if (!fm) {
+    fail(`${file}: no frontmatter`);
+    continue;
+  }
   if (!NAME.test(fm.name || '')) fail(`${file}: bad name "${fm.name}"`);
   if (fm.name !== dir) fail(`${file}: name "${fm.name}" != folder "${dir}"`);
   const desc = fm.description || '';
@@ -96,10 +141,16 @@ for (const dir of skillDirs) {
   // User-only skills: Codex needs the policy file, ZCode (no flag) needs the description to say so.
   if (!modelInvocable) {
     const yaml = `skills/${dir}/agents/openai.yaml`;
-    if (!exists(yaml) || !/allow_implicit_invocation:\s*false/.test(read(yaml))) fail(`${yaml}: user-only skill needs allow_implicit_invocation: false`);
-    if (!desc.includes('Only when the user explicitly invokes it.')) fail(`${file}: user-only description must say "Only when the user explicitly invokes it."`);
+    if (!exists(yaml) || !/allow_implicit_invocation:\s*false/.test(read(yaml)))
+      fail(`${yaml}: user-only skill needs allow_implicit_invocation: false`);
+    if (!desc.includes('Only when the user explicitly invokes it.'))
+      fail(`${file}: user-only description must say "Only when the user explicitly invokes it."`);
   }
 }
+
+// /braid:help lists every skill: one table row each.
+const help = exists('skills/help/SKILL.md') ? read('skills/help/SKILL.md') : '';
+for (const dir of skillDirs) if (!help.includes(`\n| \`${dir}\``)) fail(`skills/help/SKILL.md: no row for ${dir}`);
 
 // Hook smoke test, run from a copy under a `"type": "module"` package.json: the
 // .cjs extension must keep it CommonJS. Walks level switching, drift, pointers, off.
@@ -132,21 +183,42 @@ let alwaysOn = 0;
       }).toString();
       return out ? JSON.parse(out).hookSpecificOutput.additionalContext : '';
     };
-    const expect = (cond, msg) => { if (!cond) fail(`hook: ${msg}`); };
+    const expect = (cond, msg) => {
+      if (!cond) fail(`hook: ${msg}`);
+    };
 
     const start = hook('session', { source: 'startup' });
     expect(start.includes('BRAID ACTIVE — level: full'), 'default level is not full');
     expect(start.includes('**full**') && !start.includes('**lite**'), 'level table not filtered');
-    expect(start.includes('Active change: braid/changes/add-x (1/2 tasks).'), 'active change pointer missing or includes queued');
+    expect(
+      start.includes('Active change: braid/changes/add-x (1/2 tasks).'),
+      'active change pointer missing or includes queued',
+    );
     expect(start.includes('Queued proposals: braid/changes/fix-y.'), 'queued proposal pointer missing');
     // An OpenSpec project (no braid/ folder): its changes get the same pointer.
     const ospec = path.join(tmp, 'ospec', 'openspec', 'changes', 'add-z');
     fs.mkdirSync(ospec, { recursive: true });
     fs.writeFileSync(path.join(ospec, 'tasks.md'), '## 1. Do\n- [ ] 1.1 one\n');
-    expect(hook('session', { source: 'startup', cwd: path.join(tmp, 'ospec') }).includes('Active change: openspec/changes/add-z (0/1 tasks).'), 'OpenSpec change pointer missing');
+    expect(
+      hook('session', { source: 'startup', cwd: path.join(tmp, 'ospec') }).includes(
+        'Active change: openspec/changes/add-z (0/1 tasks).',
+      ),
+      'OpenSpec change pointer missing',
+    );
     expect(start.includes('v1 (1 open)'), 'route pointer missing');
-    expect(start.includes('braid/map.md (built at abc1234') && start.includes('HANDOFF.md (written at'), 'map/handoff pointer missing');
-    expect(hook('prompt', { prompt: '/braid:braid lite' }).includes('BRAID LEVEL: lite'), 'level switch not confirmed');
+    expect(
+      start.includes('braid/map.md (built at abc1234') && start.includes('HANDOFF.md (written at'),
+      'map/handoff pointer missing',
+    );
+    expect(
+      hook('prompt', { prompt: '/braid:braid lite' }).includes("BRAID LEVEL: lite — Build what's asked"),
+      'level switch not confirmed with its table row',
+    );
+    const report = hook('prompt', { prompt: '/braid:braid' });
+    expect(
+      report.includes('BRAID ACTIVE — level: lite') && !report.includes('The ladder'),
+      'bare /braid:braid while on does not just report',
+    );
     expect(hook('session', { source: 'compact' }).includes('level: lite'), 'level lost across compaction');
     expect(hook('subagent', {}).includes('level: lite'), 'subagent not injected');
     expect(hook('prompt', { prompt: 'fix the bug' }) === '', 'drift reminder on by default');
@@ -159,13 +231,33 @@ let alwaysOn = 0;
     hook('prompt', { prompt: '[$braid:braid](C:/x/skills/braid/SKILL.md) drift off' });
     expect(hook('prompt', { prompt: 'fix the bug' }) === '', 'Codex picker link form not parsed');
     hook('prompt', { prompt: '/braid:braid drift on' });
-    expect(hook('prompt', { prompt: '/braid:spec propose' }) === 'braid: lite · YAGNI > KISS > DRY · ladder first · done means verified', 'other braid skills misread as level commands');
+    expect(
+      hook('prompt', { prompt: '/braid:spec propose' }) ===
+        'braid: lite · YAGNI > KISS > DRY · ladder first · done means verified',
+      'other braid skills misread as level commands',
+    );
     hook('prompt', { prompt: 'stop braid' });
     expect(hook('session', { source: 'compact' }) === '', 'still injecting after "stop braid"');
+    // Coming back from off re-sends what a session starts with, by level or bare.
+    const lite = hook('prompt', { prompt: '/braid:braid lite' });
+    expect(
+      lite.includes('BRAID ACTIVE — level: lite') && lite.includes('## The ladder') && lite.includes('Active change:'),
+      'level switch while off does not re-send the core and pointers',
+    );
+    hook('prompt', { prompt: 'stop braid' });
+    const back = hook('prompt', { prompt: '/braid:braid' });
+    expect(
+      back.includes('BRAID ACTIVE — level: full') && back.includes('## The ladder') && back.includes('Active change:'),
+      'bare /braid:braid while off does not switch on with the core and pointers',
+    );
+    expect(hook('session', { source: 'compact' }).includes('level: full'), 'switch back on not remembered');
 
     // No session id: nothing is shared between id-less sessions, so one can't switch another off.
     hook('prompt', { session_id: undefined, prompt: 'stop braid' });
-    expect(hook('session', { session_id: undefined, source: 'startup' }).includes('level: full'), 'id-less sessions share state');
+    expect(
+      hook('session', { session_id: undefined, source: 'startup' }).includes('level: full'),
+      'id-less sessions share state',
+    );
     // A state file with invalid fields falls back field by field.
     fs.mkdirSync(path.join(tmp, 'data', 'sessions'), { recursive: true });
     fs.writeFileSync(path.join(tmp, 'data', 'sessions', 'bad.json'), '{"mode":"bogus","adhd":"false","drift":1}');
@@ -178,8 +270,14 @@ let alwaysOn = 0;
       if (i % 2) fs.writeFileSync(path.join(busy, `change-${i}`, 'tasks.md'), '- [ ] t\n');
     }
     const busyOut = hook('session', { session_id: 'busy', source: 'startup', cwd: path.join(tmp, 'busy') });
-    const pointerLines = busyOut.slice(busyOut.indexOf('## Project state')).split('\n').filter((l) => l.startsWith('- '));
-    expect(pointerLines.length <= 5 && pointerLines.every((l) => l.length <= 300) && busyOut.includes('and 17 more'), `pointer lines not capped: ${pointerLines.map((l) => l.length)}`);
+    const pointerLines = busyOut
+      .slice(busyOut.indexOf('## Project state'))
+      .split('\n')
+      .filter((l) => l.startsWith('- '));
+    expect(
+      pointerLines.length <= 5 && pointerLines.every((l) => l.length <= 300) && busyOut.includes('and 17 more'),
+      `pointer lines not capped: ${pointerLines.map((l) => l.length)}`,
+    );
 
     // The budget is measured on the worst case: every pointer present, every list full, and
     // names far past the clip length in 3-byte characters (braid/ and openspec/ changes both).
@@ -202,15 +300,22 @@ let alwaysOn = 0;
 
     // Windows can swallow a hook's stdin so it never closes: the hook must still answer and exit
     // well inside the harness's 5 s timeout. A child keeps the pipe open and times the hook.
-    const probe = execFileSync(process.execPath, ['-e', `
+    const probe = execFileSync(process.execPath, [
+      '-e',
+      `
       const c = require('node:child_process').spawn(process.execPath, [process.argv[1], 'session'], { stdio: ['pipe', 'pipe', 'ignore'], env: { ...process.env, CLAUDE_PLUGIN_DATA: process.argv[2] } });
       let out = ''; const t = Date.now();
       c.stdout.on('data', (d) => { out += d; });
       c.on('exit', () => { console.log(JSON.stringify({ ms: Date.now() - t, bytes: out.length })); process.exit(0); });
       setTimeout(() => { console.log(JSON.stringify({ ms: -1 })); c.kill(); process.exit(0); }, 4000);`,
-      path.join(plugin, 'hooks', 'braid.cjs'), path.join(tmp, 'data')]).toString();
+      path.join(plugin, 'hooks', 'braid.cjs'),
+      path.join(tmp, 'data'),
+    ]).toString();
     const { ms, bytes } = JSON.parse(probe);
-    expect(ms >= 0 && ms < 3000 && bytes > 0, `hook with open stdin: ${ms < 0 ? 'still running after 4 s' : `${ms} ms, ${bytes} bytes`}`);
+    expect(
+      ms >= 0 && ms < 3000 && bytes > 0,
+      `hook with open stdin: ${ms < 0 ? 'still running after 4 s' : `${ms} ms, ${bytes} bytes`}`,
+    );
   } catch (e) {
     fail(`hook: ${e.message}`);
   } finally {
@@ -229,13 +334,25 @@ if (tokens > 2500) fail(`always-on budget ~${tokens} tokens > 2500`);
 // UPSTREAM.md: one row per skill; vendored ones carry their LICENSE, derived ones' upstream
 // notice (copyright line and permission text, not just a link) is in THIRD-PARTY-NOTICES.
 const notices = exists('THIRD-PARTY-NOTICES') ? read('THIRD-PARTY-NOTICES').split(/^---$/m) : [];
-const hasNotice = (repo) => notices.some((s) => s.includes(`https://github.com/${repo}`) && /^Copyright \(c\) \d{4} \S/m.test(s) && s.includes('Permission is hereby granted'));
-const rows = read('UPSTREAM.md').split(/\r?\n/).filter((l) => /^\|\s*`?[a-z0-9]/.test(l));
+const hasNotice = (repo) =>
+  notices.some(
+    (s) =>
+      s.includes(`https://github.com/${repo}`) &&
+      /^Copyright \(c\) \d{4} \S/m.test(s) &&
+      s.includes('Permission is hereby granted'),
+  );
+const rows = read('UPSTREAM.md')
+  .split(/\r?\n/)
+  .filter((l) => /^\|\s*`?[a-z0-9]/.test(l));
 const rowSkills = rows.map((r) => r.split('|')[1].trim().replace(/`/g, ''));
 for (const dir of skillDirs) if (!rowSkills.includes(dir)) fail(`UPSTREAM.md: no row for skills/${dir}`);
 for (const row of rows) {
-  const [skill, kind, repo] = row.split('|').slice(1).map((c) => c.trim().replace(/`/g, ''));
-  if (kind === 'derived' && !hasNotice(repo)) fail(`THIRD-PARTY-NOTICES: derived from ${repo} but carries no copyright notice for it`);
+  const [skill, kind, repo] = row
+    .split('|')
+    .slice(1)
+    .map((c) => c.trim().replace(/`/g, ''));
+  if (kind === 'derived' && !hasNotice(repo))
+    fail(`THIRD-PARTY-NOTICES: derived from ${repo} but carries no copyright notice for it`);
   if (!exists(`skills/${skill}/SKILL.md`)) fail(`UPSTREAM.md: skills/${skill} does not exist`);
   if (!['vendored', 'derived', 'clean-room'].includes(kind)) fail(`UPSTREAM.md: ${skill} has unknown kind "${kind}"`);
   if (kind === 'vendored' && !exists(`skills/${skill}/LICENSE`)) fail(`skills/${skill}: vendored without LICENSE`);
@@ -252,4 +369,6 @@ if (errors.length) {
   console.error([...new Set(errors)].map((e) => `✗ ${e}`).join('\n'));
   process.exit(1);
 }
-console.log(`✓ ${manifests.length} manifests, ${skillDirs.length} skills, ${rows.length} upstream rows, hook ok, always-on ~${tokens} tokens`);
+console.log(
+  `✓ ${manifests.length} manifests, ${skillDirs.length} skills, ${rows.length} upstream rows, hook ok, always-on ~${tokens} tokens`,
+);

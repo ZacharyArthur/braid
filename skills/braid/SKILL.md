@@ -18,7 +18,7 @@ now and follow it for the rest of the session.
 - `/braid:braid lite|full|ultra`: set the level for this session. Confirm in one line.
 - `/braid:braid off` or "stop braid": off for this session.
 - `/braid:braid drift on|off`: a one-line reminder of the rules on every prompt, for long sessions that start sliding back into over-building. Off by default.
-- `/braid:braid` alone: report the level.
+- `/braid:braid` alone: report the level; when off, switch back on at full.
 
 The hook remembers the level across compaction. Without the hook (no Node),
 the level lasts as long as this conversation does.

@@ -16,7 +16,9 @@ quietly become permanent.
 Skip `node_modules`, `.git`, and build output. Require a comment prefix so
 prose that merely mentions the convention stays out:
 
-`grep -rnE '(#|//|--|;|/\*|<!--) ?braid\((yagni|kiss|dry)\):' .`
+`grep -rnE --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=build '(#|//|--|;|/\*|<!--) ?braid\((yagni|kiss|dry)\):' .`
+
+Add the project's other build or vendor folders as more `--exclude-dir`s.
 
 Each hit is one ledger row.
 

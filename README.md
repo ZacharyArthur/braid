@@ -53,8 +53,10 @@ Then run `codex`, open `/hooks`, review and trust braid's hooks, and start a new
 | `security-audit` | Multi-phase security audit with verified findings |
 | `humanizer` | Make AI-written prose read like you |
 | `adhd` | Action-first answers; stays on until "stop adhd mode" |
+| `skill` | Write a new skill that stays small and triggers right; hands off to Anthropic's `skill-creator` for evals |
+| `help` | What each skill does and how to call it in your harness; `help <skill>` for one in depth |
 
-Only `braid`, `grilling`, `domain-modeling` and `map` load on their own; the rest wait for you to call them.
+Only `braid`, `grilling`, `domain-modeling` and `map` load on their own; the rest wait for you to call them. Adding a skill or syncing upstream: [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Benchmarks
 
@@ -80,7 +82,7 @@ braid stands on these projects. Vendored files keep their upstream `LICENSE`, no
 
 **Vendored:** [ponytail](https://github.com/DietrichGebert/ponytail) (core, derived), [mattpocock/skills](https://github.com/mattpocock/skills), [i-have-adhd](https://github.com/ayghri/i-have-adhd), [humanizer](https://github.com/blader/humanizer), [cloudflare/security-audit-skill](https://github.com/cloudflare/security-audit-skill), [superpowers](https://github.com/obra/superpowers).
 
-**Derived or inspired by:** [OpenSpec](https://github.com/Fission-AI/openspec) (spec format), mattpocock's wayfinder (wayfind), [graphify](https://github.com/Graphify-Labs/graphify) (map), [impeccable](https://github.com/pbakaus/impeccable), [taste-skill](https://github.com/Leonxlnx/taste-skill) and [ui-ux-pro-max](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill) (design), superpowers (verification rule).
+**Derived or inspired by:** [OpenSpec](https://github.com/Fission-AI/openspec) (spec format), mattpocock's wayfinder (wayfind), [graphify](https://github.com/Graphify-Labs/graphify) (map), [impeccable](https://github.com/pbakaus/impeccable), [taste-skill](https://github.com/Leonxlnx/taste-skill) and [ui-ux-pro-max](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill) (design), superpowers (verification rule), Anthropic's [skill-creator](https://github.com/anthropics/skills) and skill-authoring guide (skill).
 
 **Companions worth installing when you need the full thing:** impeccable, ui-ux-pro-max, taste-skill, [diagram-design](https://github.com/cathrynlavery/diagram-design), [Agent-Skills-for-Context-Engineering](https://github.com/muratcankoylan/Agent-Skills-for-Context-Engineering), OpenSpec, graphify.
 
