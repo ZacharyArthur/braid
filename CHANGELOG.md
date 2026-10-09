@@ -2,6 +2,12 @@
 
 All notable changes to braid. Versions follow semver: major = a skill renamed or removed, or the `braid/` layout changed; minor = a new skill or verb; patch = wording and upstream syncs.
 
+## [1.2.0] - 2026-10-08
+
+- Mods: optional Claude Code-only plugins in braid's marketplace, each installed and switched on or off on its own (ADR 0011). Codex never sees them.
+- New mod `braid-context` 0.1.0: a band above the prompt with context used, a prompt cache countdown with its TTL (from the transcript; red under 1 min, and on a 1h cache yellow under 5 first; "live" while a turn runs), the last turn's cache hit rate, session spend (percent of the 5-hour window on a subscription, its reset time once used up, dollars on API or Bedrock; context and the window turn yellow from 75%, red from 90%; the hit rate yellow under 80%, red under 50%), braid's level and active change, all on one line, with block-character bars for context, cache time left and the 5-hour window from 120 columns up.
+- README: the status line says braid is released and points to this changelog and the ADRs.
+
 ## [1.1.0] - 2026-10-05
 
 - New `skill`: write a skill that stays small and triggers right (interview, minimal draft, cross-harness frontmatter checks, a fresh-subagent test run); hands off to Anthropic's `skill-creator` for evals.

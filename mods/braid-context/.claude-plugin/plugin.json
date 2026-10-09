@@ -1,0 +1,9 @@
+{
+  "name": "braid-context",
+  "version": "0.1.0",
+  "description": "Claude Code only: a band above the prompt with context used, prompt cache countdown, cache hit rate, session spend (5-hour window or dollars), and braid's level and active change.",
+  "author": { "name": "Zachary Arthur", "url": "https://github.com/ZacharyArthur" },
+  "homepage": "https://github.com/ZacharyArthur/braid",
+  "license": "MIT",
+  "types": "./types/index.d.ts"
+}

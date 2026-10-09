@@ -40,5 +40,9 @@ _Avoid_: map (that's the repo map), roadmap
 **Frontier**:
 The open decisions whose prerequisites are already decided.
 
+**Mod**:
+A Claude Code-only plugin of TypeScript hooks in `mods/<name>/`, listed in braid's marketplace and installed on its own.
+_Avoid_: extension, add-on
+
 **Vendored / derived / clean-room**:
 How a skill relates to its upstream: verbatim copy with surgical edits, substantial rewrite, or written from scratch with credit only.

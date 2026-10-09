@@ -4,6 +4,7 @@
   "description": "Clean-code harness for AI coding agents: YAGNI > KISS > DRY, plus grilling, specs, wayfinding and reviews.",
   "owner": { "name": "Zachary Arthur", "url": "https://github.com/ZacharyArthur" },
   "plugins": [
-    { "name": "braid", "description": "Clean-code harness for AI coding agents: YAGNI > KISS > DRY, plus grilling, specs, wayfinding and reviews.", "source": "./", "category": "productivity" }
+    { "name": "braid", "description": "Clean-code harness for AI coding agents: YAGNI > KISS > DRY, plus grilling, specs, wayfinding and reviews.", "source": "./", "category": "productivity" },
+    { "name": "braid-context", "description": "Claude Code only: a band above the prompt with context used, prompt cache countdown, cache hit rate, session spend (5-hour window or dollars), and braid's level and active change.", "source": "./mods/braid-context", "category": "productivity" }
   ]
 }

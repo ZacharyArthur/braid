@@ -1,1 +1,3 @@
 bench/results/*-fake*/
+mods/*/.claude-plugin/types/
+mods/*/tsconfig.json
