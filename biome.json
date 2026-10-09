@@ -1,5 +1,5 @@
 {
-  "files": { "includes": ["hooks/**", "scripts/**", "bench/ab.cjs"] },
+  "files": { "includes": ["hooks/**", "scripts/**", "bench/ab.cjs", "mods/**", "!mods/*/.claude-plugin/types"] },
   "formatter": { "indentStyle": "space", "indentWidth": 2, "lineWidth": 120 },
   "javascript": { "formatter": { "quoteStyle": "single" } }
 }

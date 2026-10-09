@@ -4,7 +4,7 @@ Clean-code harness for AI coding agents. Three strands: **YAGNI > KISS > DRY**.
 
 A plugin for **Claude Code**, **Codex** and **ZCode**: an always-on core that keeps generated code minimal, plus a workflow for grilling plans, writing specs, mapping repos, handing off and reviewing.
 
-> Status: v1 release candidate. Decisions: [braid/routes/v1.md](braid/routes/v1.md) and [braid/adr/](braid/adr/). Remaining work: [braid/changes/ship-v1/](braid/changes/ship-v1/tasks.md).
+> Status: released and in use since v1.0.0. What each release changed: [CHANGELOG.md](CHANGELOG.md). Decisions: [braid/adr/](braid/adr/).
 
 ## Install
 
@@ -57,6 +57,14 @@ Then run `codex`, open `/hooks`, review and trust braid's hooks, and start a new
 | `help` | What each skill does and how to call it in your harness; `help <skill>` for one in depth |
 
 Only `braid`, `grilling`, `domain-modeling` and `map` load on their own; the rest wait for you to call them. Adding a skill or syncing upstream: [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Mods
+
+Optional add-ons for **Claude Code only** (terminal and Desktop app, v2.1.287+), each a separate plugin in the same marketplace. Codex never lists them; ZCode lists them but can't run them. Install one with `claude plugin install <mod>@braid` (or `/plugin install <mod>@braid`), and switch it off or on in `/plugin`.
+
+| Mod | What it shows |
+|---|---|
+| `braid-context` | A line above the prompt: context used, the prompt cache's countdown to going cold (red under 1 min; on a 1h cache, yellow under 5 first; "live" while a turn runs), the last turn's cache hit rate, what the session is spending (`5h 23%` of the 5-hour window on a subscription, or the time it resets once used up; `$1.23` on API or Bedrock), and braid's level and active change. Context, cache time left and the 5-hour window also show as block-character bars on a wide enough band, e.g. `ctx ██░░░░░░ 312k/1M 31%`. Context and the 5-hour window turn yellow from 75% and red from 90%; the hit rate turns yellow under 80% and red under 50%. Enough to stand in for a status line, including in the Desktop app, which has none |
 
 ## Benchmarks
 
