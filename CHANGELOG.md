@@ -2,6 +2,10 @@
 
 All notable changes to braid. Versions follow semver: major = a skill renamed or removed, or the `braid/` layout changed; minor = a new skill or verb; patch = wording and upstream syncs.
 
+## [Unreleased]
+
+- `braid-context` 0.1.1: the band follows each main-thread response, so context and spend move during a long turn instead of at its end.
+
 ## [1.2.0] - 2026-10-08
 
 - Mods: optional Claude Code-only plugins in braid's marketplace, each installed and switched on or off on its own (ADR 0011). Codex never sees them.

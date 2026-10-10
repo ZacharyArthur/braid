@@ -1,38 +1,4 @@
-# Mods
-
-## Purpose
-
-Optional Claude Code-only plugins in braid's marketplace, installed and switched on or off one by one, and what the first one, `braid-context`, shows.
-
-## Requirements
-
-### Requirement: Mods are installed one by one in Claude Code
-
-The braid marketplace SHALL list each mod as its own plugin, described as Claude Code only, which a Claude Code user installs, enables and disables independently of braid and of other mods.
-
-#### Scenario: Install one mod
-
-- **WHEN** a Claude Code user who added the braid marketplace installs one mod
-- **THEN** that mod runs and no other mod does
-
-#### Scenario: Disable a mod
-
-- **WHEN** the user disables a mod in `/plugin`
-- **THEN** that mod stops running and braid and the other mods are unaffected
-
-### Requirement: Mods stay out of braid and Codex
-
-The `braid` plugin SHALL NOT load any mod, and the Codex marketplace SHALL NOT list any mod.
-
-#### Scenario: braid alone
-
-- **WHEN** a user installs only braid, in any of the three harnesses
-- **THEN** no mod runs
-
-#### Scenario: Codex marketplace
-
-- **WHEN** a Codex user lists the braid marketplace's plugins
-- **THEN** only braid is listed
+## MODIFIED Requirements
 
 ### Requirement: Context band
 

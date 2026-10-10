@@ -7,6 +7,6 @@ export type Session = { transcript: string; sid: string };
 
 declare module 'claude-code' {
   interface PluginState {
-    'braid-context': { cache: Cache | null; braid: Braid | null; session: Session | null };
+    'braid-context': { cache: Cache | null; braid: Braid | null; session: Session | null; answered: boolean };
   }
 }
