@@ -337,6 +337,44 @@ for (const surface of ['terminal', 'desktop'] as const) {
     expect((await cacheText(await band($)))?.text).toBe('cache 59:00 (1h)');
   });
 
+  test(`${surface}: each response redraws context and spend before the turn ends`, async ($, on) => {
+    // A conversation's first turn: no cache yet, so no tick redraws the band.
+    const opts = { ctxTokens: 100_000, ctxPercent: 10, usd: 0.5 };
+    world(on, opts);
+    await start($);
+    const ui = await band($, 80, true);
+    expect(await text(ui)).toContain('ctx 100k/1M 10%');
+    expect(await text(ui)).not.toContain('$');
+    Object.assign(opts, { ctxTokens: 250_000, ctxPercent: 25, usd: 0.75 });
+    for await (const _ of $.turn.step({ turnId: 't1', index: 0, model: 'm', messageCount: 1 }));
+    expect(await text(ui)).toContain('ctx 250k/1M 25% · $0.75');
+    // A subagent's response is not the main thread's: no redraw.
+    Object.assign(opts, { ctxTokens: 400_000, ctxPercent: 40 });
+    for await (const _ of $.turn.step({ turnId: 't1', index: 0, model: 'm', messageCount: 1, agentId: 'a1' }));
+    expect(await text(ui)).toContain('ctx 250k/1M 25%');
+    // /clear: spend waits again, and a failed request is no response.
+    await $.classic.SessionStart({ source: 'clear', transcript_path: TRANSCRIPT, session_id: 's1' });
+    for await (const _ of $.turn.step({ turnId: 't2', index: 0, model: 'failed', messageCount: 1 }));
+    expect(await text(ui)).not.toContain('$');
+  });
+
+  test(`${surface}: a later turn after the cache went cold redraws per response too`, async ($, on) => {
+    // No tick past expiry, and the finished turn's cache figures keep spend from reading the response flag:
+    // only the step's own redraw shows the new figures.
+    const opts = { ctxTokens: 100_000, ctxPercent: 10, usd: 0.5 };
+    const clock = world(on, opts);
+    await start($);
+    await turn($);
+    await clock.advance(61 * 60_000);
+    const ui = await band($, 80, true);
+    expect(await text(ui)).toContain('ctx 100k/1M 10%');
+    Object.assign(opts, { ctxTokens: 250_000, ctxPercent: 25, usd: 0.75 });
+    for await (const _ of $.turn.step({ turnId: 't2', index: 0, model: 'm', messageCount: 3 }));
+    const shown = await text(ui);
+    expect(shown).toContain('ctx 250k/1M 25%');
+    expect(shown).toContain('$0.75');
+  });
+
   test(`${surface}: a failed last request doesn't restart the countdown`, async ($, on) => {
     const clock = world(on);
     await start($);

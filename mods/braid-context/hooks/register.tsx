@@ -6,6 +6,8 @@ import type { Braid, Cache, Session, Ttl } from '../types';
 const cache = atom({ plugin: 'braid-context', key: 'cache' } as const, null);
 const braid = atom({ plugin: 'braid-context', key: 'braid' } as const, null);
 const session = atom({ plugin: 'braid-context', key: 'session' } as const, null);
+// A main-thread response has arrived in this conversation; the cache figures wait for the turn's end.
+const answered = atom({ plugin: 'braid-context', key: 'answered' } as const, false);
 
 const TTL_MS = { '5m': 5 * 60_000, '1h': 60 * 60_000 };
 
@@ -142,6 +144,7 @@ export const register: Register = (on) => {
   on('classic.SessionStart', async ($, e, next) => {
     // A new conversation (startup, /clear, resume, compact) has no cache of its own until its first response.
     await update($, cache, () => null);
+    await update($, answered, () => false);
     const result = await next(e);
     await remember($, e);
     return result;
@@ -156,11 +159,15 @@ export const register: Register = (on) => {
   // otherwise count as cache life it doesn't have. Lost on a reload, when the turn's end stands in.
   let requested: number | null = null;
   // Only a request the API answered with cache use counts: a failed one never touched the cache.
+  // session.measure waits for the turn's end, so each main-thread response redraws context and spend here.
   on('turn.step', async function* ($, e, next) {
     const sent = await $.clock.now();
     const r = yield* next(e);
+    if (e.agentId !== undefined) return r;
     const u = r.usage;
-    if (e.agentId === undefined && u && u.cache_read_input_tokens + u.cache_creation_input_tokens > 0) requested = sent;
+    if (u && u.cache_read_input_tokens + u.cache_creation_input_tokens > 0) requested = sent;
+    if (u) await update($, answered, () => true);
+    $.ui.invalidate('ui.render');
     return r;
   });
 
@@ -244,7 +251,10 @@ export const register: Register = (on) => {
           </Text>,
         );
       }
-      // Spend waits for this conversation's first response too: only a response tells a subscription from API.
+    }
+    // Spend waits for this conversation's first response, mid-turn or a finished turn's: only a response
+    // tells a subscription from API.
+    if (c || (await read($, answered))) {
       if (window5h && window5h.percentUsed >= 100 && window5h.resetsAt)
         parts.push(
           <Text key="spend" color="error">
