@@ -24,7 +24,7 @@ Then, by kind:
 
 - **vendored**: copy the row's Path files (minus its exclusions) over the skill folder verbatim and commit that alone (`<skill>: sync upstream <short-sha>`). Re-apply braid's surgical edits in a second commit, so the next diff stays mergeable ([ADR 0003](braid/adr/0003-vendor-verbatim-with-pins.md)). Keep its `LICENSE` current.
 - **derived**: read the diff for ideas worth having and write them fresh, in braid's words and at braid's size ([ADR 0008](braid/adr/0008-clean-room-over-porting-products.md)). Never a merge.
-- **clean-room**: as derived, but never paste upstream text, not even a sentence. Rows without a path (`map`, `design`) aren't tracked; skim those repos when you choose to.
+- **clean-room**: as derived, but never paste upstream text, not even a sentence. A skill with several sources gets one row per source.
 
 Every kind: bump the SHA to the commit you reviewed, even when you took nothing, so the next run starts from there. Run `node scripts/check.cjs`, and add a patch entry to `CHANGELOG.md` when a skill changed.
 
@@ -44,12 +44,14 @@ Every kind: bump the SHA to the commit you reviewed, even when you took nothing,
 | `review` | derived | DietrichGebert/ponytail | skills/ponytail-review | 552acd5efd0aeae2583a12efe39373d2f076f25e | MIT |
 | `audit` | derived | DietrichGebert/ponytail | skills/ponytail-audit | 552acd5efd0aeae2583a12efe39373d2f076f25e | MIT |
 | `debt` | derived | DietrichGebert/ponytail | skills/ponytail-debt | 552acd5efd0aeae2583a12efe39373d2f076f25e | MIT |
-| `map` | clean-room | Graphify-Labs/graphify | - | - | Apache-2.0 (idea only) |
+| `map` | clean-room | Graphify-Labs/graphify | graphify/skill.md, docs/how-it-works.md | b4e6307bf170f27e0cb888c03f4af9308d531a42 | Apache-2.0 (ideas only) |
 | `spec` | derived | Fission-AI/openspec | docs/concepts.md, src/core/templates/workflows | 9111a7654d7800391459431fff4eaf66e33a3d2e | MIT |
 | `wayfind` | clean-room | mattpocock/skills | skills/engineering/wayfinder | 49dd158d1076134a641b33efb035946536778336 | MIT (idea only) |
 | `handoff` | clean-room | mattpocock/skills | skills/productivity/handoff | 49dd158d1076134a641b33efb035946536778336 | MIT (idea only) |
 | `xreview` | clean-room | - | - | - | - |
-| `design` | clean-room | pbakaus/impeccable, Leonxlnx/taste-skill, nextlevelbuilder/ui-ux-pro-max-skill | - | - | Apache-2.0 / MIT (ideas only) |
+| `design` | clean-room | pbakaus/impeccable | plugin/skills/impeccable/SKILL.md, plugin/skills/impeccable/reference/craft-floor.md | d631a8827f99414d2b6daba4ef08b7f8701751d7 | Apache-2.0 (ideas only) |
+| `design` | clean-room | Leonxlnx/taste-skill | skills/taste-skill | 717446e07a78d4e6d7918b1fde1a263378eebac9 | MIT (ideas only) |
+| `design` | clean-room | nextlevelbuilder/ui-ux-pro-max-skill | .claude/skills/ui-ux-pro-max/SKILL.md | 67803eac81607188194aea9842a723b89326d90d | MIT (ideas only) |
 | `standards` | clean-room | - | - | - | - |
 | `skill` | clean-room | anthropics/skills | skills/skill-creator | dbd4588f9e1033efb41dad4bef2f7947c8993d44 | Apache-2.0 (ideas only) |
 | `help` | clean-room | - | - | - | - |
