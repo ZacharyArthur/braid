@@ -1,0 +1,1 @@
+{ "source": "ponytail", "prompt": "The partner feed renamed the order field `qty` to `quantity`. Rename `Order.qty` in the `shop` package to `quantity` to match.", "check": "check.py" }

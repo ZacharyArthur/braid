@@ -12,7 +12,7 @@ Plan a change. Planning only: **no code edits**, even if the request says
    record it in the proposal.
 3. **Orient.** Read `braid/map.md`, the affected `braid/specs/<domain>/spec.md`,
    `braid/GLOSSARY.md`, and relevant ADRs. Check what the code does today.
-4. **Climb the ladder on the change itself.** Does all of it need to exist?
+4. **Find the smallest complete change.** Does all of it need to exist?
    What is the smallest version that delivers the value? Cut scope goes under
    *Out of scope* with a one-line reason.
 5. **Write** `braid/changes/<name>/`:

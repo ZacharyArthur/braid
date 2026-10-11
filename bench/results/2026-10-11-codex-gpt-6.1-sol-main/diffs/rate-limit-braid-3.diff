@@ -1,0 +1,82 @@
+diff --git a/main.py b/main.py
+index 9cbedc7..9437ac8 100644
+--- a/main.py
++++ b/main.py
+@@ -1,13 +1,37 @@
+-from fastapi import FastAPI
++from math import ceil
++from threading import Lock
++from time import monotonic
++
++from fastapi import FastAPI, HTTPException, Request
+ from pydantic import BaseModel
+ 
+ app = FastAPI()
+ 
++RATE_LIMIT = 10
++WINDOW_SECONDS = 60
++# braid(yagni): per-process counters; use shared storage for multiple workers.
++requests_by_ip: dict[str, tuple[float, int]] = {}
++rate_limit_lock = Lock()
++
+ 
+ class Message(BaseModel):
+     text: str
+ 
+ 
+ @app.post("/messages")
+-def create_message(message: Message):
++def create_message(message: Message, request: Request):
++    ip = request.client.host if request.client else "unknown"
++    with rate_limit_lock:
++        now = monotonic()
++        for client, (started, _) in list(requests_by_ip.items()):
++            if now - started >= WINDOW_SECONDS:
++                del requests_by_ip[client]
++        started, count = requests_by_ip.get(ip, (now, 0))
++        if count >= RATE_LIMIT:
++            raise HTTPException(
++                status_code=429,
++                detail="Too many requests",
++                headers={"Retry-After": str(ceil(WINDOW_SECONDS - (now - started)))},
++            )
++        requests_by_ip[ip] = (started, count + 1)
+     return {"ok": True, "length": len(message.text)}
+diff --git a/test_main.py b/test_main.py
+new file mode 100644
+index 0000000..78f97ff
+--- /dev/null
++++ b/test_main.py
+@@ -0,0 +1,32 @@
++import unittest
++from unittest.mock import patch
++
++from fastapi.testclient import TestClient
++
++import main
++
++
++class RateLimitTest(unittest.TestCase):
++    def test_limit_isolation_and_expiry(self):
++        main.requests_by_ip.clear()
++        with patch("main.monotonic", return_value=100) as clock:
++            with TestClient(main.app) as client:
++                for _ in range(main.RATE_LIMIT):
++                    response = client.post("/messages", json={"text": "hello"})
++                    self.assertEqual(response.status_code, 200)
++                    self.assertEqual(response.json(), {"ok": True, "length": 5})
++                response = client.post("/messages", json={"text": "hello"})
++                self.assertEqual(response.status_code, 429)
++                self.assertEqual(response.headers["Retry-After"], "60")
++                # Forwarded headers must not let clients bypass their limit.
++                response = client.post("/messages", json={"text": "hello"},
++                                       headers={"X-Forwarded-For": "another-ip"})
++                self.assertEqual(response.status_code, 429)
++                with TestClient(main.app, client=("another-ip", 123)) as other:
++                    self.assertEqual(other.post("/messages", json={"text": "hi"}).status_code, 200)
++                clock.return_value = 160
++                self.assertEqual(client.post("/messages", json={"text": "hello"}).status_code, 200)
++
++
++if __name__ == "__main__":
++    unittest.main()

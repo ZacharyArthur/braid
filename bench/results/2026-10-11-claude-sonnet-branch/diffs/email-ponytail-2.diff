@@ -1,0 +1,28 @@
+diff --git a/validate.py b/validate.py
+new file mode 100644
+index 0000000..88ef7c9
+--- /dev/null
++++ b/validate.py
+@@ -0,0 +1,22 @@
++import re
++
++# shortcut: practical ASCII subset of RFC 5322 (no quoted locals, IP literals or IDN), upgrade if those are needed
++_EMAIL = re.compile(
++    r"[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+(\.[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+)*"
++    r"@([A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,63}"
++)
++
++
++def is_valid_email(address) -> bool:
++    return (
++        isinstance(address, str)
++        and len(address) <= 254
++        and address.partition("@")[0].__len__() <= 64
++        and _EMAIL.fullmatch(address) is not None
++    )
++
++
++if __name__ == "__main__":
++    assert is_valid_email("a.b+tag@example.co.uk")
++    for bad in ["", "a@b", "a@@b.com", ".a@b.com", "a..b@b.com", "a@-b.com", "a b@c.com", "a@b.c", None, "a@b.com\n"]:
++        assert not is_valid_email(bad), bad

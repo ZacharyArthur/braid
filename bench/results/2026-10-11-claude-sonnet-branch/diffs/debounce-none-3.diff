@@ -1,0 +1,52 @@
+diff --git a/debounce.js b/debounce.js
+new file mode 100644
+index 0000000..0f5e7a8
+--- /dev/null
++++ b/debounce.js
+@@ -0,0 +1,46 @@
++/**
++ * Returns a debounced version of fn that delays invoking it until `delay` ms
++ * have elapsed since the last call. Preserves `this` and the latest arguments.
++ * The returned function has `cancel()` and `flush()` helpers.
++ */
++function debounce(fn, delay) {
++  if (typeof fn !== 'function') {
++    throw new TypeError('debounce: fn must be a function');
++  }
++  delay = Number(delay) || 0;
++
++  let timer = null;
++  let lastArgs;
++  let lastThis;
++
++  function invoke() {
++    timer = null;
++    const args = lastArgs;
++    const ctx = lastThis;
++    lastArgs = lastThis = undefined;
++    return fn.apply(ctx, args);
++  }
++
++  function debounced(...args) {
++    lastArgs = args;
++    lastThis = this;
++    if (timer !== null) clearTimeout(timer);
++    timer = setTimeout(invoke, delay);
++  }
++
++  debounced.cancel = function () {
++    if (timer !== null) clearTimeout(timer);
++    timer = null;
++    lastArgs = lastThis = undefined;
++  };
++
++  debounced.flush = function () {
++    if (timer === null) return undefined;
++    clearTimeout(timer);
++    return invoke();
++  };
++
++  return debounced;
++}
++
++module.exports = debounce;

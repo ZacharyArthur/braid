@@ -1,0 +1,15 @@
+diff --git a/debounce.js b/debounce.js
+new file mode 100644
+index 0000000..14c0357
+--- /dev/null
++++ b/debounce.js
+@@ -0,0 +1,9 @@
++function debounce(fn, delay) {
++  let timer;
++  return function (...args) {
++    clearTimeout(timer);
++    timer = setTimeout(() => fn.apply(this, args), delay);
++  };
++}
++
++module.exports = debounce;

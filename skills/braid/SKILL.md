@@ -38,9 +38,3 @@ the level lasts as long as this conversation does.
 - YAGNI first: does the second handler need its own parsing at all?
 - KISS next: two plain, readable copies beat a premature `DateParserFactory`.
 - DRY last: the *format string* is knowledge, so it gets one constant now. The parsing *code* waits for a third copy that changes for the same reason.
-
-## Hardware and the physical world
-
-Hardware is never the ideal on paper: a real clock drifts, a real sensor reads
-off, a PCA9685 runs a few percent fast. Leave the calibration knob, not just
-less code. The physical world needs tuning a minimal model can't see.

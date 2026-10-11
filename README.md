@@ -34,7 +34,7 @@ Then run `codex`, open `/hooks`, review and trust braid's hooks, and start a new
 
 ## What's in it
 
-**Always on:** the core rules (YAGNI > KISS > DRY), injected each session and after compaction, plus one-line pointers to the active change, route, repo map and handoff. About 1.5k tokens. Level: `/braid:braid lite|full|ultra`; off: "stop braid".
+**Always on:** the core rules (YAGNI > KISS > DRY), injected each session and after compaction, plus one-line pointers to the active change, route, repo map and handoff, and, in a git repo with no `braid/map.md`, a generated map of what the code already defines (`BRAID_MAP=0` turns it off). About 1.5k tokens, 2k with the map. Level: `/braid:braid lite|full|ultra`; off: "stop braid".
 
 | Skill | What it does |
 |---|---|
@@ -45,8 +45,8 @@ Then run `codex`, open `/hooks`, review and trust braid's hooks, and start a new
 | `standards` | The project's `AGENTS.md`: priorities, stack, exact lint/type/test/dead-code/validation commands, quality gate, conventions, spec workflow, git workflow, plus optional invariants, dev environment and security (and a `CLAUDE.md` that imports it) |
 | `domain-modeling` | Glossary and ADRs in `braid/` |
 | `handoff` | `braid/HANDOFF.md` for whoever picks this up next |
-| `review` / `audit` | Over-engineering review of a diff / the whole repo |
-| `debt` | Ledger of every `braid(<strand>):` corner cut |
+| `review` / `audit` | Quality review of a change / the whole repo: bugs, risks, load, missing tests, speed, and what to cut |
+| `debt` | Ledger of every `shortcut(<strand>):` corner cut |
 | `xreview` | A review prompt for a different model; adversarial or `--open` |
 | `design` | Native-first UI without the generic AI look |
 | `systematic-debugging` | Root cause before any fix |
@@ -82,13 +82,15 @@ Codex also writes test files under the "one runnable check" rule, counted separa
 
 ## Conflicts
 
-Don't run braid alongside [ponytail](https://github.com/DietrichGebert/ponytail): braid's core is derived from it and both inject near-identical rules.
+Don't run braid alongside [ponytail](https://github.com/DietrichGebert/ponytail): braid's core is based on ponytail's text and both inject near-identical rules.
 
 ## Credits
 
-braid stands on these projects. Vendored files keep their upstream `LICENSE`, notices for derived code are in [THIRD-PARTY-NOTICES](THIRD-PARTY-NOTICES); see [UPSTREAM.md](UPSTREAM.md) for pinned sources.
+braid stands on these projects. Vendored files keep their upstream `LICENSE`, notices for based and derived code are in [THIRD-PARTY-NOTICES](THIRD-PARTY-NOTICES); see [UPSTREAM.md](UPSTREAM.md) for pinned sources.
 
-**Vendored:** [ponytail](https://github.com/DietrichGebert/ponytail) (core, derived), [mattpocock/skills](https://github.com/mattpocock/skills), [i-have-adhd](https://github.com/ayghri/i-have-adhd), [humanizer](https://github.com/blader/humanizer), [cloudflare/security-audit-skill](https://github.com/cloudflare/security-audit-skill), [superpowers](https://github.com/obra/superpowers).
+**Based on:** [ponytail](https://github.com/DietrichGebert/ponytail) (core, review, audit, debt and the codebase map).
+
+**Vendored:** [mattpocock/skills](https://github.com/mattpocock/skills), [i-have-adhd](https://github.com/ayghri/i-have-adhd), [humanizer](https://github.com/blader/humanizer), [cloudflare/security-audit-skill](https://github.com/cloudflare/security-audit-skill), [superpowers](https://github.com/obra/superpowers).
 
 **Derived or inspired by:** [OpenSpec](https://github.com/Fission-AI/openspec) (spec format), mattpocock's wayfinder (wayfind), [graphify](https://github.com/Graphify-Labs/graphify) (map), [impeccable](https://github.com/pbakaus/impeccable), [taste-skill](https://github.com/Leonxlnx/taste-skill) and [ui-ux-pro-max](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill) (design), superpowers (verification rule), Anthropic's [skill-creator](https://github.com/anthropics/skills) and skill-authoring guide (skill).
 

@@ -1,0 +1,76 @@
+diff --git a/test_uploads.py b/test_uploads.py
+new file mode 100644
+index 0000000..5c5ca80
+--- /dev/null
++++ b/test_uploads.py
+@@ -0,0 +1,46 @@
++import shutil
++import unittest
++import uuid
++from pathlib import Path
++
++from uploads import safe_upload_path
++
++
++class SafeUploadPathTests(unittest.TestCase):
++    def setUp(self):
++        self.directory = Path(__file__).parent / f"test-uploads-{uuid.uuid4()}"
++        self.directory.mkdir()
++        self.addCleanup(shutil.rmtree, self.directory)
++
++    def test_relative_uploads(self):
++        for filename in ("photo.jpg", "images/photo.jpg", "images\\photo.jpg"):
++            with self.subTest(filename=filename):
++                expected = self.directory / filename.replace("\\", "/")
++                self.assertEqual(safe_upload_path(self.directory, filename), str(expected.resolve()))
++
++    def test_invalid_paths(self):
++        for filename in (
++            "", ".", "..", "../outside.txt", "..\\outside.txt",
++            "../" + self.directory.name + "-other/file.txt",
++            "/outside.txt", "\\outside.txt", "C:\\outside.txt", "C:outside.txt",
++            "\\\\server\\share\\file.txt", "file\x00.txt", "file.txt:stream", "NUL", None,
++        ):
++            with self.subTest(filename=filename):
++                with self.assertRaises(ValueError):
++                    safe_upload_path(self.directory, filename)
++
++    def test_symlink_escape(self):
++        base = self.directory / "uploads"
++        outside = self.directory / "outside"
++        base.mkdir()
++        outside.mkdir()
++        try:
++            (base / "link").symlink_to(outside, target_is_directory=True)
++        except OSError as error:
++            self.skipTest(f"Symlinks unavailable: {error}")
++        with self.assertRaises(ValueError):
++            safe_upload_path(base, "link/file.txt")
++
++
++if __name__ == "__main__":
++    unittest.main()
+diff --git a/uploads.py b/uploads.py
+index a6f3ae4..79194bf 100644
+--- a/uploads.py
++++ b/uploads.py
+@@ -1,3 +1,17 @@
++import ntpath
++from pathlib import Path
++
++
+ def safe_upload_path(base_dir, filename):
+-    """Join an untrusted filename onto base_dir and return the path."""
+-    raise NotImplementedError
++    """Return an absolute upload path inside base_dir, or raise ValueError."""
++    if not isinstance(filename, str) or not filename or "\x00" in filename:
++        raise ValueError("Invalid upload filename")
++    if ntpath.isabs(filename) or ntpath.splitdrive(filename)[0] or ntpath.isreserved(filename):
++        raise ValueError("Invalid upload filename")
++
++    base = Path(base_dir).resolve()
++    # Interpret both separators so traversal checks also work across platforms.
++    path = (base / filename.replace("\\", "/")).resolve()
++    if path == base or not path.is_relative_to(base):
++        raise ValueError("Upload path must stay inside base_dir")
++    return str(path)

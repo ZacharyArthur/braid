@@ -1,0 +1,39 @@
+diff --git a/validate.py b/validate.py
+new file mode 100644
+index 0000000..7007a02
+--- /dev/null
++++ b/validate.py
+@@ -0,0 +1,33 @@
++"""Validate common email address syntax without checking delivery."""
++
++import re
++
++
++_EMAIL = re.compile(
++    r"[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+"
++    r"(?:\.[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+)*@"
++    r"(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+"
++    r"[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?"
++)
++
++
++def is_valid_email(address: str) -> bool:
++    """Return whether address has common ASCII email syntax and valid lengths."""
++    # shortcut: excludes quoted locals and internationalized addresses, upgrade if needed.
++    if not isinstance(address, str) or len(address) > 254:
++        return False
++    return len(address.partition("@")[0]) <= 64 and _EMAIL.fullmatch(address) is not None
++
++
++if __name__ == "__main__":
++    for address in ("alice@example.com", "first.last+tag@sub.example.org", "a" * 64 + "@example.com"):
++        assert is_valid_email(address), address
++    for address in (
++        None, "", "alice", "alice@localhost", " alice@example.com",
++        "alice@example.com\n", "a..b@example.com", ".a@example.com",
++        "a.@example.com", "a@@example.com", "a@-example.com",
++        "a@example-.com", "a@" + "b" * 64 + ".com",
++        "a" * 65 + "@example.com",
++        "a" * 64 + "@" + ".".join(["b" * 63] * 3),
++    ):
++        assert not is_valid_email(address), address

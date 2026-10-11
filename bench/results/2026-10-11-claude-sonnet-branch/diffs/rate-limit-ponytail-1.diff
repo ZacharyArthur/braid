@@ -1,0 +1,40 @@
+diff --git a/main.py b/main.py
+index 9cbedc7..b61e2b2 100644
+--- a/main.py
++++ b/main.py
+@@ -1,13 +1,33 @@
+-from fastapi import FastAPI
++import time
++from collections import defaultdict, deque
++
++from fastapi import Depends, FastAPI, HTTPException, Request
+ from pydantic import BaseModel
+ 
+ app = FastAPI()
+ 
++LIMIT = 10  # requests per client IP
++WINDOW = 60  # seconds
++_hits: dict[str, deque] = defaultdict(deque)
++
++
++# shortcut: in-process, per-IP; counts reset on restart and aren't shared across workers, use Redis/slowapi if you scale out
++def rate_limit(request: Request):
++    ip = request.client.host if request.client else "unknown"
++    now = time.monotonic()
++    hits = _hits[ip]
++    while hits and now - hits[0] > WINDOW:
++        hits.popleft()
++    if len(hits) >= LIMIT:
++        retry = int(WINDOW - (now - hits[0])) + 1
++        raise HTTPException(429, "Too many requests", headers={"Retry-After": str(retry)})
++    hits.append(now)
++
+ 
+ class Message(BaseModel):
+     text: str
+ 
+ 
+-@app.post("/messages")
++@app.post("/messages", dependencies=[Depends(rate_limit)])
+ def create_message(message: Message):
+     return {"ok": True, "length": len(message.text)}

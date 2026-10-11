@@ -1,0 +1,97 @@
+diff --git a/main.py b/main.py
+index 9cbedc7..df24ee7 100644
+--- a/main.py
++++ b/main.py
+@@ -1,13 +1,43 @@
+-from fastapi import FastAPI
++from collections import deque
++from math import ceil
++from threading import Lock
++from time import monotonic
++
++from fastapi import Depends, FastAPI, HTTPException, Request
+ from pydantic import BaseModel
+ 
+ app = FastAPI()
+ 
++RATE_LIMIT = 10
++RATE_WINDOW = 60
++_requests = {}
++_requests_lock = Lock()
++
++
++# shortcut: counters are per process, use a shared store for multiple workers.
++def check_rate_limit(request: Request):
++    client = request.client.host if request.client else "unknown"
++    with _requests_lock:
++        now = monotonic()
++        for key, timestamps in list(_requests.items()):
++            while timestamps and timestamps[0] <= now - RATE_WINDOW:
++                timestamps.popleft()
++            if not timestamps:
++                del _requests[key]
++        timestamps = _requests.setdefault(client, deque())
++        if len(timestamps) >= RATE_LIMIT:
++            raise HTTPException(
++                status_code=429,
++                detail="Too many requests",
++                headers={"Retry-After": str(ceil(timestamps[0] + RATE_WINDOW - now))},
++            )
++        timestamps.append(now)
++
+ 
+ class Message(BaseModel):
+     text: str
+ 
+ 
+-@app.post("/messages")
++@app.post("/messages", dependencies=[Depends(check_rate_limit)])
+ def create_message(message: Message):
+     return {"ok": True, "length": len(message.text)}
+diff --git a/test_main.py b/test_main.py
+new file mode 100644
+index 0000000..e07da32
+--- /dev/null
++++ b/test_main.py
+@@ -0,0 +1,41 @@
++import unittest
++from types import SimpleNamespace
++from unittest.mock import patch
++
++import main
++
++
++class RateLimitTests(unittest.TestCase):
++    def setUp(self):
++        main._requests.clear()
++        self.clock = patch("main.monotonic", return_value=100)
++        self.now = self.clock.start()
++        self.addCleanup(self.clock.stop)
++        self.addCleanup(main._requests.clear)
++        self.request = SimpleNamespace(client=SimpleNamespace(host="127.0.0.1"))
++
++    def test_limit_and_independent_clients(self):
++        for _ in range(main.RATE_LIMIT):
++            main.check_rate_limit(self.request)
++        with self.assertRaises(main.HTTPException) as caught:
++            main.check_rate_limit(self.request)
++        self.assertEqual(caught.exception.status_code, 429)
++        self.assertEqual(caught.exception.headers, {"Retry-After": "60"})
++        main.check_rate_limit(SimpleNamespace(client=SimpleNamespace(host="127.0.0.2")))
++
++    def test_window_expiry_and_cleanup(self):
++        for _ in range(main.RATE_LIMIT):
++            main.check_rate_limit(self.request)
++        self.now.return_value = 159.5
++        with self.assertRaises(main.HTTPException) as caught:
++            main.check_rate_limit(self.request)
++        self.assertEqual(caught.exception.headers["Retry-After"], "1")
++        self.now.return_value = 160
++        main.check_rate_limit(SimpleNamespace(client=None))
++        self.assertNotIn("127.0.0.1", main._requests)
++        main.check_rate_limit(self.request)
++        self.assertEqual(list(main._requests["127.0.0.1"]), [160])
++
++
++if __name__ == "__main__":
++    unittest.main()

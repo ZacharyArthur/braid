@@ -109,5 +109,5 @@ a task is done and checked.
 
 ## Always
 
-- braid's core rules apply to every verb: the ladder, YAGNI > KISS > DRY.
+- braid's core rules apply to every verb: the smallest complete change, YAGNI > KISS > DRY.
 - Use `braid/GLOSSARY.md` terms. Respect `braid/adr/`. Read `braid/map.md` before exploring.

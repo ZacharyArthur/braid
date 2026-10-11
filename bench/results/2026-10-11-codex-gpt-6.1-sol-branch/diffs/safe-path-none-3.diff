@@ -1,0 +1,86 @@
+diff --git a/test_uploads.py b/test_uploads.py
+new file mode 100644
+index 0000000..d0f22c0
+--- /dev/null
++++ b/test_uploads.py
+@@ -0,0 +1,43 @@
++import os
++import unittest
++from pathlib import Path
++from unittest.mock import patch
++
++from uploads import safe_upload_path
++
++
++class SafeUploadPathTests(unittest.TestCase):
++    def test_normal_filename(self):
++        directory = Path(__file__).resolve().parent
++        self.assertEqual(
++            safe_upload_path(directory, "report 2026.txt"),
++            os.path.join(os.path.realpath(directory), "report 2026.txt"),
++        )
++
++    def test_rejects_untrusted_paths(self):
++        for filename in (
++            "", ".", "..", "../secret", "..\\secret", "/secret",
++            "C:\\secret", "C:secret", "\\\\server\\share\\secret",
++            "folder/file", "folder\\file", "file:stream", "bad\x00name",
++        ):
++            with self.subTest(filename=filename):
++                with self.assertRaises(ValueError):
++                    safe_upload_path("uploads", filename)
++
++    def test_rejects_non_string_filename(self):
++        for filename in (None, b"file.txt", 123):
++            with self.subTest(filename=filename):
++                with self.assertRaises(TypeError):
++                    safe_upload_path("uploads", filename)
++
++    def test_rejects_symlink_to_sibling_directory(self):
++        directory = Path(__file__).resolve().parent
++        base = str(directory / "uploads")
++        outside = str(directory / "uploads-other")
++        with patch("uploads.os.path.realpath", side_effect=[base, outside]):
++            with self.assertRaises(ValueError):
++                safe_upload_path(base, "escape")
++
++
++if __name__ == "__main__":
++    unittest.main()
+diff --git a/uploads.py b/uploads.py
+index a6f3ae4..5274ea2 100644
+--- a/uploads.py
++++ b/uploads.py
+@@ -1,3 +1,30 @@
++import ntpath
++import os
++
++
+ def safe_upload_path(base_dir, filename):
+-    """Join an untrusted filename onto base_dir and return the path."""
+-    raise NotImplementedError
++    """Return an absolute upload path for a single untrusted filename.
++
++    Raise ValueError for invalid filenames or paths that resolve outside the
++    base directory. Callers must prevent concurrent changes to symlinks in the
++    upload directory between this check and opening the file.
++    """
++    if not isinstance(filename, str):
++        raise TypeError("filename must be a string")
++    if (
++        not filename
++        or filename in (".", "..")
++        or any(char in filename for char in ("/", "\\", "\x00", ":"))
++        or ntpath.splitdrive(filename)[0]
++    ):
++        raise ValueError("filename must be a single file name")
++
++    base = os.path.realpath(os.fsdecode(base_dir))
++    path = os.path.realpath(os.path.join(base, filename))
++    try:
++        contained = os.path.commonpath((base, path)) == base
++    except ValueError:
++        contained = False
++    if not contained or path == base:
++        raise ValueError("upload path must stay inside base_dir")
++    return path

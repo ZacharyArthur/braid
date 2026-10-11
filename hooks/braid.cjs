@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // braid hook: one script for Claude Code, Codex and ZCode.
-//   node braid.cjs session    SessionStart: inject core rules + project pointers
+//   node braid.cjs session    SessionStart: inject core rules + project pointers + codebase map
 //   node braid.cjs prompt     UserPromptSubmit: track level / drift / adhd per session
 //   node braid.cjs subagent   SubagentStart: inject core rules into subagents
 // Stdlib only, .cjs so a parent package.json with "type": "module" can't break it.
@@ -67,11 +67,11 @@ const tryRead = (p) => {
   }
 };
 
-// Keep only the active level's row of the levels table.
+// Keep only the active level's row of the levels table. The frontmatter is ponytail's, kept so syncs merge clean.
 function core(mode) {
   const text = tryRead(CORE);
   if (!text) return null;
-  const body = text
+  const body = stripFrontmatter(text)
     .split(/\r?\n/)
     .filter((line) => {
       const row = line.match(/^\|\s*\*\*(\w+)\*\*\s*\|/);
@@ -111,9 +111,14 @@ function count(text, re) {
 // Pointer lines stay short however busy the repo is: name a few, count the rest, clip long names.
 const few = (items, max = 3) =>
   items.slice(0, max).join(', ') + (items.length > max ? ` and ${items.length - max} more` : '');
-const clip = (name, max = 40) => {
-  const c = [...name];
-  return c.length > max ? `${c.slice(0, max - 1).join('')}…` : name;
+const clip = (name, max = 32) => {
+  if (Buffer.byteLength(name) <= max) return name;
+  let out = '';
+  for (const ch of name) {
+    if (Buffer.byteLength(out + ch) > max - 3) break; // room for the 3-byte ellipsis
+    out += ch;
+  }
+  return `${out}…`;
 };
 
 function pointers(cwd) {
@@ -166,6 +171,30 @@ function pointers(cwd) {
   return lines;
 }
 
+// What the code already defines, when there's no curated braid/map.md to point to. Fails open.
+// Only inside a git repo: outside one the map would walk folders with no .gitignore to respect.
+function inRepo(dir) {
+  for (let d = path.resolve(dir); ; d = path.dirname(d)) {
+    if (fs.existsSync(path.join(d, '.git'))) return true;
+    if (path.dirname(d) === d) return false;
+  }
+}
+
+function generatedMap(cwd) {
+  if (process.env.BRAID_MAP === '0' || fs.existsSync(path.join(cwd, 'braid', 'map.md')) || !inRepo(cwd)) return '';
+  // Its own process, killed at 1.5 s: a huge folder or file can't stall the session hook into its timeout.
+  try {
+    return execFileSync(process.execPath, [path.join(__dirname, 'map.cjs'), cwd], {
+      timeout: 1500,
+      stdio: ['ignore', 'pipe', 'ignore'],
+    })
+      .toString()
+      .trim();
+  } catch {
+    return '';
+  }
+}
+
 function adhd() {
   const text = tryRead(ADHD);
   return text && `ADHD MODE ACTIVE (restored by braid)\n\n${stripFrontmatter(text)}`;
@@ -173,10 +202,14 @@ function adhd() {
 
 // --- events ---
 
-// The core plus the project pointers: what a session starts with.
+// The core, the project pointers and the generated map: what a session starts with.
 function coreWithState(mode, cwd) {
   const p = pointers(cwd || process.cwd());
-  return [core(mode), p.length && `## Project state\n\n${p.map((l) => `- ${l}`).join('\n')}`]
+  return [
+    core(mode),
+    p.length && `## Project state\n\n${p.map((l) => `- ${l}`).join('\n')}`,
+    generatedMap(cwd || process.cwd()),
+  ]
     .filter(Boolean)
     .join('\n\n');
 }
@@ -207,7 +240,7 @@ function onPrompt(input, st, sid) {
     const arg = (cmd[1] || '').trim();
     const drift = arg.match(/^drift\s+(on|off)$/);
     const wasOff = st.mode === 'off';
-    // Bare command while off switches back on at full. Coming back from off sends what a session starts with: compaction may have dropped it.
+    // Bare command while off switches back on at full. Coming back from off re-sends what a session starts with: compaction may have dropped it.
     if (LEVELS.includes(arg) || arg === 'off' || (!arg && wasOff)) {
       st.mode = arg || 'full';
       changed = true;
@@ -240,7 +273,7 @@ function onPrompt(input, st, sid) {
 
   if (changed && sid) save(sid, st);
   if (st.drift && st.mode !== 'off' && !cmd)
-    out.push(`braid: ${st.mode} · YAGNI > KISS > DRY · ladder first · done means verified`);
+    out.push(`braid: ${st.mode} · YAGNI > KISS > DRY · smallest complete change first · done means verified`);
   return out.join('\n');
 }
 

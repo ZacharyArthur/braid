@@ -3,8 +3,9 @@ licenses require.
 
 ---
 
-Portions of braid (skills/braid/, skills/review/, skills/audit/, skills/debt/, hooks/braid.cjs)
-are derived from ponytail (https://github.com/DietrichGebert/ponytail), under this license:
+Portions of braid (skills/braid/, skills/review/, skills/audit/, skills/debt/, hooks/braid.cjs,
+hooks/map.cjs, the bench tasks whose task.json says "source": "ponytail", bench/ab.cjs's completeness judge)
+are based on or derived from ponytail (https://github.com/DietrichGebert/ponytail), under this license:
 
 MIT License
 

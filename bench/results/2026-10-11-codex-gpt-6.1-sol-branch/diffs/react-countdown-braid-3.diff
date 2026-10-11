@@ -1,0 +1,86 @@
+diff --git a/Countdown.jsx b/Countdown.jsx
+new file mode 100644
+index 0000000..b894d21
+--- /dev/null
++++ b/Countdown.jsx
+@@ -0,0 +1,22 @@
++import React, { useEffect, useState } from 'react';
++
++export default function Countdown({ seconds }) {
++  const duration = Number.isFinite(seconds) ? Math.max(0, Math.floor(seconds)) : 0;
++  const [remaining, setRemaining] = useState(duration);
++
++  useEffect(() => {
++    setRemaining(duration);
++    if (duration === 0) return;
++
++    let ticksLeft = duration;
++    const interval = setInterval(() => {
++      ticksLeft -= 1;
++      setRemaining(ticksLeft);
++      if (ticksLeft === 0) clearInterval(interval);
++    }, 1000);
++
++    return () => clearInterval(interval);
++  }, [seconds, duration]);
++
++  return <span role="timer">{remaining} seconds remaining</span>;
++}
+diff --git a/Countdown.test.cjs b/Countdown.test.cjs
+new file mode 100644
+index 0000000..81ba8f4
+--- /dev/null
++++ b/Countdown.test.cjs
+@@ -0,0 +1,52 @@
++const assert = require('node:assert/strict');
++const fs = require('node:fs');
++const vm = require('node:vm');
++
++// Exercise the timer lifecycle without installing a React test environment.
++const source = fs.readFileSync('Countdown.jsx', 'utf8')
++  .replace(/^import .*;\n/, '')
++  .replace('export default function', 'function')
++  .replace(/return <span[^\n]+;/, 'return remaining;');
++let remaining;
++let effect;
++let tick;
++let active = false;
++const context = {
++  useState: (initial) => {
++    remaining = initial;
++    return [remaining, (value) => { remaining = value; }];
++  },
++  useEffect: (callback) => { effect = callback; },
++  setInterval: (callback, delay) => {
++    assert.equal(delay, 1000);
++    tick = callback;
++    active = true;
++    return 1;
++  },
++  clearInterval: () => { active = false; },
++};
++vm.createContext(context);
++vm.runInContext(source, context);
++context.Countdown({ seconds: 2 });
++const cleanup = effect();
++assert.equal(remaining, 2);
++tick();
++assert.equal(remaining, 1);
++tick();
++assert.equal(remaining, 0);
++assert.equal(active, false);
++context.Countdown({ seconds: 5 });
++effect();
++assert.equal(remaining, 5);
++cleanup();
++assert.equal(active, false);
++for (const seconds of [0, -2, NaN, Infinity, '5', undefined]) {
++  context.Countdown({ seconds });
++  effect();
++  assert.equal(remaining, 0);
++  assert.equal(active, false);
++}
++context.Countdown({ seconds: 2.9 });
++effect();
++assert.equal(remaining, 2);
++console.log('Countdown self-check passed');

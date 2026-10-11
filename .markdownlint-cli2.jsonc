@@ -1,6 +1,7 @@
 // House style: one line per paragraph, compact tables, skills open with prose,
 // <placeholders> read raw by agents, bold labels in the README.
-// Vendored skills stay verbatim (UPSTREAM.md), so they aren't linted.
+// Vendored skills stay verbatim and based files keep ponytail's formatting (UPSTREAM.md), so syncs
+// merge clean; they aren't linted.
 {
   "config": {
     "MD013": false,
@@ -11,6 +12,8 @@
   },
   "globs": ["*.md", "braid/**/*.md", "skills/**/*.md"],
   "ignores": [
-    "skills/{adhd,domain-modeling,grill-me,grill-with-docs,grilling,humanizer,security-audit,systematic-debugging}/**"
+    "skills/{adhd,domain-modeling,grill-me,grill-with-docs,grilling,humanizer,security-audit,systematic-debugging}/**",
+    "skills/{review,audit,debt}/SKILL.md",
+    "skills/braid/core.md"
   ]
 }

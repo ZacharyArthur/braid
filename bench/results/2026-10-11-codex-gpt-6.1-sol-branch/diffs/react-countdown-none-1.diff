@@ -1,0 +1,36 @@
+diff --git a/Countdown.jsx b/Countdown.jsx
+new file mode 100644
+index 0000000..66e8a65
+--- /dev/null
++++ b/Countdown.jsx
+@@ -0,0 +1,30 @@
++import { useEffect, useState } from "react";
++
++/** Counts down automatically; changing seconds restarts the timer. */
++export default function Countdown({ seconds = 0 }) {
++  const duration = Number.isFinite(seconds)
++    ? Math.max(0, Math.floor(seconds))
++    : 0;
++  const [remaining, setRemaining] = useState(duration);
++
++  useEffect(() => {
++    setRemaining(duration);
++    if (duration === 0) return;
++
++    // Derive the remaining time from a deadline to avoid interval drift.
++    const deadline = Date.now() + duration * 1000;
++    const interval = setInterval(() => {
++      const next = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
++      setRemaining(next);
++      if (next === 0) clearInterval(interval);
++    }, 1000);
++
++    return () => clearInterval(interval);
++  }, [duration]);
++
++  return (
++    <span role="timer" aria-label={`${remaining} seconds remaining`}>
++      {remaining}
++    </span>
++  );
++}

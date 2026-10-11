@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // braid A/B benchmark: the same tasks through Claude Code or Codex with braid, ponytail, or no plugin.
 //
-//   node bench/ab.cjs [--agent claude|codex] [--model m] [--runs 3] [--tasks a,b] [--arms braid,ponytail,none] [--label x] [--fake]
+//   node bench/ab.cjs [--agent claude|codex] [--model m] [--runs 3] [--tasks a,b] [--arms braid,ponytail,none] [--label x] [--judge opus] [--fake]
 //
 // Each run copies bench/tasks/<task>/files into a fresh git repo, runs the agent there with only
 // that arm's rules, then measures the diff, runs the task's check, and probes for DRY.
@@ -10,6 +10,8 @@
 //   codex:  `codex exec` with --ignore-user-config (skips installed plugins); the arm's always-on
 //           text goes in as developer_instructions: braid's own hook output for that run dir,
 //           or ponytail's own instruction builder.
+// Each real run's diff also goes to a blind judge (`claude -p`, --judge model) that scores completeness
+// 0 (stub) to 3 (fully done): less code only counts if it still does the job. Idea: ponytail's complete.py.
 // --fake skips the agent: it applies the task's reference solution (arms braid, ponytail) or
 // nothing (arm none), to test the harness and the checks without spending tokens.
 // Results: bench/results/<date>-<agent>-<model>[-label][-n]/ (report.md, runs.jsonl, one .diff per run),
@@ -50,6 +52,7 @@ const codexDefaultModel = () => {
   } // no config: let Codex pick its own default
 };
 const MODEL = opt('model') ?? (AGENT === 'codex' ? codexDefaultModel() : 'sonnet');
+const JUDGE = opt('judge', 'opus');
 const RUNS = Number(opt('runs', FAKE ? 1 : 3));
 const ARMS = opt('arms', 'braid,ponytail,none').split(',');
 const TASK_IDS = opt('tasks', fs.readdirSync(TASKS).join(',')).split(',');
@@ -91,7 +94,7 @@ const ENV = {
   PATH: PYTHON && path.isAbsolute(PYTHON) ? path.dirname(PYTHON) + path.delimiter + process.env.PATH : process.env.PATH,
 };
 
-// ponytail at the commit braid is derived from: the pin lives only in UPSTREAM.md.
+// ponytail at the commit braid is based on: the pin lives only in UPSTREAM.md.
 function ponytailDir() {
   const sha = fs.readFileSync(path.join(ROOT, 'UPSTREAM.md'), 'utf8').match(/^\| `braid` \|.*\| ([0-9a-f]{40}) \|/m)[1];
   const dir = path.join(WORK, `ponytail-${sha.slice(0, 8)}`);
@@ -152,8 +155,14 @@ function rulesFor(arm, cwd) {
     }).stdout.toString();
     return JSON.parse(out).hookSpecificOutput.additionalContext;
   }
-  if (arm === 'ponytail')
-    return require(path.join(ponytailDir(), 'hooks', 'ponytail-instructions.js')).getPonytailInstructions('full');
+  if (arm === 'ponytail') {
+    // Its session hook appends its codebase map, as braid's does.
+    const hooks = path.join(ponytailDir(), 'hooks');
+    const map = require(path.join(hooks, 'ponytail-map.js')).buildMap(cwd);
+    return (
+      require(path.join(hooks, 'ponytail-instructions.js')).getPonytailInstructions('full') + (map ? `\n\n${map}` : '')
+    );
+  }
   return null;
 }
 
@@ -202,6 +211,55 @@ function codex(task, arm, cwd) {
 
 const TEST_FILE = /(^|\/)(tests?\/|test_[^/]*$|[^/]*_test\.[^/]+$|[^/]*\.(test|spec)\.[^/]+$)/;
 
+const RUBRIC = [
+  'You check whether a code change ACTUALLY IMPLEMENTS the task it was given. Judge completeness only:',
+  'ignore style, size, performance and security. A stub, a placeholder or a change that skips the core',
+  'behavior asked for is incomplete. Score 0-3: 0 = stub or nothing the task asked; 1 = partial, the core',
+  'behavior is missing or broken; 2 = works but a stated requirement is missing; 3 = fully does the task.',
+  'Reply with only this JSON: {"completeness": <0-3>, "missing": "<the most important missing piece, or none>"}',
+].join(' ');
+
+// Blind: corner-cut markers and tool names would tell the judge which arm wrote the code, and it runs
+// in an empty folder so it can't read the run dirs, whose names carry the arm.
+function complete(task, diff, reply) {
+  if (FAKE) return null;
+  const blind = path.join(WORK, 'judge');
+  fs.mkdirSync(blind, { recursive: true });
+  const submission = `${diff}\n\nAgent's reply:\n${reply}`
+    .replace(/\b(shortcut|braid|ponytail)(\(\w+\))?:/gi, 'note:')
+    .replace(/\b(braid|ponytail|yagni|kiss|dry)\b/gi, 'note');
+  const r = spawnSync(
+    'claude',
+    [
+      '-p',
+      '--model',
+      JUDGE,
+      '--output-format',
+      'json',
+      '--setting-sources',
+      'project,local',
+      '--no-session-persistence',
+    ],
+    {
+      input: `${RUBRIC}\n\nTask: ${promptFor(task)}\n\nSubmission (a diff):\n${submission}`,
+      cwd: blind,
+      env: ENV,
+      timeout: 300000,
+      maxBuffer: 64 << 20,
+    },
+  );
+  // Only a clean run with a whole number 0-3 counts; anything else is no score, never a guess.
+  if (r.status !== 0) return null;
+  try {
+    const out = JSON.parse(r.stdout.toString());
+    if (out.is_error) return null;
+    const { completeness } = JSON.parse(out.result.match(/\{[\s\S]*\}/)[0]);
+    return Number.isInteger(completeness) && completeness >= 0 && completeness <= 3 ? completeness : null;
+  } catch {
+    return null;
+  }
+}
+
 function check(task, dir, cwd) {
   if (!task.check) return null;
   const file = path.join(dir, task.check);
@@ -236,7 +294,8 @@ function once(id, arm, i, outDir) {
     : (AGENT === 'codex' ? codex : claude)(task, arm, cwd);
 
   git(cwd, 'add', '-A');
-  fs.writeFileSync(path.join(outDir, 'diffs', `${id}-${arm}-${i}.diff`), redact(git(cwd, 'diff', '--cached')));
+  const diff = git(cwd, 'diff', '--cached');
+  fs.writeFileSync(path.join(outDir, 'diffs', `${id}-${arm}-${i}.diff`), redact(diff));
   // Code and tests are counted apart: a test file the core rules asked for isn't bloat.
   let added = 0,
     removed = 0,
@@ -260,6 +319,7 @@ function once(id, arm, i, outDir) {
     removed,
     tests,
     check: check(task, dir, cwd),
+    complete: agent.error ? null : complete(task, diff, agent.reply),
     dry: dry(task, cwd),
   };
   fs.rmSync(cwd, { recursive: true, force: true }); // the diff is saved; the run dir is throwaway
@@ -276,6 +336,10 @@ const tally = (rs, key) => {
   if (vals.every((v) => v === 'skipped')) return 'skipped';
   return `${vals.filter((v) => v === true).length}/${vals.length}`;
 };
+const scored = (rs) => {
+  const s = rs.map((r) => r.complete).filter((v) => typeof v === 'number');
+  return s.length ? median(s) : '-';
+};
 const cost = (rs) => (rs.some((r) => r.cost === null) ? '-' : median(rs.map((r) => r.cost)).toFixed(4));
 
 function report(results) {
@@ -284,7 +348,7 @@ function report(results) {
     for (const arm of ARMS) {
       const rs = results.filter((r) => r.task === id && r.arm === arm);
       rows.push(
-        `| ${id} | ${arm} | +${median(rs.map((r) => r.added))} −${median(rs.map((r) => r.removed))} | ${median(rs.map((r) => r.tests || 0))} | ${tally(rs, 'check')} | ${tally(rs, 'dry')} | ${median(rs.map((r) => r.tokens))} | ${cost(rs)} | ${median(rs.map((r) => r.seconds)).toFixed(1)} | ${median(rs.map((r) => r.turns))} | ${rs.filter((r) => r.error).length} |`,
+        `| ${id} | ${arm} | +${median(rs.map((r) => r.added))} −${median(rs.map((r) => r.removed))} | ${median(rs.map((r) => r.tests || 0))} | ${tally(rs, 'check')} | ${scored(rs)} | ${tally(rs, 'dry')} | ${median(rs.map((r) => r.tokens))} | ${cost(rs)} | ${median(rs.map((r) => r.seconds)).toFixed(1)} | ${median(rs.map((r) => r.turns))} | ${rs.filter((r) => r.error).length} |`,
       );
     }
   return [
@@ -292,8 +356,8 @@ function report(results) {
     '',
     `${new Date().toISOString().slice(0, 10)} · arms: ${ARMS.join(', ')} · medians · python checks: ${PYTHON ? pyVersion(PYTHON) : 'skipped (no Python 3)'}`,
     '',
-    `| task | arm | code | tests | check | DRY | tokens | cost $ | time s | ${AGENT === 'codex' ? 'steps' : 'turns'} | errors |`,
-    '|---|---|--:|--:|:-:|:-:|--:|--:|--:|--:|--:|',
+    `| task | arm | code | tests | check | complete | DRY | tokens | cost $ | time s | ${AGENT === 'codex' ? 'steps' : 'turns'} | errors |`,
+    '|---|---|--:|--:|:-:|:-:|:-:|--:|--:|--:|--:|--:|',
     ...rows,
     '',
     'DRY probes: ' +
@@ -339,7 +403,9 @@ for (const id of TASK_IDS)
       results.push(r);
       fs.appendFileSync(path.join(outDir, 'runs.jsonl'), `${JSON.stringify(r)}\n`);
       console.log(
-        r.error ? `error: ${r.error}` : `+${r.added} −${r.removed} tests=${r.tests} check=${r.check} dry=${r.dry}`,
+        r.error
+          ? `error: ${r.error}`
+          : `+${r.added} −${r.removed} tests=${r.tests} check=${r.check} complete=${r.complete} dry=${r.dry}`,
       );
     }
 fs.writeFileSync(path.join(outDir, 'report.md'), report(results));

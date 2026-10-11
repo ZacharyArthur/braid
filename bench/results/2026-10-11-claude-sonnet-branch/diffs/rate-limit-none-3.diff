@@ -1,0 +1,54 @@
+diff --git a/main.py b/main.py
+index 9cbedc7..ba886ed 100644
+--- a/main.py
++++ b/main.py
+@@ -1,13 +1,47 @@
+-from fastapi import FastAPI
++import time
++from collections import defaultdict, deque
++from threading import Lock
++
++from fastapi import Depends, FastAPI, HTTPException, Request
+ from pydantic import BaseModel
+ 
+ app = FastAPI()
+ 
+ 
++class RateLimiter:
++    """In-memory sliding-window limiter, keyed by client IP.
++
++    State is per-process; use a shared store (e.g. Redis) if you run
++    multiple workers.
++    """
++
++    def __init__(self, max_requests: int, window_seconds: int):
++        self.max_requests = max_requests
++        self.window = window_seconds
++        self.hits = defaultdict(deque)
++        self.lock = Lock()
++
++    def __call__(self, request: Request):
++        key = request.client.host if request.client else "unknown"
++        now = time.monotonic()
++        with self.lock:
++            q = self.hits[key]
++            while q and now - q[0] >= self.window:
++                q.popleft()
++            if len(q) >= self.max_requests:
++                retry_after = max(1, int(self.window - (now - q[0])) + 1)
++                raise HTTPException(
++                    status_code=429,
++                    detail="Too many requests",
++                    headers={"Retry-After": str(retry_after)},
++                )
++            q.append(now)
++
++
+ class Message(BaseModel):
+     text: str
+ 
+ 
+-@app.post("/messages")
++@app.post("/messages", dependencies=[Depends(RateLimiter(max_requests=5, window_seconds=60))])
+ def create_message(message: Message):
+     return {"ok": True, "length": len(message.text)}

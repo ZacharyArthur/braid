@@ -1,0 +1,26 @@
+diff --git a/debounce.js b/debounce.js
+new file mode 100644
+index 0000000..9c122fa
+--- /dev/null
++++ b/debounce.js
+@@ -0,0 +1,20 @@
++function debounce(fn, delay) {
++  let timer;
++  return function (...args) {
++    clearTimeout(timer);
++    timer = setTimeout(() => fn.apply(this, args), delay);
++  };
++}
++
++module.exports = debounce;
++
++if (require.main === module) {
++  const assert = require('assert');
++  const calls = [];
++  const d = debounce((x) => calls.push(x), 50);
++  d(1); d(2); d(3);
++  setTimeout(() => {
++    assert.deepStrictEqual(calls, [3]);
++    console.log('ok');
++  }, 120);
++}

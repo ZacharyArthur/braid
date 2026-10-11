@@ -1,0 +1,40 @@
+diff --git a/main.py b/main.py
+index 9cbedc7..5d2488e 100644
+--- a/main.py
++++ b/main.py
+@@ -1,13 +1,33 @@
+-from fastapi import FastAPI
++import time
++from collections import defaultdict, deque
++
++from fastapi import Depends, FastAPI, HTTPException, Request
+ from pydantic import BaseModel
+ 
+ app = FastAPI()
+ 
++RATE_LIMIT = 5  # requests
++RATE_WINDOW = 60  # seconds
++
++# braid(yagni): in-memory per-process sliding window keyed by client IP; use Redis if running multiple workers
++_hits: dict[str, deque] = defaultdict(deque)
++
++
++def rate_limit(request: Request):
++    now = time.monotonic()
++    hits = _hits[request.client.host]
++    while hits and now - hits[0] > RATE_WINDOW:
++        hits.popleft()
++    if len(hits) >= RATE_LIMIT:
++        retry_after = int(RATE_WINDOW - (now - hits[0])) + 1
++        raise HTTPException(429, "Too many requests", headers={"Retry-After": str(retry_after)})
++    hits.append(now)
++
+ 
+ class Message(BaseModel):
+     text: str
+ 
+ 
+-@app.post("/messages")
++@app.post("/messages", dependencies=[Depends(rate_limit)])
+ def create_message(message: Message):
+     return {"ok": True, "length": len(message.text)}

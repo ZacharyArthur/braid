@@ -1,0 +1,99 @@
+diff --git a/__pycache__/main.cpython-314.pyc b/__pycache__/main.cpython-314.pyc
+new file mode 100644
+index 0000000..4010543
+Binary files /dev/null and b/__pycache__/main.cpython-314.pyc differ
+diff --git a/__pycache__/test_main.cpython-314.pyc b/__pycache__/test_main.cpython-314.pyc
+new file mode 100644
+index 0000000..dc48d72
+Binary files /dev/null and b/__pycache__/test_main.cpython-314.pyc differ
+diff --git a/main.py b/main.py
+index 9cbedc7..0da9d5f 100644
+--- a/main.py
++++ b/main.py
+@@ -1,13 +1,47 @@
+-from fastapi import FastAPI
++from collections import deque
++from math import ceil
++from threading import Lock
++from time import monotonic
++
++from fastapi import FastAPI, HTTPException, Request
+ from pydantic import BaseModel
+ 
+ app = FastAPI()
+ 
++RATE_LIMIT = 10
++RATE_WINDOW = 60
++_requests = {}
++_rate_lock = Lock()
++
++
++def check_rate_limit(request: Request):
++    client = request.client.host if request.client else "unknown"
++    # braid(yagni): per-process state; use a shared store for multiple workers.
++    with _rate_lock:
++        now = monotonic()
++        for key in list(_requests):
++            timestamps = _requests[key]
++            while timestamps and timestamps[0] <= now - RATE_WINDOW:
++                timestamps.popleft()
++            if not timestamps:
++                del _requests[key]
++
++        timestamps = _requests.setdefault(client, deque())
++        if len(timestamps) >= RATE_LIMIT:
++            retry_after = ceil(timestamps[0] + RATE_WINDOW - now)
++            raise HTTPException(
++                status_code=429,
++                detail="Too many requests",
++                headers={"Retry-After": str(retry_after)},
++            )
++        timestamps.append(now)
++
+ 
+ class Message(BaseModel):
+     text: str
+ 
+ 
+ @app.post("/messages")
+-def create_message(message: Message):
++def create_message(message: Message, request: Request):
++    check_rate_limit(request)
+     return {"ok": True, "length": len(message.text)}
+diff --git a/test_main.py b/test_main.py
+new file mode 100644
+index 0000000..2886841
+--- /dev/null
++++ b/test_main.py
+@@ -0,0 +1,31 @@
++import unittest
++from unittest.mock import patch
++
++from fastapi.testclient import TestClient
++
++import main
++
++
++class RateLimitTest(unittest.TestCase):
++    def test_limit_isolation_expiry_and_forwarded_header(self):
++        main._requests.clear()
++        with patch("main.monotonic", return_value=100) as clock:
++            with TestClient(main.app, client=("192.0.2.1", 1234)) as client:
++                for _ in range(main.RATE_LIMIT):
++                    response = client.post("/messages", json={"text": "hello"})
++                    self.assertEqual(response.json(), {"ok": True, "length": 5})
++                response = client.post(
++                    "/messages", json={"text": "hello"},
++                    headers={"X-Forwarded-For": "192.0.2.99"},
++                )
++                self.assertEqual(response.status_code, 429)
++                self.assertEqual(response.headers["Retry-After"], "60")
++                with TestClient(main.app, client=("192.0.2.2", 1234)) as other:
++                    self.assertEqual(other.post("/messages", json={"text": "hi"}).status_code, 200)
++                clock.return_value = 160
++                self.assertEqual(client.post("/messages", json={"text": "hi"}).status_code, 200)
++                self.assertNotIn("192.0.2.2", main._requests)
++
++
++if __name__ == "__main__":
++    unittest.main()

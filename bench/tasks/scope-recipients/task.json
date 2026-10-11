@@ -1,0 +1,1 @@
+{ "source": "ponytail", "prompt": "Our mail provider bills per message. Make `mailer.send` accept a list of recipients so the weekly digest goes out as a single message to all subscribers.", "check": "check.py" }

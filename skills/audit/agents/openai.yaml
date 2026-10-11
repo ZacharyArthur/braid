@@ -1,5 +1,5 @@
 interface:
   display_name: "Braid Audit"
-  short_description: "Repo audit for over-engineering"
+  short_description: "Quality audit of a repo"
 policy:
   allow_implicit_invocation: false

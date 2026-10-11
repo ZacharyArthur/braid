@@ -1,0 +1,74 @@
+diff --git a/digest.py b/digest.py
+index 1fa547b..5dab428 100644
+--- a/digest.py
++++ b/digest.py
+@@ -3,5 +3,5 @@ import mailer
+ 
+ def send_digest(subscribers, text):
+     """Email the weekly digest to every subscriber."""
+-    for address in subscribers:
+-        mailer.send(address, "Weekly digest", text)
++    if subscribers:
++        mailer.send(subscribers, "Weekly digest", text)
+diff --git a/mailer.py b/mailer.py
+index 9bce7eb..505b487 100644
+--- a/mailer.py
++++ b/mailer.py
+@@ -2,5 +2,5 @@ OUTBOX = []  # sent messages; the provider client reads from here
+ 
+ 
+ def send(to, subject, body):
+-    """Send one email. `to` is the recipient address."""
++    """Send one email. `to` is a list of recipient addresses."""
+     OUTBOX.append({"to": to, "subject": subject, "body": body})
+diff --git a/signup.py b/signup.py
+index 37a6e0d..54e3754 100644
+--- a/signup.py
++++ b/signup.py
+@@ -2,4 +2,4 @@ import mailer
+ 
+ 
+ def welcome(address):
+-    mailer.send(address, "Welcome!", "Thanks for signing up.")
++    mailer.send([address], "Welcome!", "Thanks for signing up.")
+diff --git a/tests/test_mailer.py b/tests/test_mailer.py
+index faf8d01..7045e3f 100644
+--- a/tests/test_mailer.py
++++ b/tests/test_mailer.py
+@@ -1,14 +1,34 @@
+ import mailer
+ import signup
++import digest
+ 
+ 
+ def test_send():
+     mailer.OUTBOX.clear()
+-    mailer.send("a@example.com", "Hi", "Body")
+-    assert mailer.OUTBOX[-1]["to"] == "a@example.com"
++    recipients = ["a@example.com", "b@example.com"]
++    mailer.send(recipients, "Hi", "Body")
++    assert mailer.OUTBOX == [{"to": recipients, "subject": "Hi", "body": "Body"}]
+ 
+ 
+ def test_welcome():
+     mailer.OUTBOX.clear()
+     signup.welcome("new@example.com")
++    assert mailer.OUTBOX[-1]["to"] == ["new@example.com"]
+     assert mailer.OUTBOX[-1]["subject"] == "Welcome!"
++
++
++def test_digest_sends_one_message():
++    mailer.OUTBOX.clear()
++    subscribers = ["a@example.com", "b@example.com"]
++    digest.send_digest(subscribers, "This week's news")
++    assert mailer.OUTBOX == [{
++        "to": subscribers,
++        "subject": "Weekly digest",
++        "body": "This week's news",
++    }]
++
++
++def test_digest_without_subscribers():
++    mailer.OUTBOX.clear()
++    digest.send_digest([], "This week's news")
++    assert mailer.OUTBOX == []

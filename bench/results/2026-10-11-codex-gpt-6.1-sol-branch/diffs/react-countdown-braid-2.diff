@@ -1,0 +1,94 @@
+diff --git a/Countdown.jsx b/Countdown.jsx
+new file mode 100644
+index 0000000..3eabbbf
+--- /dev/null
++++ b/Countdown.jsx
+@@ -0,0 +1,24 @@
++import { useEffect, useState } from 'react';
++
++export default function Countdown({ seconds }) {
++  const initialSeconds = Number.isFinite(seconds)
++    ? Math.max(0, Math.floor(seconds))
++    : 0;
++  const [remaining, setRemaining] = useState(initialSeconds);
++
++  useEffect(() => {
++    setRemaining(initialSeconds);
++    if (initialSeconds === 0) return;
++
++    let next = initialSeconds;
++    const interval = setInterval(() => {
++      next -= 1;
++      setRemaining(next);
++      if (next === 0) clearInterval(interval);
++    }, 1000);
++
++    return () => clearInterval(interval);
++  }, [initialSeconds]);
++
++  return <span role="timer">{remaining}</span>;
++}
+diff --git a/Countdown.test.cjs b/Countdown.test.cjs
+new file mode 100644
+index 0000000..f15e6bc
+--- /dev/null
++++ b/Countdown.test.cjs
+@@ -0,0 +1,58 @@
++const assert = require('node:assert/strict');
++const fs = require('node:fs');
++const vm = require('node:vm');
++
++// Exercise the component's effects without requiring a React installation.
++const source = fs.readFileSync(`${__dirname}/Countdown.jsx`, 'utf8')
++  .replace(/^import .*;\r?\n/, '')
++  .replace('export default function', 'function')
++  .replace('<span role="timer">{remaining}</span>', 'remaining');
++let value;
++let cleanup;
++let dependencies;
++let tick;
++let active = false;
++const context = vm.createContext({
++  useState(initial) {
++    if (value === undefined) value = initial;
++    return [value, (next) => { value = next; }];
++  },
++  useEffect(effect, nextDependencies) {
++    if (dependencies && dependencies[0] === nextDependencies[0]) return;
++    cleanup?.();
++    dependencies = nextDependencies;
++    cleanup = effect();
++  },
++  setInterval(callback, delay) {
++    assert.equal(delay, 1000);
++    tick = callback;
++    active = true;
++    return 1;
++  },
++  clearInterval(id) {
++    assert.equal(id, 1);
++    active = false;
++  },
++});
++vm.runInContext(source, context);
++const render = (seconds) => context.Countdown({ seconds });
++assert.equal(render(2), 2);
++tick();
++assert.equal(render(2), 1);
++tick();
++assert.equal(render(2), 0);
++assert.equal(active, false);
++render(3);
++assert.equal(render(3), 3);
++assert.equal(active, true);
++cleanup();
++assert.equal(active, false);
++for (const seconds of [-1, NaN, Infinity, undefined]) {
++  render(seconds);
++  assert.equal(render(seconds), 0);
++  assert.equal(active, false);
++}
++render(2.9);
++assert.equal(render(2.9), 2);
++cleanup();
++console.log('Countdown checks passed: ticks, zero, reset, cleanup, and input normalization.');

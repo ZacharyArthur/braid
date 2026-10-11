@@ -8,7 +8,8 @@ after compaction, can pick up from it.
 2. **Load context.** Read `proposal.md`, the delta specs, `design.md` if it
    exists, `tasks.md`, and `braid/map.md`.
 3. **Work the first unchecked task**, then the next, in order:
-   - Implement it under braid's core rules. The deltas say *what*; the ladder
+   - Implement it under braid's core rules. The deltas say *what*; the core's
+     smallest complete change
      decides *how little*.
    - Run its check. Quote the result.
    - Tick it in `tasks.md` right away, not in a batch at the end.

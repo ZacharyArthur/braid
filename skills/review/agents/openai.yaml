@@ -1,5 +1,5 @@
 interface:
   display_name: "Braid Review"
-  short_description: "Diff review for over-engineering"
+  short_description: "Quality review of a change"
 policy:
   allow_implicit_invocation: false

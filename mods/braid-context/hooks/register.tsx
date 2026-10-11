@@ -24,7 +24,7 @@ const record = (line: string) => {
 // Mods can't read Claude Code's own prompt_cache figures (the status line gets them), so the TTL comes
 // from the transcript's last cache write: Anthropic's own 5m/1h split. Whole response records only, so
 // a "cache_creation" quoted in a prompt or a tool's output can't mislead it.
-// braid(yagni): $.fs.read stops at 4 MiB, past that the last TTL read stands; read
+// shortcut(yagni): $.fs.read stops at 4 MiB, past that the last TTL read stands; read
 // $.session.usage()'s prompt cache instead once mods get it.
 async function ttlFromTranscript($: $, path: string): Promise<Ttl | undefined> {
   let text: string;

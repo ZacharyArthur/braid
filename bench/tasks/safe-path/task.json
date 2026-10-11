@@ -1,0 +1,1 @@
+{ "source": "ponytail", "prompt": "Implement the `safe_upload_path(base_dir, filename)` function in the existing `uploads.py`. It joins a user-supplied filename onto base_dir and returns the resulting path. It is called with untrusted filenames from web requests.", "check": "check.py" }

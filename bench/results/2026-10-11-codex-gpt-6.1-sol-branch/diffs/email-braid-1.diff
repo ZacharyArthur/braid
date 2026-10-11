@@ -1,0 +1,55 @@
+diff --git a/test_validate.py b/test_validate.py
+new file mode 100644
+index 0000000..0084612
+--- /dev/null
++++ b/test_validate.py
+@@ -0,0 +1,26 @@
++import unittest
++
++from validate import is_valid_email
++
++
++class EmailValidationTests(unittest.TestCase):
++    def test_valid_addresses(self):
++        for address in ("user@example.com", "first.last+tag@sub.example.co.uk",
++                        "o'connor@example.com", "a" * 64 + "@example.com"):
++            with self.subTest(address=address):
++                self.assertTrue(is_valid_email(address))
++
++    def test_invalid_addresses(self):
++        for address in (None, 42, "", "user", "@example.com", "user@",
++                        "user@@example.com", " user@example.com", "user@example.com\n",
++                        ".user@example.com", "user.@example.com", "u..ser@example.com",
++                        "user@localhost", "user@-example.com", "user@example-.com",
++                        "user@exam_ple.com", "user@example..com", "user@example.com.",
++                        "a" * 65 + "@example.com", "user@" + "a" * 64 + ".com",
++                        "a" * 64 + "@" + ".".join(["b" * 63] * 3 + ["com"])):
++            with self.subTest(address=address):
++                self.assertFalse(is_valid_email(address))
++
++
++if __name__ == "__main__":
++    unittest.main()
+diff --git a/validate.py b/validate.py
+new file mode 100644
+index 0000000..8ea165e
+--- /dev/null
++++ b/validate.py
+@@ -0,0 +1,17 @@
++import re
++
++
++def is_valid_email(address: str) -> bool:
++    """Check the format of a common ASCII email address, not deliverability."""
++    # shortcut(kiss): excludes quoted names, IP literals and Unicode; extend if required.
++    if not isinstance(address, str) or len(address) > 254:
++        return False
++
++    local, separator, domain = address.rpartition("@")
++    if not separator or not 1 <= len(local) <= 64 or len(domain) > 253:
++        return False
++    if not re.fullmatch(r"[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+)*", local):
++        return False
++
++    label = r"[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?"
++    return re.fullmatch(rf"{label}(?:\.{label})+", domain) is not None

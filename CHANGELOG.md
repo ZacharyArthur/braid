@@ -2,8 +2,14 @@
 
 All notable changes to braid. Versions follow semver: major = a skill renamed or removed, or the `braid/` layout changed; minor = a new skill or verb; patch = wording and upstream syncs.
 
-## [Unreleased]
+## [1.3.0] - 2026-10-11
 
+- Based on ponytail 5 (ADR 0012): braid's core, `review`, `audit` and `debt` now carry ponytail's own text at the pinned release, with braid's renames and added blocks on top, so each ponytail release is a three-way merge instead of a rewrite. UPSTREAM.md gains the **based** kind.
+- Core: ponytail 5's rules (read every place a change must reach first, the 6-rung ladder, finish every caller, test and fixture a change breaks, keep the codebase's structure, moved code keeps its checks, one closing line on what was skipped or not checked and any risk), plus braid's precedence, KISS, DRY and "done means verified" blocks. Always-on drops from ~1.9k to ~1.5k tokens worst case before the map; AGENTS.md's budget priority is now "within ~300 tokens of ponytail's".
+- Corner cuts are marked `shortcut(<strand>):`, so users' code no longer carries braid's name; `debt`, `review`, `audit` and `xreview` still read `braid(<strand>):` and plain `shortcut:`.
+- `review` and `audit` are now quality reviews: bugs, risks, load, missing tests, speed, then lean cuts, numbered in must / should / nice groups with a verdict. Lean findings keep braid's one-line strand tags, plus `split:`.
+- Codebase map at session start (ponytail's, based, in `hooks/map.cjs`): the top-level names per folder, within 2,000 bytes, only inside a git repo (tracked files, and untracked ones git doesn't ignore) with no `braid/map.md`; `BRAID_MAP=0` turns it off. It runs in its own process, killed at 1.5 s, so it never blocks or fails the session. Project-state names are clipped by bytes. Worst-case always-on with the map: ~2k tokens, within ~300 of ponytail's worst case, which `check.cjs` now enforces.
+- Bench: a blind completeness judge (0 stub to 3 done) on every real run, and three hidden-check tasks from ponytail's set: `safe-path`, `scope-rename`, `scope-recipients`.
 - `braid-context` 0.1.1: the band follows each main-thread response, so context and spend move during a long turn instead of at its end.
 - Upstream sync: `grilling` words each question so "yes" takes the recommendation; `adhd`'s lead-with-the-action example drops the install command; `systematic-debugging`'s secret probes no longer echo values. Other non-ponytail pins bumped with nothing to take. Ideas from the design and map sources (rewritten, per ADR 0008): `design` states its read of the page in one line before building, treats a redesign as a replacement, adds tells (heading eyebrows, empty section numbers, gradient text, side-stripe cards, mono as costume, div-built fake screenshots, mid-page theme flips), copy and tabular-number checks, and runs its pre-ship check in one batched pass; `map` names the most-imported modules and never copies secrets. `map` and `design` sources are now pinned, so `scripts/upstream.cjs` reports their drift too.
 

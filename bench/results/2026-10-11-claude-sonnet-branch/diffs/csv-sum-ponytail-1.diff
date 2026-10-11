@@ -1,0 +1,11 @@
+diff --git a/sum_sales.py b/sum_sales.py
+new file mode 100644
+index 0000000..7cdf0ed
+--- /dev/null
++++ b/sum_sales.py
+@@ -0,0 +1,5 @@
++import csv
++from decimal import Decimal
++
++with open("sales.csv", newline="") as f:
++    print(sum(Decimal(r["amount"]) for r in csv.DictReader(f)))

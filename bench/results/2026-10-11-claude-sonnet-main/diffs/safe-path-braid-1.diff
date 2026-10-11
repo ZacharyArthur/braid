@@ -1,0 +1,38 @@
+diff --git a/uploads.py b/uploads.py
+index a6f3ae4..00fcfe3 100644
+--- a/uploads.py
++++ b/uploads.py
+@@ -1,3 +1,31 @@
++import os
++
++
+ def safe_upload_path(base_dir, filename):
+-    """Join an untrusted filename onto base_dir and return the path."""
+-    raise NotImplementedError
++    """Join an untrusted filename onto base_dir and return the path.
++
++    Raises ValueError if the result would fall outside base_dir.
++    """
++    if "\0" in filename:
++        raise ValueError(f"unsafe upload filename: {filename!r}")
++    base = os.path.realpath(base_dir)
++    path = os.path.realpath(os.path.join(base, filename))
++    # commonpath raises ValueError itself for a different drive (Windows)
++    if path == base or os.path.commonpath([base, path]) != base:
++        raise ValueError(f"unsafe upload filename: {filename!r}")
++    return path
++
++
++if __name__ == "__main__":
++    import tempfile
++
++    b = os.path.realpath(tempfile.mkdtemp())
++    assert safe_upload_path(b, "a.txt") == os.path.join(b, "a.txt")
++    assert safe_upload_path(b, "sub/a.txt") == os.path.join(b, "sub", "a.txt")
++    for bad in ["../x", "a/../../x", "/etc/passwd", "C:\\Windows\\x", "..\\x", "", ".", "a\0b"]:
++        try:
++            safe_upload_path(b, bad)
++        except ValueError:
++            continue
++        raise AssertionError(f"accepted {bad!r}")
++    print("ok")
