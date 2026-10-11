@@ -5,6 +5,7 @@ All notable changes to braid. Versions follow semver: major = a skill renamed or
 ## [Unreleased]
 
 - `braid-context` 0.1.1: the band follows each main-thread response, so context and spend move during a long turn instead of at its end.
+- Upstream sync: `grilling` words each question so "yes" takes the recommendation; `adhd`'s lead-with-the-action example drops the install command; `systematic-debugging`'s secret probes no longer echo values. Other non-ponytail pins bumped with nothing to take.
 
 ## [1.2.0] - 2026-10-08
 

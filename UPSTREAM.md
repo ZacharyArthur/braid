@@ -33,23 +33,23 @@ Every kind: bump the SHA to the commit you reviewed, even when you took nothing,
 | Skill | Kind | Repo | Path | SHA | License |
 |---|---|---|---|---|---|
 | `braid` | derived | DietrichGebert/ponytail | skills/ponytail/SKILL.md, hooks/ | 552acd5efd0aeae2583a12efe39373d2f076f25e | MIT |
-| `grilling` | vendored | mattpocock/skills | skills/productivity/grilling | d81f3a183412e71a5b1e84ca21bc1a35eea03a60 | MIT |
-| `grill-me` | vendored | mattpocock/skills | skills/productivity/grill-me | d81f3a183412e71a5b1e84ca21bc1a35eea03a60 | MIT |
-| `grill-with-docs` | vendored | mattpocock/skills | skills/engineering/grill-with-docs | d81f3a183412e71a5b1e84ca21bc1a35eea03a60 | MIT |
-| `domain-modeling` | vendored | mattpocock/skills | skills/engineering/domain-modeling | d81f3a183412e71a5b1e84ca21bc1a35eea03a60 | MIT |
-| `adhd` | vendored | ayghri/i-have-adhd | skills/i-have-adhd | 839872f9d1cd634fed642b4589ce7226199cc15f | MIT |
+| `grilling` | vendored | mattpocock/skills | skills/productivity/grilling | 49dd158d1076134a641b33efb035946536778336 | MIT |
+| `grill-me` | vendored | mattpocock/skills | skills/productivity/grill-me | 49dd158d1076134a641b33efb035946536778336 | MIT |
+| `grill-with-docs` | vendored | mattpocock/skills | skills/engineering/grill-with-docs | 49dd158d1076134a641b33efb035946536778336 | MIT |
+| `domain-modeling` | vendored | mattpocock/skills | skills/engineering/domain-modeling | 49dd158d1076134a641b33efb035946536778336 | MIT |
+| `adhd` | vendored | ayghri/i-have-adhd | skills/i-have-adhd | 723af7d9afaf43eb871dbcce6129e2bf80de90d5 | MIT |
 | `humanizer` | vendored | blader/humanizer | SKILL.md, agents/openai.yaml | 225a6f39ac85f76ee48dbad772ea4abe4ed6c9d8 | MIT |
 | `security-audit` | vendored | cloudflare/security-audit-skill | skills/security-audit | c1c8a8c1471069fb0e188eeaff69b8e8db6564a8 | MIT |
-| `systematic-debugging` | vendored | obra/superpowers | skills/systematic-debugging (minus CREATION-LOG, test-*.md) | 8ca22dba9a94f28898bbce59f2537ff4d87c747d | MIT |
+| `systematic-debugging` | vendored | obra/superpowers | skills/systematic-debugging (minus CREATION-LOG, test-*.md) | bb92a77741419a4ab5f06e711a283343f1ada0c3 | MIT |
 | `review` | derived | DietrichGebert/ponytail | skills/ponytail-review | 552acd5efd0aeae2583a12efe39373d2f076f25e | MIT |
 | `audit` | derived | DietrichGebert/ponytail | skills/ponytail-audit | 552acd5efd0aeae2583a12efe39373d2f076f25e | MIT |
 | `debt` | derived | DietrichGebert/ponytail | skills/ponytail-debt | 552acd5efd0aeae2583a12efe39373d2f076f25e | MIT |
 | `map` | clean-room | Graphify-Labs/graphify | - | - | Apache-2.0 (idea only) |
-| `spec` | derived | Fission-AI/openspec | docs/concepts.md, src/core/templates/workflows | 73583067dd6d5e774a2567741e37b2ccc3334395 | MIT |
-| `wayfind` | clean-room | mattpocock/skills | skills/engineering/wayfinder | d81f3a183412e71a5b1e84ca21bc1a35eea03a60 | MIT (idea only) |
-| `handoff` | clean-room | mattpocock/skills | skills/productivity/handoff | d81f3a183412e71a5b1e84ca21bc1a35eea03a60 | MIT (idea only) |
+| `spec` | derived | Fission-AI/openspec | docs/concepts.md, src/core/templates/workflows | 9111a7654d7800391459431fff4eaf66e33a3d2e | MIT |
+| `wayfind` | clean-room | mattpocock/skills | skills/engineering/wayfinder | 49dd158d1076134a641b33efb035946536778336 | MIT (idea only) |
+| `handoff` | clean-room | mattpocock/skills | skills/productivity/handoff | 49dd158d1076134a641b33efb035946536778336 | MIT (idea only) |
 | `xreview` | clean-room | - | - | - | - |
 | `design` | clean-room | pbakaus/impeccable, Leonxlnx/taste-skill, nextlevelbuilder/ui-ux-pro-max-skill | - | - | Apache-2.0 / MIT (ideas only) |
 | `standards` | clean-room | - | - | - | - |
-| `skill` | clean-room | anthropics/skills | skills/skill-creator | 683bc88e56f3e09ba94f7055977f3d3aa499f202 | Apache-2.0 (ideas only) |
+| `skill` | clean-room | anthropics/skills | skills/skill-creator | dbd4588f9e1033efb41dad4bef2f7947c8993d44 | Apache-2.0 (ideas only) |
 | `help` | clean-room | - | - | - | - |
