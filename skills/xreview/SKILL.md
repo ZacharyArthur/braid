@@ -32,9 +32,9 @@ Sections, in order:
    - `--open`: "You are a senior SRE and staff engineer. Decide whether this is correct and complete. 'No significant issues' is a valid, expected answer."
 2. **Intent.** What this code is supposed to do: the pointers above.
 3. **Scope.** The exact diff command or paths. Nothing outside it.
-4. **Principles.** YAGNI > KISS > DRY; rule of three. Point to `skills/braid/core.md` in the braid plugin, or paste its Rules section if the reviewer can't reach it. Flag over-building and under-building alike.
+4. **Principles.** YAGNI > KISS > DRY; rule of three. Point to `skills/braid/core.md` in the braid plugin, or paste `core.md` if the reviewer can't reach it. Flag over-building and under-building alike.
 5. **Check.** Completeness against `tasks.md` and the spec deltas; correctness and edge cases; spec and vision alignment; security basics; error handling; whether verification actually ran; ops (config, rollout, observability).
-6. **Don't flag.** Style preferences; anything an ADR already decided; speculative "what if later"; anything out of scope; a `braid(<pillar>):` corner cut whose upgrade trigger hasn't fired.
+6. **Don't flag.** Style preferences; anything an ADR already decided; speculative "what if later"; anything out of scope; a `shortcut(<strand>):` (or plain `shortcut:`, or older `braid(<strand>):`) corner cut whose upgrade trigger hasn't fired.
 7. **Method.** Two passes:
    - Find: candidates with `file:line` and evidence only. No fixes yet.
    - Refute: try to disprove each candidate against the code. Run a test or a reproduction wherever possible. Keep survivors, labelled **CONFIRMED** (shown by running something) or **PLAUSIBLE** (reasoned only). Drop the rest.

@@ -5,7 +5,7 @@ from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel
 
 app = FastAPI()
-hits = defaultdict(deque)  # braid(yagni): in-process, per-worker; shared store if you run several workers
+hits = defaultdict(deque)  # shortcut(yagni): in-process, per-worker; shared store if you run several workers
 
 
 class Message(BaseModel):

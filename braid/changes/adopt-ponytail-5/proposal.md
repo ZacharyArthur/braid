@@ -1,6 +1,6 @@
 ## Why
 
-braid started from ponytail, but its ponytail rows are "derived": every release is re-read and hand-ported, and ponytail 5 rewrote its core, review and audit. Since v5, ponytail's always-on cost is below braid's (~1.3k tokens with its map, ~1.9k for braid), against braid's first priority in AGENTS.md. Tracking ponytail's text as the base makes each release a merge, not a rewrite.
+braid started from ponytail, but its ponytail rows are "derived": every release is re-read and hand-ported, and ponytail 5 rewrote its core, review and audit. Since v5, ponytail's always-on cost is well below braid's (~1.3k tokens with its map, ~1.9k for braid). AGENTS.md's first priority becomes "within ~300 tokens of ponytail's", since braid adds the strands on top of ponytail's text. Tracking ponytail's text as the base makes each release a merge, not a rewrite.
 
 ## What changes
 
@@ -9,7 +9,7 @@ braid started from ponytail, but its ponytail rows are "derived": every release 
 - Corner-cut marker becomes `shortcut(<strand>): <ceiling>, <upgrade path>`: ponytail's neutral word, braid's strand kept. `debt`, `review`, `audit` and `xreview` still recognize `braid(<strand>):` and plain `shortcut:`.
 - `review` and `audit` become ponytail 5's quality reports (correct, safe, holds under load, tested, fast, lean; numbered findings in must / should / nice groups; verdict, lean and not-checked lines). Their lean findings use braid's strand tags plus `split:`, one line each, and keep "never flag two copies". `review` keeps braid's default target (uncommitted plus branch vs base). `xreview` stays the cold second opinion.
 - `debt` = ponytail 5's ledger with braid's marker regex, grouping by strand, and `braid/DEBT.md`.
-- Session hook gains ponytail's codebase map (vendored from `hooks/ponytail-map.js`): top-level names per folder within a character cap, only when the repo has no `braid/map.md`; `BRAID_MAP=0` turns it off; time-capped so the hook never blocks. In all three harnesses.
+- Session hook gains ponytail's codebase map (based on `hooks/ponytail-map.js`): top-level names per folder within a character cap, only when the repo has no `braid/map.md`; `BRAID_MAP=0` turns it off; time-capped so the hook never blocks. In all three harnesses.
 - Bench: the ponytail arm follows the new pin (it reads UPSTREAM.md); a completeness judge (stub vs full); three hidden-check tasks from ponytail's set (a rename that must reach every caller, path traversal, one email to many subscribers without exposing addresses). The ship gate is a real paired run.
 - Release 1.3.0: new behavior, nothing renamed or removed.
 

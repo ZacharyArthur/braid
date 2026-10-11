@@ -15,9 +15,9 @@ The always-on rules SHALL be ponytail's current rules at the pinned release, ren
 - **WHEN** ponytail changes text braid did not edit
 - **THEN** the next sync takes that text unchanged
 
-### Requirement: Always-on cost at or below ponytail's
+### Requirement: Always-on cost near ponytail's
 
-The worst-case always-on context SHALL stay within ~2.5k tokens and no larger than ponytail's own session-start output at the pinned release.
+The worst-case always-on context (session-start text plus the descriptions of skills that load on their own) SHALL stay within ~2.5k tokens and within ~300 tokens of ponytail's worst case at the pinned release.
 
 #### Scenario: Worst case
 
@@ -26,8 +26,13 @@ The worst-case always-on context SHALL stay within ~2.5k tokens and no larger th
 
 #### Scenario: Compared with ponytail
 
-- **WHEN** braid and ponytail at the pin start a session in the same repo
-- **THEN** braid's injected context is no larger than ponytail's
+- **WHEN** braid's worst case is set against ponytail's (its core, its map at the cap, its auto-loading descriptions) at the pin
+- **THEN** braid's is at most ~300 tokens larger, and the repo check fails otherwise
+
+#### Scenario: Long non-ASCII names
+
+- **WHEN** active changes or routes have long names in multi-byte characters
+- **THEN** each name in the project state is clipped by bytes, so the lines cost no more than ASCII ones
 
 ### Requirement: Closing line
 

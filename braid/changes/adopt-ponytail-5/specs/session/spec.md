@@ -2,12 +2,27 @@
 
 ### Requirement: Generated codebase map
 
-At session start, in a repo with no `braid/map.md`, the session hook SHALL add a map of the top-level functions, classes and exports of source files, one line per folder, within a fixed character cap, skipping tests, generated and vendored files, and listing shared code first.
+At session start, inside a git repo with no `braid/map.md`, the session hook SHALL add a map of the top-level functions, classes and exports of source files, one line per folder, within a fixed character cap, skipping tests, generated and vendored files, and listing shared code first.
 
 #### Scenario: Repo without a map
 
 - **WHEN** a session starts in a repo with source files and no `braid/map.md`
 - **THEN** the injected context includes the generated map, at most the cap in length
+
+#### Scenario: Not a git repo
+
+- **WHEN** a session starts in a folder that is not inside a git repo
+- **THEN** no generated map is added
+
+#### Scenario: Gitignored files
+
+- **WHEN** the repo ignores a folder in `.gitignore`
+- **THEN** untracked files in that folder never appear in the map; files git already tracks still do, as git itself lists them
+
+#### Scenario: Switching back on
+
+- **WHEN** braid is switched back on after "stop braid"
+- **THEN** the map is re-sent with the core and pointers
 
 #### Scenario: Curated map exists
 

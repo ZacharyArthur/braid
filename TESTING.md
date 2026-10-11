@@ -21,6 +21,7 @@ In a new session:
 - [ ] In a project: `/braid:spec propose add-something` → `braid/changes/add-something/` with `tasks.md`; a new session shows "Active change: braid/changes/add-something (0/N tasks)"
 - [ ] "stop braid", then `/compact` → no braid rules in context
 - [ ] Then bare `/braid:braid` → back at **full**, with the core and its Project state re-sent
+- [ ] In a repo with code and no `braid/map.md`, ask "what does this code already define?" → it quotes the injected **Codebase map**; with `BRAID_MAP=0` set before launch, no map
 - [ ] `/braid:humanizer`, `/braid:security-audit`, `/braid:help` and `/braid:skill` appear in the `/` menu; ask "make this sound less AI" without the command → humanizer does **not** auto-load
 
 ## Codex

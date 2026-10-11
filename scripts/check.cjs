@@ -176,10 +176,10 @@ let alwaysOn = 0;
     fs.writeFileSync(path.join(proj, 'map.md'), '<!-- braid:map sha=abc1234 -->\n');
     fs.writeFileSync(path.join(proj, 'HANDOFF.md'), '<!-- braid:handoff sha=abc1234 -->\n');
 
-    const hook = (event, input) => {
+    const hook = (event, input, env = {}) => {
       const out = execFileSync(process.execPath, [path.join(plugin, 'hooks', 'braid.cjs'), event], {
         input: JSON.stringify({ session_id: 'check', cwd: path.dirname(proj), ...input }),
-        env: { ...process.env, CLAUDE_PLUGIN_DATA: path.join(tmp, 'data') },
+        env: { ...process.env, BRAID_MAP: '', CLAUDE_PLUGIN_DATA: path.join(tmp, 'data'), ...env },
       }).toString();
       return out ? JSON.parse(out).hookSpecificOutput.additionalContext : '';
     };
@@ -190,6 +190,43 @@ let alwaysOn = 0;
     const start = hook('session', { source: 'startup' });
     expect(start.includes('BRAID ACTIVE — level: full'), 'default level is not full');
     expect(start.includes('**full**') && !start.includes('**lite**'), 'level table not filtered');
+    expect(!start.includes('argument-hint:'), 'core frontmatter injected');
+    // Generated map: only inside a git repo, never gitignored files, not next to braid/map.md, off with BRAID_MAP=0.
+    expect(!start.includes('Codebase map'), 'generated map added next to braid/map.md');
+    const src = path.join(tmp, 'src-proj', 'lib');
+    fs.mkdirSync(src, { recursive: true });
+    fs.writeFileSync(path.join(src, 'text.js'), 'export function slugify(s) {}\n');
+    const srcCwd = path.dirname(src);
+    fs.mkdirSync(path.join(srcCwd, 'private'));
+    fs.writeFileSync(path.join(srcCwd, 'private', 'keys.js'), 'export const IGNORED_SECRET = 1;\n');
+    fs.writeFileSync(path.join(srcCwd, '.gitignore'), 'private/\n');
+    expect(
+      !hook('session', { session_id: 'src', source: 'startup', cwd: srcCwd }).includes('Codebase map'),
+      'generated map outside a git repo',
+    );
+    execFileSync('git', ['init', '-q'], { cwd: srcCwd });
+    expect(
+      !hook('session', { session_id: 'src', source: 'startup', cwd: srcCwd }).includes('IGNORED_SECRET'),
+      'generated map lists gitignored files',
+    );
+    const stale = path.join(tmp, 'stale-worktree');
+    fs.cpSync(srcCwd, stale, { recursive: true });
+    fs.rmSync(path.join(stale, '.git'), { recursive: true });
+    fs.writeFileSync(path.join(stale, '.git'), 'gitdir: ../missing\n');
+    expect(
+      !hook('session', { session_id: 'src', source: 'startup', cwd: stale }).includes('IGNORED_SECRET'),
+      'generated map lists gitignored files when git fails',
+    );
+    expect(
+      hook('session', { session_id: 'src', source: 'startup', cwd: srcCwd }).includes('lib/: slugify'),
+      'generated map missing without braid/map.md',
+    );
+    expect(
+      !hook('session', { session_id: 'src', source: 'startup', cwd: srcCwd }, { BRAID_MAP: '0' }).includes(
+        'Codebase map',
+      ),
+      'generated map not off with BRAID_MAP=0',
+    );
     expect(
       start.includes('Active change: braid/changes/add-x (1/2 tasks).'),
       'active change pointer missing or includes queued',
@@ -211,12 +248,16 @@ let alwaysOn = 0;
       'map/handoff pointer missing',
     );
     expect(
-      hook('prompt', { prompt: '/braid:braid lite' }).includes("BRAID LEVEL: lite — Build what's asked"),
+      hook('prompt', { prompt: '/braid:braid ultra' }).includes('BRAID LEVEL: ultra — Also question the request'),
+      'ultra switch not confirmed with its table row',
+    );
+    expect(
+      hook('prompt', { prompt: '/braid:braid lite' }).includes('BRAID LEVEL: lite — Build what was asked'),
       'level switch not confirmed with its table row',
     );
     const report = hook('prompt', { prompt: '/braid:braid' });
     expect(
-      report.includes('BRAID ACTIVE — level: lite') && !report.includes('The ladder'),
+      report.includes('BRAID ACTIVE — level: lite') && !report.includes('## The smallest complete change'),
       'bare /braid:braid while on does not just report',
     );
     expect(hook('session', { source: 'compact' }).includes('level: lite'), 'level lost across compaction');
@@ -233,7 +274,7 @@ let alwaysOn = 0;
     hook('prompt', { prompt: '/braid:braid drift on' });
     expect(
       hook('prompt', { prompt: '/braid:spec propose' }) ===
-        'braid: lite · YAGNI > KISS > DRY · ladder first · done means verified',
+        'braid: lite · YAGNI > KISS > DRY · smallest complete change first · done means verified',
       'other braid skills misread as level commands',
     );
     hook('prompt', { prompt: 'stop braid' });
@@ -241,13 +282,17 @@ let alwaysOn = 0;
     // Coming back from off re-sends what a session starts with, by level or bare.
     const lite = hook('prompt', { prompt: '/braid:braid lite' });
     expect(
-      lite.includes('BRAID ACTIVE — level: lite') && lite.includes('## The ladder') && lite.includes('Active change:'),
+      lite.includes('BRAID ACTIVE — level: lite') &&
+        lite.includes('## The smallest complete change') &&
+        lite.includes('Active change:'),
       'level switch while off does not re-send the core and pointers',
     );
     hook('prompt', { prompt: 'stop braid' });
     const back = hook('prompt', { prompt: '/braid:braid' });
     expect(
-      back.includes('BRAID ACTIVE — level: full') && back.includes('## The ladder') && back.includes('Active change:'),
+      back.includes('BRAID ACTIVE — level: full') &&
+        back.includes('## The smallest complete change') &&
+        back.includes('Active change:'),
       'bare /braid:braid while off does not switch on with the core and pointers',
     );
     expect(hook('session', { source: 'compact' }).includes('level: full'), 'switch back on not remembered');
@@ -279,24 +324,53 @@ let alwaysOn = 0;
       `pointer lines not capped: ${pointerLines.map((l) => l.length)}`,
     );
 
-    // The budget is measured on the worst case: every pointer present, every list full, and
-    // names far past the clip length in 3-byte characters (braid/ and openspec/ changes both).
+    // The budget is measured on the worst case: the ultra level (the longest row), every pointer present,
+    // lists long enough for a 3-digit "and N more", ASCII names past the 32-byte clip under the longer
+    // openspec/ prefix, 4-digit counts, and 1,000 commits since the map and handoff shas. Each further
+    // digit in a count adds a quarter of a token.
     const worst = path.join(tmp, 'worst');
-    const long = (i) => `${i}-${'漢'.repeat(80)}`;
-    for (let i = 0; i < 4; i++) {
-      for (const root of ['braid', 'openspec']) {
-        fs.mkdirSync(path.join(worst, root, 'changes', long(i)), { recursive: true });
-        fs.writeFileSync(path.join(worst, root, 'changes', long(i), 'tasks.md'), '- [ ] t\n');
-        fs.mkdirSync(path.join(worst, root, 'changes', `q${long(i)}`));
-      }
-      fs.mkdirSync(path.join(worst, 'braid', 'routes'), { recursive: true });
-      fs.writeFileSync(path.join(worst, 'braid', 'routes', `${long(i)}.md`), '- [ ] open\n');
+    fs.mkdirSync(path.join(worst, 'braid', 'routes'), { recursive: true });
+    const git = (args, input) => execFileSync('git', args, { cwd: worst, input }).toString().trim();
+    git(['init', '-q']);
+    git(['symbolic-ref', 'HEAD', 'refs/heads/main']);
+    git(['fast-import', '--quiet'], 'commit refs/heads/main\ncommitter c <c@c> 0 +0000\ndata 0\n\n'.repeat(1001));
+    const sha = git(['rev-list', '--max-parents=0', 'HEAD']);
+    fs.writeFileSync(path.join(tmp, 'data', 'sessions', 'worst.json'), '{"mode":"ultra"}');
+    const long = (i) => `${i}-${'x'.repeat(80)}`;
+    const tasks = `${'- [x] t\n'.repeat(1000)}${'- [ ] t\n'.repeat(8999)}`;
+    for (let i = 0; i < 103; i++) {
+      fs.mkdirSync(path.join(worst, 'openspec', 'changes', long(i)), { recursive: true });
+      fs.writeFileSync(path.join(worst, 'openspec', 'changes', long(i), 'tasks.md'), tasks);
+      fs.mkdirSync(path.join(worst, 'openspec', 'changes', `q${long(i)}`));
+      fs.writeFileSync(path.join(worst, 'braid', 'routes', `${long(i)}.md`), '- [ ] open\n'.repeat(1000));
     }
-    fs.writeFileSync(path.join(worst, 'braid', 'map.md'), '<!-- braid:map sha=abc1234 -->\n');
-    fs.writeFileSync(path.join(worst, 'braid', 'HANDOFF.md'), '<!-- braid:handoff sha=abc1234 -->\n');
+    fs.writeFileSync(path.join(worst, 'braid', 'map.md'), `<!-- braid:map sha=${sha} -->\n`);
+    fs.writeFileSync(path.join(worst, 'braid', 'HANDOFF.md'), `<!-- braid:handoff sha=${sha} -->\n`);
     const worstOut = hook('session', { session_id: 'worst', source: 'startup', cwd: worst });
-    expect(worstOut.includes('…') && worstOut.includes('Handoff:'), 'worst-case fixture not exercised');
-    alwaysOn += Buffer.byteLength(worstOut);
+    const exercised = ['level: ultra', '…', '(1000/9999 tasks)', '(1000 open)', '1000 commits since', 'and 100 more'];
+    expect(
+      exercised.every((s) => worstOut.includes(s)),
+      'worst-case fixture not exercised',
+    );
+    // Names in multi-byte characters clip by bytes too, so they cost no more than ASCII ones.
+    const wide = (i) => `${i}-${'漢'.repeat(80)}`;
+    const cjk = path.join(tmp, 'cjk', 'braid', 'changes', wide(0));
+    fs.mkdirSync(cjk, { recursive: true });
+    fs.writeFileSync(path.join(cjk, 'tasks.md'), '- [ ] t\n');
+    const cjkName = hook('session', { session_id: 'cjk', cwd: path.join(tmp, 'cjk') }).match(/changes\/(\S+…)/);
+    expect(cjkName && Buffer.byteLength(cjkName[1]) <= 32, 'multi-byte names not clipped by bytes');
+    // The other worst case: a git repo with no braid/map.md, so the generated map fills its cap (non-ASCII folder names).
+    fs.rmSync(path.join(worst, 'braid', 'map.md'));
+    for (let i = 0; i < 30; i++) {
+      fs.mkdirSync(path.join(worst, 'src', wide(i)), { recursive: true });
+      fs.writeFileSync(path.join(worst, 'src', wide(i), 'm.js'), 'export const alpha = 1, beta = 2, gamma = 3;\n');
+      // Short folders fill the bytes the long lines leave under the cap.
+      fs.mkdirSync(path.join(worst, 'src', `z${i}`));
+      fs.writeFileSync(path.join(worst, 'src', `z${i}`, 'm.js'), 'export const a = 1;\n');
+    }
+    const worstMap = hook('session', { session_id: 'worst', source: 'startup', cwd: worst });
+    expect(worstMap.includes('more folders not listed'), 'worst-case map fixture not at its cap');
+    alwaysOn += Math.max(Buffer.byteLength(worstOut), Buffer.byteLength(worstMap));
 
     // Windows can swallow a hook's stdin so it never closes: the hook must still answer and exit
     // well inside the harness's 5 s timeout. A child keeps the pipe open and times the hook.
@@ -330,8 +404,14 @@ for (const dir of skillDirs) {
 }
 const tokens = Math.round(alwaysOn / 4);
 if (tokens > 2500) fail(`always-on budget ~${tokens} tokens > 2500`);
+// ponytail's worst case at the UPSTREAM.md pin, same bytes/4: its ultra-level core as its hook injects it, its map at
+// the cap (2,000 ASCII bytes plus header and overflow line; it caps characters, braid caps bytes) and its model-invocable skill descriptions. Re-measure on
+// every ponytail sync (UPSTREAM.md); braid stays within ~300 tokens of it (AGENTS.md, ADR 0012).
+const PONYTAIL_ALWAYS_ON = 1678;
+if (tokens > PONYTAIL_ALWAYS_ON + 300)
+  fail(`always-on ~${tokens} tokens > ponytail's ~${PONYTAIL_ALWAYS_ON} + 300 (re-measure it if ponytail moved)`);
 
-// UPSTREAM.md: one row per skill; vendored ones carry their LICENSE, derived ones' upstream
+// UPSTREAM.md: one row per skill; vendored ones carry their LICENSE, based and derived ones' upstream
 // notice (copyright line and permission text, not just a link) is in THIRD-PARTY-NOTICES.
 const notices = exists('THIRD-PARTY-NOTICES') ? read('THIRD-PARTY-NOTICES').split(/^---$/m) : [];
 const hasNotice = (repo) =>
@@ -351,10 +431,11 @@ for (const row of rows) {
     .split('|')
     .slice(1)
     .map((c) => c.trim().replace(/`/g, ''));
-  if (kind === 'derived' && !hasNotice(repo))
-    fail(`THIRD-PARTY-NOTICES: derived from ${repo} but carries no copyright notice for it`);
+  if ((kind === 'based' || kind === 'derived') && !hasNotice(repo))
+    fail(`THIRD-PARTY-NOTICES: ${kind} on ${repo} but carries no copyright notice for it`);
   if (!exists(`skills/${skill}/SKILL.md`)) fail(`UPSTREAM.md: skills/${skill} does not exist`);
-  if (!['vendored', 'derived', 'clean-room'].includes(kind)) fail(`UPSTREAM.md: ${skill} has unknown kind "${kind}"`);
+  if (!['vendored', 'based', 'derived', 'clean-room'].includes(kind))
+    fail(`UPSTREAM.md: ${skill} has unknown kind "${kind}"`);
   if (kind === 'vendored' && !exists(`skills/${skill}/LICENSE`)) fail(`skills/${skill}: vendored without LICENSE`);
   // braid's own skills stay small: each markdown file ≤ ~2k tokens.
   if (kind !== 'vendored' && exists(`skills/${skill}`)) {
@@ -370,5 +451,5 @@ if (errors.length) {
   process.exit(1);
 }
 console.log(
-  `✓ ${manifests.length} manifests, ${skillDirs.length} skills, ${rows.length} upstream rows, hook ok, always-on ~${tokens} tokens`,
+  `✓ ${manifests.length} manifests, ${skillDirs.length} skills, ${rows.length} upstream rows, hook ok, always-on ~${tokens} tokens (ponytail ~${PONYTAIL_ALWAYS_ON})`,
 );

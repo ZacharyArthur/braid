@@ -1,7 +1,7 @@
 # braid
 
 Clean-code harness plugin (always-on core plus workflow skills) for Claude Code, Codex and ZCode.
-Optimizes for, in order: always-on cost no higher than ponytail's, YAGNI > KISS > DRY in its own code,
+Optimizes for, in order: always-on cost within ~300 tokens of ponytail's, YAGNI > KISS > DRY in its own code,
 identical behavior across the three harnesses. When a feature and simplicity conflict, simplicity wins.
 
 ## Stack
@@ -13,9 +13,9 @@ identical behavior across the three harnesses. When a feature and simplicity con
 
 ## Invariants
 
-1. **Always-on injection ≤ ~2.5k tokens, worst case** (ADR 0007) (enforced by `node scripts/check.cjs`)
+1. **Always-on injection ≤ ~2.5k tokens and within ~300 of ponytail's, worst case** (ADR 0007, 0012) (enforced by `node scripts/check.cjs`)
 2. **All three manifests carry one version** (enforced by `node scripts/check.cjs`)
-3. **Every skill has an UPSTREAM.md row; vendored ones keep their `LICENSE`, derived ones have a notice in THIRD-PARTY-NOTICES** (enforced by `node scripts/check.cjs`)
+3. **Every skill has an UPSTREAM.md row; vendored ones keep their `LICENSE`, based and derived ones have a notice in THIRD-PARTY-NOTICES** (enforced by `node scripts/check.cjs`)
 4. **User-only skills are marked three ways: `disable-model-invocation`, `agents/openai.yaml`, description suffix** (ADR 0002) (enforced by `node scripts/check.cjs`)
 
 ## Commands
@@ -23,7 +23,7 @@ identical behavior across the three harnesses. When a feature and simplicity con
 Run from the repo root.
 
 - Check (manifests, frontmatter, hook smoke test, budget, provenance): `node scripts/check.cjs`
-- Lint Markdown (needs Node ≥ 22): `npx --yes markdownlint-cli2@0.23.3` · fix: add `--fix`. Files and rules: `.markdownlint-cli2.jsonc` (vendored skills excluded).
+- Lint Markdown (needs Node ≥ 22): `npx --yes markdownlint-cli2@0.23.3` · fix: add `--fix`. Files and rules: `.markdownlint-cli2.jsonc` (vendored skills and based files excluded).
 - Format + lint JS: `npx --yes @biomejs/biome@2.5.15 check --error-on-warnings` · fix: `--write`. Files: `biome.json` (not `bench/tasks/`: fixtures stay as written).
 - Tool versions are pinned here and in `.github/workflows/check.yml`; bump both together.
 - Mods (needs `claude` ≥ 2.1.287): `claude plugin validate mods/<name>` · `claude plugin test mods/<name>` · marketplace: `claude plugin validate .`
@@ -46,6 +46,7 @@ CI runs the same three. Changed `bench/` → also `node bench/ab.cjs --fake`. Ch
 - Scripts are `.cjs`, Node stdlib only. The hook never blocks (1 s stdin fallback); Node 18 is the floor. Mods are the one exception: `.ts`/`.tsx` against `claude-code` types, no imports beyond the plugin.
 - New or reversed decisions get an ADR in `braid/adr/` (numbered, one paragraph); domain terms go in `braid/GLOSSARY.md`.
 - Vendored skills: surgical edits only, committed separately from the verbatim copy; upstream syncs bump the SHA in UPSTREAM.md.
+- Based files (ponytail's text): braid edits only by renames and whole added blocks, so `git merge-file` syncs stay clean (ADR 0012).
 - Match surrounding style; comments say why, briefly.
 
 ## Git
@@ -63,4 +64,4 @@ CI runs the same three. Changed `bench/` → also `node bench/ab.cjs --fake`. Ch
 
 ## Reference
 
-- Upstream sources: [UPSTREAM.md](UPSTREAM.md). Vendored → merge upstream diffs; derived and clean-room → consult for ideas, don't port (ADR 0008).
+- Upstream sources: [UPSTREAM.md](UPSTREAM.md). Vendored → merge upstream diffs; based (ponytail) → three-way merge (ADR 0012); derived and clean-room → consult for ideas, don't port (ADR 0008).

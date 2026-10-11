@@ -34,8 +34,9 @@ any skill can load when a prompt matches it.
 
 The core rules (YAGNI > KISS > DRY) are injected every session and after
 compaction, with one-line pointers to the active change, route, repo map and
-handoff. ZCode never re-injects after `/compact`; there `drift on` restates the
-level on every prompt. `/braid:braid lite|full|ultra` sets the level, `drift on|off` toggles
+handoff, and, in a git repo with no `braid/map.md`, a generated map of what the
+code already defines (`BRAID_MAP=0` turns it off). ZCode never re-injects
+after `/compact`; there `drift on` restates the level on every prompt. `/braid:braid lite|full|ultra` sets the level, `drift on|off` toggles
 a per-prompt reminder, "stop braid" turns it off for the session.
 
 ### Skills
@@ -52,9 +53,9 @@ a per-prompt reminder, "stop braid" turns it off for the session.
 | `spec` | Planning, building and recording changes: `propose`, `apply`, `archive`, `discover` | `<verb> [name or description]` |
 | `standards` | Writing or reviewing the project's `AGENTS.md`: commands, quality gate, conventions, git workflow | `[section]` |
 | `handoff` | Ending a session someone else will continue: `braid/HANDOFF.md` | - |
-| `review` | Checking a diff for over-engineering | `[diff target]` |
-| `audit` | Checking a whole repo or path for over-engineering | `[path]` |
-| `debt` | Listing every `braid(<strand>):` corner cut, flagging ones with no upgrade trigger | - |
+| `review` | A quality review of a change: bugs, risks, load, missing tests, speed, what to cut | `[diff target]` |
+| `audit` | The same review for a whole repo or path | `[path]` |
+| `debt` | Listing every `shortcut(<strand>):` corner cut, flagging ones with no upgrade trigger | `[marker word]` |
 | `xreview` | A review by another model: writes the prompt, `--run` hands it to a fresh subagent | `[--open] [--run] [diff\|<path>\|all]` |
 | `systematic-debugging` | A bug or failing test: root cause before any fix | - |
 | `security-audit` | A security review or full audit with verified findings | - |

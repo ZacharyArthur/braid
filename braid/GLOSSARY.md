@@ -17,7 +17,7 @@ How hard the core pushes: lite, full (default) or ultra. Per session.
 _Avoid_: mode, intensity
 
 **Corner cut**:
-A deliberate simplification with a known ceiling, marked `braid(<strand>): <ceiling>, <upgrade path>`.
+A deliberate simplification with a known ceiling, marked `shortcut(<strand>): <ceiling>, <upgrade path>`. Older forms still read: `braid(<strand>):` and plain `shortcut:`.
 _Avoid_: hack, TODO
 
 **Pointer**:
@@ -44,5 +44,5 @@ The open decisions whose prerequisites are already decided.
 A Claude Code-only plugin of TypeScript hooks in `mods/<name>/`, listed in braid's marketplace and installed on its own.
 _Avoid_: extension, add-on
 
-**Vendored / derived / clean-room**:
-How a skill relates to its upstream: verbatim copy with surgical edits, substantial rewrite, or written from scratch with credit only.
+**Vendored / based / derived / clean-room**:
+How a skill relates to its upstream: verbatim copy with surgical edits; upstream's text as the base with braid's renames and added blocks, synced by three-way merge; substantial rewrite; or written from scratch with credit only.
