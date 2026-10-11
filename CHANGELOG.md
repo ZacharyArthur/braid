@@ -2,6 +2,10 @@
 
 All notable changes to braid. Versions follow semver: major = a skill renamed or removed, or the `braid/` layout changed; minor = a new skill or verb; patch = wording and upstream syncs.
 
+## [Unreleased]
+
+- README: installing from the Claude app (claude.ai), how its copy relates to Claude Code's, and updating it. TESTING: how to test a branch before it merges.
+
 ## [1.3.1] - 2026-10-11
 
 - braid syncs on claude.ai again. Since 1.2.0 its sync skipped braid, keeping 1.1.0, because `braid-context`'s `plugin.json` sat inside braid's plugin folder; the mod's manifest now lives in its marketplace entry (ADR 0013). Claude Code installs are unchanged.

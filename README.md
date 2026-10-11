@@ -19,6 +19,8 @@ claude plugin install braid@braid
 
 (or `/plugin marketplace add ZacharyArthur/braid` and `/plugin install braid@braid` inside a session)
 
+**Claude app** (claude.ai and the Desktop app's chat): add `https://github.com/ZacharyArthur/braid` as a marketplace in the app's plugin settings and install braid. That copy belongs to your account, separate from Claude Code's. Claude Code uses it only when braid isn't installed there; when both are, Claude Code's own copy wins, so update both or keep just one.
+
 **Codex**
 
 ```bash
@@ -30,7 +32,7 @@ Then run `codex`, open `/hooks`, review and trust braid's hooks, and start a new
 
 **ZCode:** add `ZacharyArthur/braid` as a GitHub plugin marketplace source and enable braid. Two gaps to know about. ZCode has no "user-invoked only" flag, and its Settings can't switch off a plugin's skills one at a time, so every braid skill's description costs context and the user-only ones, such as `humanizer`, can load when a prompt matches them. And ZCode never fires SessionStart on compact, so after a `/compact` the core rules are not re-injected; only the summary's paraphrase remains. `/braid:braid drift on` partly makes up for it: the drift line restates the mode on every prompt.
 
-**Updating:** in Claude Code, run `claude plugin marketplace update braid`, then `claude plugin update braid@braid`. In Codex, `codex plugin marketplace upgrade braid` updates the plugin too. In ZCode, sync the marketplace, then uninstall and reinstall braid; updating alone keeps the old cached copy.
+**Updating:** in Claude Code, run `claude plugin marketplace update braid`, then `claude plugin update braid@braid` (in the Desktop app: sync the marketplace, then update the plugin), and start a new session. It finds an update only once a release raises the version. In the Claude app, sync the braid marketplace, then update the plugin. In Codex, `codex plugin marketplace upgrade braid` (or syncing the marketplace in the ChatGPT app) updates the plugin too. In ZCode, sync the marketplace, then uninstall and reinstall braid; updating alone keeps the old cached copy.
 
 ## What's in it
 
