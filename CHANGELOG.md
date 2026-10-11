@@ -5,6 +5,7 @@ All notable changes to braid. Versions follow semver: major = a skill renamed or
 ## [Unreleased]
 
 - `braid-context` 0.1.1: the band follows each main-thread response, so context and spend move during a long turn instead of at its end.
+- Upstream sync: `grilling` words each question so "yes" takes the recommendation; `adhd`'s lead-with-the-action example drops the install command; `systematic-debugging`'s secret probes no longer echo values. Other non-ponytail pins bumped with nothing to take. Ideas from the design and map sources (rewritten, per ADR 0008): `design` states its read of the page in one line before building, treats a redesign as a replacement, adds tells (heading eyebrows, empty section numbers, gradient text, side-stripe cards, mono as costume, div-built fake screenshots, mid-page theme flips), copy and tabular-number checks, and runs its pre-ship check in one batched pass; `map` names the most-imported modules and never copies secrets. `map` and `design` sources are now pinned, so `scripts/upstream.cjs` reports their drift too.
 
 ## [1.2.0] - 2026-10-08
 
