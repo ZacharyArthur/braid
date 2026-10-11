@@ -1,6 +1,6 @@
 # Testing
 
-`node scripts/check.cjs` covers manifests, frontmatter, the hook's behavior and the token budget; CI runs it on Windows and Ubuntu. What it can't cover is each harness actually loading the plugin. Run this checklist once per release, with ponytail disabled so it can't mask results.
+`node scripts/check.cjs` covers manifests, frontmatter, the hook's behavior and the token budget; CI runs it on Windows and Ubuntu. What it can't cover is each harness actually loading the plugin. Run this checklist once per release, with ponytail disabled so it can't mask results. The install commands below pull `main`; to test a branch before it merges, start Claude Code with `claude --plugin-dir <path to your checkout>` after disabling the installed braid (`claude plugin disable braid@braid`, then `enable` when done).
 
 First, `node scripts/upstream.cjs`: sync or consciously skip anything it flags ([UPSTREAM.md](UPSTREAM.md#syncing)).
 
