@@ -2,6 +2,10 @@
 
 All notable changes to braid. Versions follow semver: major = a skill renamed or removed, or the `braid/` layout changed; minor = a new skill or verb; patch = wording and upstream syncs.
 
+## [Unreleased]
+
+- braid syncs on claude.ai again. Since 1.2.0 its sync skipped braid, keeping 1.1.0, because `braid-context`'s `plugin.json` sat inside braid's plugin folder; the mod's manifest now lives in its marketplace entry (ADR 0013). Claude Code installs are unchanged.
+
 ## [1.3.0] - 2026-10-11
 
 - Based on ponytail 5 (ADR 0012): braid's core, `review`, `audit` and `debt` now carry ponytail's own text at the pinned release, with braid's renames and added blocks on top, so each ponytail release is a three-way merge instead of a rewrite. UPSTREAM.md gains the **based** kind.

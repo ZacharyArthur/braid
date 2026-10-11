@@ -7,7 +7,7 @@ identical behavior across the three harnesses. When a feature and simplicity con
 ## Stack
 
 - Markdown skills; Node ≥ 18 CommonJS (`.cjs`), stdlib only: `hooks/braid.cjs`, `scripts/*.cjs`, `bench/ab.cjs`. Python 3 only for bench checks.
-- Claude Code-only mods in `mods/<name>/`: TypeScript hooks modules run by Claude Code itself (no Node, no build), each its own plugin with its own version (ADR 0011).
+- Claude Code-only mods in `mods/<name>/`: TypeScript hooks modules run by Claude Code itself (no Node, no build), each its own plugin with its own version, its manifest in its marketplace entry (ADR 0011, 0013).
 - One plugin; runtime is one hook process per harness event. CI: `check.cjs` on Node 18 (Ubuntu, Windows); lints on Node 22 (Ubuntu).
 - No npm dependencies, no `package.json`. Vendored skills enter only via UPSTREAM.md, pinned by SHA (ADR 0003).
 
@@ -26,7 +26,7 @@ Run from the repo root.
 - Lint Markdown (needs Node ≥ 22): `npx --yes markdownlint-cli2@0.23.3` · fix: add `--fix`. Files and rules: `.markdownlint-cli2.jsonc` (vendored skills and based files excluded).
 - Format + lint JS: `npx --yes @biomejs/biome@2.5.15 check --error-on-warnings` · fix: `--write`. Files: `biome.json` (not `bench/tasks/`: fixtures stay as written).
 - Tool versions are pinned here and in `.github/workflows/check.yml`; bump both together.
-- Mods (needs `claude` ≥ 2.1.287): `claude plugin validate mods/<name>` · `claude plugin test mods/<name>` · marketplace: `claude plugin validate .`
+- Mods (needs `claude` ≥ 2.1.287): `claude plugin test mods/<name>` · marketplace, which also checks each mod's entry: `claude plugin validate .`
 - Bench harness, free: `node bench/ab.cjs --fake`
 - Upstream drift, read-only (needs `gh`): `node scripts/upstream.cjs [skill ...]`
 - Adding a skill or a mod, syncing upstream, releasing: [CONTRIBUTING.md](CONTRIBUTING.md).
@@ -34,7 +34,7 @@ Run from the repo root.
 ## Before saying done
 
 `node scripts/check.cjs && npx --yes markdownlint-cli2@0.23.3 && npx --yes @biomejs/biome@2.5.15 check --error-on-warnings`.
-CI runs the same three. Changed `bench/` → also `node bench/ab.cjs --fake`. Changed `mods/` → also the three mod checks above (local only; CI has no `claude`). Never claim done until it passes.
+CI runs the same three. Changed `bench/` → also `node bench/ab.cjs --fake`. Changed `mods/` or the marketplace → also the two mod checks above (local only; CI has no `claude`). Never claim done until it passes.
 
 ## Workflow
 
