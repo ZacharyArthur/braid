@@ -17,8 +17,8 @@ The gate in [AGENTS.md](AGENTS.md#before-saying-done) must pass before every com
 
 Mods are Claude Code only (ADR 0011): each is its own plugin, so they never touch braid's manifests, budget or version. Claude Code's built-in `plugin-authoring` skill writes one.
 
-1. `mods/<name>/`: `.claude-plugin/plugin.json` with its own `version` and `license: MIT`, `hooks/hooks.json` naming one module, the module, and at least one `*.test.ts` that loops its body over the `terminal` and `desktop` surfaces. Values kept in `$.state` are declared in `types/index.d.ts`.
-2. An entry in `.claude-plugin/marketplace.json` with `"source": "./mods/<name>"` and a description opening "Claude Code only:". Never in `.agents/plugins/marketplace.json`: that is Codex's.
+1. `mods/<name>/`: no `.claude-plugin/plugin.json` (claude.ai skips a plugin with another nested inside it, ADR 0013), `hooks/hooks.json` naming one module, the module, and at least one `*.test.ts` that loops its body over the `terminal` and `desktop` surfaces. Values kept in `$.state` are declared in `types/index.d.ts`.
+2. An entry in `.claude-plugin/marketplace.json` with `"source": "./mods/<name>"`, a description opening "Claude Code only:", its own `version`, `author`, `homepage`, `license: MIT` and `"strict": false` (the entry is the whole manifest). Never in `.agents/plugins/marketplace.json`: that is Codex's.
 3. A row in the README's Mods table, and a `CHANGELOG.md` entry. Bump the mod's own version on each change; braid's version moves only when braid's files do.
 4. The mod checks in [AGENTS.md](AGENTS.md#commands), plus the usual gate.
 
