@@ -1,0 +1,40 @@
+diff --git a/digest.py b/digest.py
+index 1fa547b..befbb2e 100644
+--- a/digest.py
++++ b/digest.py
+@@ -3,5 +3,4 @@ import mailer
+ 
+ def send_digest(subscribers, text):
+     """Email the weekly digest to every subscriber."""
+-    for address in subscribers:
+-        mailer.send(address, "Weekly digest", text)
++    mailer.send(list(subscribers), "Weekly digest", text)
+diff --git a/mailer.py b/mailer.py
+index 9bce7eb..f4fea19 100644
+--- a/mailer.py
++++ b/mailer.py
+@@ -2,5 +2,5 @@ OUTBOX = []  # sent messages; the provider client reads from here
+ 
+ 
+ def send(to, subject, body):
+-    """Send one email. `to` is the recipient address."""
++    """Send one email. `to` is a recipient address or a list of addresses."""
+     OUTBOX.append({"to": to, "subject": subject, "body": body})
+diff --git a/tests/test_mailer.py b/tests/test_mailer.py
+index faf8d01..2f94fab 100644
+--- a/tests/test_mailer.py
++++ b/tests/test_mailer.py
+@@ -8,6 +8,13 @@ def test_send():
+     assert mailer.OUTBOX[-1]["to"] == "a@example.com"
+ 
+ 
++def test_send_many_is_one_message():
++    mailer.OUTBOX.clear()
++    mailer.send(["a@example.com", "b@example.com"], "Hi", "Body")
++    assert len(mailer.OUTBOX) == 1
++    assert mailer.OUTBOX[0]["to"] == ["a@example.com", "b@example.com"]
++
++
+ def test_welcome():
+     mailer.OUTBOX.clear()
+     signup.welcome("new@example.com")

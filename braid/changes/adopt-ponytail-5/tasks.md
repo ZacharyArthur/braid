@@ -34,7 +34,7 @@
 - [x] 5.1 Completeness judge: scores each run 0 (stub) to 3 (full task), blind; report column
 - [x] 5.2 Three hidden-check tasks from ponytail's set (rename reaching every caller, path traversal, private bulk email), credited in THIRD-PARTY-NOTICES
 - [x] 5.3 `node bench/ab.cjs --fake` passes
-- [ ] 5.4 Real paired run, Claude Code, all arms, on `main` and on this branch the same day (maintainer runs it; costs money). Gate: the branch is no more expensive than `main` and no worse on hidden checks or completeness; results in `bench/results/`
+- [x] 5.4 Real paired run, Claude Code, all arms, on `main` and on this branch the same day (maintainer runs it; costs money). Gate: the branch is no more expensive than `main` and no worse on hidden checks or completeness; results in `bench/results/`. Ran 2026-10-11 with Claude Code (sonnet) and Codex (gpt-6.1-sol), 3 runs per task; `main`'s plugin ran the braid arm on this branch's tasks and judge. Hidden checks equal (27/30 every arm, both agents; `scope-recipients` fails everywhere). Cost +0.7% (Claude) and tokens +3.5% (Codex), completeness 2.97 vs 3.00 and 2.92 vs 2.97 on diffs identical to full-score ones: within noise, passed at the maintainer's call. 7-10% less code than `main`
 
 ## 6. Release
 

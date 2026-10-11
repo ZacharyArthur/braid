@@ -1,0 +1,19 @@
+diff --git a/sum_sales.py b/sum_sales.py
+new file mode 100644
+index 0000000..14a066c
+--- /dev/null
++++ b/sum_sales.py
+@@ -0,0 +1,13 @@
++import csv
++from decimal import Decimal
++
++
++def main():
++    with open("sales.csv", newline="", encoding="utf-8-sig") as file:
++        reader = csv.DictReader(file)
++        total = sum((Decimal(row["amount"]) for row in reader), Decimal("0"))
++    print(total)
++
++
++if __name__ == "__main__":
++    main()

@@ -1,0 +1,52 @@
+diff --git a/fixtures/orders.json b/fixtures/orders.json
+index 67ac82a..9be4483 100644
+--- a/fixtures/orders.json
++++ b/fixtures/orders.json
+@@ -1,4 +1,4 @@
+ [
+-  {"sku": "A-100", "qty": 2, "unit_cents": 500},
+-  {"sku": "B-200", "qty": 1, "unit_cents": 1250}
++  {"sku": "A-100", "quantity": 2, "unit_cents": 500},
++  {"sku": "B-200", "quantity": 1, "unit_cents": 1250}
+ ]
+diff --git a/shop/orders.py b/shop/orders.py
+index 5985b48..75abc98 100644
+--- a/shop/orders.py
++++ b/shop/orders.py
+@@ -4,15 +4,15 @@ from dataclasses import dataclass
+ @dataclass
+ class Order:
+     sku: str
+-    qty: int
++    quantity: int
+     unit_cents: int
+ 
+ 
+ def order_total(orders):
+     """Total of a list of orders, in cents."""
+-    return sum(o.qty * o.unit_cents for o in orders)
++    return sum(o.quantity * o.unit_cents for o in orders)
+ 
+ 
+ def from_dict(d):
+     """Build an Order from one record of the partner feed."""
+-    return Order(sku=d["sku"], qty=d["qty"], unit_cents=d["unit_cents"])
++    return Order(sku=d["sku"], quantity=d["quantity"], unit_cents=d["unit_cents"])
+diff --git a/tests/test_orders.py b/tests/test_orders.py
+index dc0bc10..5a26ca1 100644
+--- a/tests/test_orders.py
++++ b/tests/test_orders.py
+@@ -3,11 +3,11 @@ from shop.loader import load_orders
+ 
+ 
+ def test_total():
+-    assert order_total([Order(sku="A", qty=2, unit_cents=500)]) == 1000
++    assert order_total([Order(sku="A", quantity=2, unit_cents=500)]) == 1000
+ 
+ 
+ def test_from_dict():
+-    assert from_dict({"sku": "A", "qty": 3, "unit_cents": 100}).qty == 3
++    assert from_dict({"sku": "A", "quantity": 3, "unit_cents": 100}).quantity == 3
+ 
+ 
+ def test_fixture_total():

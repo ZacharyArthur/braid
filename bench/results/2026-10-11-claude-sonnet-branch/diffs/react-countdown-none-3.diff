@@ -1,0 +1,73 @@
+diff --git a/Countdown.jsx b/Countdown.jsx
+new file mode 100644
+index 0000000..b2307c0
+--- /dev/null
++++ b/Countdown.jsx
+@@ -0,0 +1,67 @@
++import { useState, useEffect, useRef, useCallback } from "react";
++
++function format(total) {
++  const m = Math.floor(total / 60);
++  const s = total % 60;
++  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
++}
++
++/**
++ * Counts down from `seconds` to 0, ticking once per second.
++ *
++ * Props:
++ *  - seconds:   starting number of seconds
++ *  - autoStart: begin counting on mount (default true)
++ *  - onComplete: called once when the countdown reaches 0
++ */
++export default function Countdown({ seconds, autoStart = true, onComplete }) {
++  const start = Math.max(0, Math.floor(Number(seconds) || 0));
++  const [remaining, setRemaining] = useState(start);
++  const [running, setRunning] = useState(autoStart && start > 0);
++  const onCompleteRef = useRef(onComplete);
++  onCompleteRef.current = onComplete;
++
++  // Reset when the starting value changes.
++  useEffect(() => {
++    setRemaining(start);
++    setRunning(autoStart && start > 0);
++  }, [start, autoStart]);
++
++  useEffect(() => {
++    if (!running) return;
++    const id = setInterval(() => {
++      setRemaining((r) => Math.max(0, r - 1));
++    }, 1000);
++    return () => clearInterval(id);
++  }, [running]);
++
++  // Fire completion once when reaching 0 while running.
++  useEffect(() => {
++    if (running && remaining === 0) {
++      setRunning(false);
++      onCompleteRef.current?.();
++    }
++  }, [remaining, running]);
++
++  const reset = useCallback(() => {
++    setRemaining(start);
++    setRunning(false);
++  }, [start]);
++
++  const done = remaining === 0;
++
++  return (
++    <div role="timer" aria-live="off" style={{ textAlign: "center" }}>
++      <div style={{ fontSize: "3rem", fontVariantNumeric: "tabular-nums" }}>
++        {format(remaining)}
++      </div>
++      {done && <div>Time's up!</div>}
++      <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
++        <button onClick={() => setRunning((r) => !r)} disabled={done}>
++          {running ? "Pause" : "Start"}
++        </button>
++        <button onClick={reset}>Reset</button>
++      </div>
++    </div>
++  );
++}

@@ -1,0 +1,32 @@
+diff --git a/validate.py b/validate.py
+new file mode 100644
+index 0000000..ac44aa3
+--- /dev/null
++++ b/validate.py
+@@ -0,0 +1,26 @@
++import re
++
++# braid(yagni): pragmatic subset of RFC 5322 (no quoted locals, IP literals, or IDN); use email-validator if needed
++_EMAIL = re.compile(
++    r"[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+(\.[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+)*"
++    r"@"
++    r"([A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,63}"
++)
++
++
++def is_valid_email(address) -> bool:
++    return (
++        isinstance(address, str)
++        and len(address) <= 254
++        and len(address.split("@")[0]) <= 64
++        and _EMAIL.fullmatch(address) is not None
++    )
++
++
++if __name__ == "__main__":
++    for ok in ["a@b.co", "john.doe+tag@example.com", "x_y@sub.example.org"]:
++        assert is_valid_email(ok), ok
++    for bad in ["", "a@b", "a@@b.com", ".a@b.com", "a..b@c.com", "a@-b.com",
++                "a b@c.com", "a@b.c", "a@b.com\n", None, "a" * 65 + "@b.com"]:
++        assert not is_valid_email(bad), bad
++    print("ok")

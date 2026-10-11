@@ -1,0 +1,142 @@
+diff --git a/__pycache__/main.cpython-314.pyc b/__pycache__/main.cpython-314.pyc
+new file mode 100644
+index 0000000..9ca2611
+Binary files /dev/null and b/__pycache__/main.cpython-314.pyc differ
+diff --git a/__pycache__/test_main.cpython-314.pyc b/__pycache__/test_main.cpython-314.pyc
+new file mode 100644
+index 0000000..de0f2fd
+Binary files /dev/null and b/__pycache__/test_main.cpython-314.pyc differ
+diff --git a/main.py b/main.py
+index 9cbedc7..2e0add1 100644
+--- a/main.py
++++ b/main.py
+@@ -1,13 +1,59 @@
+-from fastapi import FastAPI
++from collections import deque
++from math import ceil
++from threading import Lock
++from time import monotonic
++
++from fastapi import Depends, FastAPI, HTTPException, Request
+ from pydantic import BaseModel
+ 
+ app = FastAPI()
+ 
+ 
++class RateLimiter:
++    """Thread-safe sliding window, scoped to this application process."""
++
++    def __init__(self, limit: int = 10, window: float = 60):
++        self.limit = limit
++        self.window = window
++        self._requests: dict[str, deque[float]] = {}
++        self._lock = Lock()
++
++    def check(self, client: str) -> None:
++        with self._lock:
++            now = monotonic()
++            cutoff = now - self.window
++            # Drop inactive clients so history does not grow indefinitely.
++            for key in list(self._requests):
++                timestamps = self._requests[key]
++                while timestamps and timestamps[0] <= cutoff:
++                    timestamps.popleft()
++                if not timestamps:
++                    del self._requests[key]
++
++            timestamps = self._requests.setdefault(client, deque())
++            if len(timestamps) >= self.limit:
++                retry_after = max(1, ceil(timestamps[0] + self.window - now))
++                raise HTTPException(
++                    status_code=429,
++                    detail="Too many requests. Try again later.",
++                    headers={"Retry-After": str(retry_after)},
++                )
++            timestamps.append(now)
++
++
++message_limiter = RateLimiter()
++
++
++def limit_messages(request: Request) -> None:
++    # Use the connection peer; do not trust arbitrary forwarded IP headers.
++    client = request.client.host if request.client else "unknown"
++    message_limiter.check(client)
++
++
+ class Message(BaseModel):
+     text: str
+ 
+ 
+-@app.post("/messages")
++@app.post("/messages", dependencies=[Depends(limit_messages)])
+ def create_message(message: Message):
+     return {"ok": True, "length": len(message.text)}
+diff --git a/test_main.py b/test_main.py
+new file mode 100644
+index 0000000..ce26a3b
+--- /dev/null
++++ b/test_main.py
+@@ -0,0 +1,62 @@
++import unittest
++from concurrent.futures import ThreadPoolExecutor
++from unittest.mock import patch
++
++from fastapi import HTTPException
++from fastapi.testclient import TestClient
++
++import main
++
++
++class RateLimitTests(unittest.TestCase):
++    def setUp(self):
++        self.limiter = main.RateLimiter()
++        self.override = patch.object(main, "message_limiter", self.limiter)
++        self.override.start()
++        self.addCleanup(self.override.stop)
++        self.client = TestClient(main.app)
++
++    def test_endpoint_limit_and_retry_header(self):
++        with patch.object(main, "monotonic", return_value=100):
++            for _ in range(10):
++                response = self.client.post("/messages", json={"text": "hello"})
++                self.assertEqual(response.status_code, 200)
++                self.assertEqual(response.json(), {"ok": True, "length": 5})
++            response = self.client.post("/messages", json={"text": "hello"})
++            self.assertEqual(response.status_code, 429)
++            self.assertEqual(response.headers["Retry-After"], "60")
++            # Spoofing a forwarded address cannot bypass the limit.
++            response = self.client.post(
++                "/messages", json={"text": "hello"},
++                headers={"X-Forwarded-For": "192.0.2.99"},
++            )
++            self.assertEqual(response.status_code, 429)
++
++    def test_independent_clients_and_expiry(self):
++        with patch.object(main, "monotonic", return_value=100):
++            for _ in range(10):
++                self.limiter.check("client-a")
++            self.limiter.check("client-b")
++        with patch.object(main, "monotonic", return_value=159.2):
++            with self.assertRaises(HTTPException) as raised:
++                self.limiter.check("client-a")
++            self.assertEqual(raised.exception.headers["Retry-After"], "1")
++        with patch.object(main, "monotonic", return_value=160):
++            self.limiter.check("client-a")
++            self.assertNotIn("client-b", self.limiter._requests)
++
++    def test_concurrent_requests_cannot_exceed_limit(self):
++        def attempt(_):
++            try:
++                self.limiter.check("shared-client")
++                return True
++            except HTTPException:
++                return False
++
++        with patch.object(main, "monotonic", return_value=100):
++            with ThreadPoolExecutor(max_workers=20) as pool:
++                self.assertEqual(sum(pool.map(attempt, range(50))), 10)
++
++
++if __name__ == "__main__":
++    unittest.main()

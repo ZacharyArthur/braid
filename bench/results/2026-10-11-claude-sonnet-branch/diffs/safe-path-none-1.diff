@@ -1,0 +1,34 @@
+diff --git a/uploads.py b/uploads.py
+index a6f3ae4..67e8a70 100644
+--- a/uploads.py
++++ b/uploads.py
+@@ -1,3 +1,27 @@
++import os
++
++
+ def safe_upload_path(base_dir, filename):
+-    """Join an untrusted filename onto base_dir and return the path."""
+-    raise NotImplementedError
++    """Join an untrusted filename onto base_dir and return the path.
++
++    Raises ValueError if the filename is empty, contains a NUL byte, is
++    absolute or drive-qualified, or would resolve outside base_dir
++    (e.g. via ".." segments or symlinks).
++    """
++    if not isinstance(filename, str) or not filename or "\0" in filename:
++        raise ValueError("invalid filename")
++
++    # Treat both separators as separators regardless of platform, so
++    # "..\\x" is caught on POSIX too and "/etc/passwd" on Windows.
++    normalized = filename.replace("\\", "/")
++    if normalized.startswith("/") or os.path.isabs(filename) or os.path.splitdrive(filename)[0]:
++        raise ValueError("absolute paths are not allowed")
++    if ":" in normalized.split("/")[0]:
++        raise ValueError("drive or stream specifiers are not allowed")
++
++    base = os.path.realpath(base_dir)
++    path = os.path.realpath(os.path.join(base, *normalized.split("/")))
++
++    if path == base or os.path.commonpath([base, path]) != base:
++        raise ValueError("path escapes upload directory")
++    return path

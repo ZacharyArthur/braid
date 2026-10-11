@@ -1,0 +1,66 @@
+diff --git a/Countdown.jsx b/Countdown.jsx
+new file mode 100644
+index 0000000..ebc87fc
+--- /dev/null
++++ b/Countdown.jsx
+@@ -0,0 +1,60 @@
++import { useState, useEffect, useRef } from "react";
++
++function format(total) {
++  const m = Math.floor(total / 60);
++  const s = total % 60;
++  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
++}
++
++/**
++ * Counts down from `seconds` to 0, ticking once per second.
++ * Props:
++ *  - seconds: starting value (number of seconds)
++ *  - onComplete: optional callback fired once when the countdown reaches 0
++ *  - autoStart: start running immediately (default true)
++ */
++export default function Countdown({ seconds, onComplete, autoStart = true }) {
++  const start = Math.max(0, Math.floor(Number(seconds) || 0));
++  const [remaining, setRemaining] = useState(start);
++  const [running, setRunning] = useState(autoStart);
++  const onCompleteRef = useRef(onComplete);
++  onCompleteRef.current = onComplete;
++
++  // Reset when the starting value changes.
++  useEffect(() => {
++    setRemaining(start);
++    setRunning(autoStart);
++  }, [start, autoStart]);
++
++  useEffect(() => {
++    if (!running) return;
++    if (remaining <= 0) {
++      setRunning(false);
++      onCompleteRef.current?.();
++      return;
++    }
++    const id = setTimeout(() => setRemaining((r) => r - 1), 1000);
++    return () => clearTimeout(id);
++  }, [running, remaining]);
++
++  const reset = () => {
++    setRemaining(start);
++    setRunning(true);
++  };
++
++  return (
++    <div role="timer" aria-live="off">
++      <span style={{ fontSize: "2rem", fontVariantNumeric: "tabular-nums" }}>
++        {format(remaining)}
++      </span>
++      <div>
++        {remaining > 0 && (
++          <button onClick={() => setRunning((r) => !r)}>
++            {running ? "Pause" : "Start"}
++          </button>
++        )}
++        <button onClick={reset}>Reset</button>
++      </div>
++    </div>
++  );
++}

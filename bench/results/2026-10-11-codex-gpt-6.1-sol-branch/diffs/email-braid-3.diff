@@ -1,0 +1,56 @@
+diff --git a/test_validate.py b/test_validate.py
+new file mode 100644
+index 0000000..1040151
+--- /dev/null
++++ b/test_validate.py
+@@ -0,0 +1,23 @@
++import unittest
++
++from validate import is_valid_email
++
++
++class EmailValidationTests(unittest.TestCase):
++    def test_common_addresses_and_boundaries(self):
++        valid = ["alice@example.com", "a.b+tag@sub.example.org", "a" * 64 + "@example.com"]
++        invalid = [
++            None, "", "alice", "a@@example.com", "a@localhost",
++            ".a@example.com", "a..b@example.com", "a.@example.com",
++            "a@-example.com", "a@example-.com", "a@example..com",
++            "a@example.com\n", " a@example.com", "a b@example.com",
++            "a" * 65 + "@example.com", "a@" + "b" * 64 + ".com",
++            "a" * 64 + "@" + ".".join(["b" * 63] * 3),
++        ]
++        for address in valid + invalid:
++            with self.subTest(address=address):
++                self.assertEqual(is_valid_email(address), address in valid)
++
++
++if __name__ == "__main__":
++    unittest.main()
+diff --git a/validate.py b/validate.py
+new file mode 100644
+index 0000000..b0484d5
+--- /dev/null
++++ b/validate.py
+@@ -0,0 +1,21 @@
++import re
++
++
++def is_valid_email(address: str) -> bool:
++    """Validate common ASCII email syntax, without checking deliverability."""
++    # shortcut(yagni): excludes quoted local parts and internationalized addresses; expand if needed.
++    if not isinstance(address, str) or len(address) > 254:
++        return False
++
++    local, separator, domain = address.rpartition("@")
++    if not separator or not 1 <= len(local) <= 64:
++        return False
++    if not re.fullmatch(r"[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+)*", local):
++        return False
++
++    labels = domain.split(".")
++    return len(labels) >= 2 and all(
++        re.fullmatch(r"[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?", label)
++        is not None
++        for label in labels
++    )

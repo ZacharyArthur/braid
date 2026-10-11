@@ -1,0 +1,39 @@
+diff --git a/uploads.py b/uploads.py
+index a6f3ae4..5a6d419 100644
+--- a/uploads.py
++++ b/uploads.py
+@@ -1,3 +1,32 @@
++import ntpath
++import os
++
++
+ def safe_upload_path(base_dir, filename):
+-    """Join an untrusted filename onto base_dir and return the path."""
+-    raise NotImplementedError
++    """Return an absolute upload path inside base_dir, or raise ValueError.
++
++    Both slash styles are treated as separators. Existing symlinks are
++    resolved before checking containment. The caller must prevent concurrent
++    changes to directory symlinks between validation and opening the file.
++    """
++    if not isinstance(filename, str) or not filename or "\x00" in filename:
++        raise ValueError("filename must be a nonempty string without NUL bytes")
++
++    # Reject Windows drives, UNC paths, rooted paths, and alternate streams,
++    # even when validation runs on a non-Windows host.
++    if ntpath.splitdrive(filename)[0] or filename.startswith(("/", "\\")) or ":" in filename:
++        raise ValueError("filename must be a relative path")
++
++    parts = filename.replace("\\", "/").split("/")
++    if ".." in parts:
++        raise ValueError("filename must not contain parent directory traversal")
++
++    base = os.path.realpath(base_dir)
++    path = os.path.realpath(os.path.join(base, *parts))
++    try:
++        contained = os.path.normcase(os.path.commonpath((base, path))) == os.path.normcase(base)
++    except ValueError:
++        contained = False
++    if not contained or os.path.normcase(path) == os.path.normcase(base):
++        raise ValueError("filename must resolve to a path inside base_dir")
++    return path

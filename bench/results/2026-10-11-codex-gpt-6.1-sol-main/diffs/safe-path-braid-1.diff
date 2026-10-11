@@ -1,0 +1,56 @@
+diff --git a/test_uploads.py b/test_uploads.py
+new file mode 100644
+index 0000000..eabdfa9
+--- /dev/null
++++ b/test_uploads.py
+@@ -0,0 +1,23 @@
++from pathlib import Path
++
++from uploads import safe_upload_path
++
++
++def test_safe_upload_path():
++    base = Path(__file__).parent.resolve() / "uploads"
++    assert safe_upload_path(base, "photo.jpg") == str(base / "photo.jpg")
++    assert safe_upload_path(base, "nested/photo.jpg") == str(base / "nested" / "photo.jpg")
++    for name in ("", ".", "..", "../outside", "../uploads-other/file",
++                 "..\\outside", "/outside", "C:\\outside", "C:outside",
++                 "\\\\server\\share\\file", "file:stream", "bad\0name"):
++        try:
++            safe_upload_path(base, name)
++        except ValueError:
++            pass
++        else:
++            raise AssertionError(f"Accepted unsafe filename: {name!r}")
++
++
++if __name__ == "__main__":
++    test_safe_upload_path()
++    print("safe_upload_path checks passed")
+diff --git a/uploads.py b/uploads.py
+index a6f3ae4..b96e660 100644
+--- a/uploads.py
++++ b/uploads.py
+@@ -1,3 +1,20 @@
++from pathlib import Path, PureWindowsPath
++
++
+ def safe_upload_path(base_dir, filename):
+-    """Join an untrusted filename onto base_dir and return the path."""
+-    raise NotImplementedError
++    """Return a resolved upload path within base_dir, or raise ValueError."""
++    if not isinstance(filename, str) or not filename or "\0" in filename:
++        raise ValueError("Invalid upload filename")
++    # Treat both separator styles as paths, regardless of the host platform.
++    name = filename.replace("\\", "/")
++    if PureWindowsPath(name).anchor or ":" in name:
++        raise ValueError("Upload filename must be relative")
++    base = Path(base_dir).resolve()
++    path = (base / name).resolve()
++    try:
++        path.relative_to(base)
++    except ValueError:
++        raise ValueError("Upload path escapes base_dir") from None
++    if path == base:
++        raise ValueError("Upload filename must name a file")
++    return str(path)

@@ -1,0 +1,35 @@
+diff --git a/validate.py b/validate.py
+new file mode 100644
+index 0000000..4963bd4
+--- /dev/null
++++ b/validate.py
+@@ -0,0 +1,29 @@
++import re
++
++_LOCAL_RE = re.compile(r"^[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+(\.[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+)*$")
++_LABEL_RE = re.compile(r"^[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?$")
++
++
++def is_valid_email(address) -> bool:
++    """Return True if `address` looks like a valid email address.
++
++    Checks a practical subset of RFC 5321/5322: a dot-atom local part
++    (max 64 chars), a single '@', and a domain of at least two
++    dot-separated labels with an alphabetic TLD (254 chars max overall).
++    Quoted local parts, comments, and IP-literal domains are not supported.
++    """
++    if not isinstance(address, str) or len(address) > 254:
++        return False
++
++    local, sep, domain = address.rpartition("@")
++    if not sep or not local or not domain:
++        return False
++    if len(local) > 64 or not _LOCAL_RE.match(local):
++        return False
++
++    labels = domain.split(".")
++    if len(labels) < 2:
++        return False
++    if not all(_LABEL_RE.match(label) for label in labels):
++        return False
++    return labels[-1].isalpha() and len(labels[-1]) >= 2

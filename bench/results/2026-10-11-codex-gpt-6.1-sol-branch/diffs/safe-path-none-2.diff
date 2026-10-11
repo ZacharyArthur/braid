@@ -1,0 +1,40 @@
+diff --git a/uploads.py b/uploads.py
+index a6f3ae4..08abc5a 100644
+--- a/uploads.py
++++ b/uploads.py
+@@ -1,3 +1,33 @@
++import ntpath
++import os
++
++
+ def safe_upload_path(base_dir, filename):
+-    """Join an untrusted filename onto base_dir and return the path."""
+-    raise NotImplementedError
++    """Return an absolute upload path contained in base_dir.
++
++    Relative subdirectories are allowed. Invalid or escaping filenames raise
++    ValueError. Existing symlinks are resolved before checking containment.
++    The caller must prevent concurrent changes to the upload directory while
++    opening the returned path, since validation alone cannot prevent races.
++    """
++    if not isinstance(filename, str):
++        raise ValueError("filename must be a string")
++    if (
++        not filename
++        or "\x00" in filename
++        or "\\" in filename
++        or ":" in filename
++        or ntpath.isabs(filename)
++        or any(part in ("", ".", "..") for part in filename.split("/"))
++    ):
++        raise ValueError("filename must be a relative upload path")
++
++    base = os.path.realpath(base_dir)
++    path = os.path.realpath(os.path.join(base, filename))
++    try:
++        contained = os.path.commonpath((base, path)) == base
++    except ValueError:
++        contained = False
++    if not contained or path == base:
++        raise ValueError("upload path must stay within base_dir")
++    return path

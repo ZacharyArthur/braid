@@ -1,0 +1,24 @@
+diff --git a/Countdown.jsx b/Countdown.jsx
+new file mode 100644
+index 0000000..faa7edf
+--- /dev/null
++++ b/Countdown.jsx
+@@ -0,0 +1,18 @@
++import { useEffect, useState } from "react";
++
++export default function Countdown({ seconds, onComplete }) {
++  const [left, setLeft] = useState(seconds);
++
++  useEffect(() => setLeft(seconds), [seconds]);
++
++  useEffect(() => {
++    if (left <= 0) {
++      onComplete?.();
++      return;
++    }
++    const id = setTimeout(() => setLeft(left - 1), 1000);
++    return () => clearTimeout(id);
++  }, [left]);
++
++  return <span role="timer">{left}</span>;
++}

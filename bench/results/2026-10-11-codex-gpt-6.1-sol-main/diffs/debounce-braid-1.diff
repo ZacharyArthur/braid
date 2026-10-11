@@ -1,0 +1,53 @@
+diff --git a/debounce.js b/debounce.js
+new file mode 100644
+index 0000000..40bd2e5
+--- /dev/null
++++ b/debounce.js
+@@ -0,0 +1,10 @@
++function debounce(fn, delay) {
++  let timeout;
++
++  return function (...args) {
++    clearTimeout(timeout);
++    timeout = setTimeout(() => fn.apply(this, args), delay);
++  };
++}
++
++module.exports = debounce;
+diff --git a/debounce.test.js b/debounce.test.js
+new file mode 100644
+index 0000000..84e42ba
+--- /dev/null
++++ b/debounce.test.js
+@@ -0,0 +1,31 @@
++const assert = require('node:assert/strict');
++const { setTimeout: wait } = require('node:timers/promises');
++const debounce = require('./debounce');
++
++async function test() {
++  const calls = [];
++  const context = {
++    run: debounce(function (...args) {
++      calls.push({ context: this, args });
++    }, 40),
++  };
++
++  context.run('first');
++  await wait(20);
++  context.run('last', 2);
++  await wait(25);
++  assert.equal(calls.length, 0);
++  await wait(40);
++  assert.deepEqual(calls, [{ context, args: ['last', 2] }]);
++
++  context.run('again');
++  await wait(60);
++  assert.equal(calls.length, 2);
++  assert.deepEqual(calls[1].args, ['again']);
++  console.log('Debounce checks passed');
++}
++
++test().catch((error) => {
++  console.error(error);
++  process.exitCode = 1;
++});

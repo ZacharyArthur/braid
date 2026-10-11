@@ -1,0 +1,132 @@
+diff --git a/main.py b/main.py
+index 9cbedc7..a878062 100644
+--- a/main.py
++++ b/main.py
+@@ -1,13 +1,55 @@
+-from fastapi import FastAPI
++from collections import OrderedDict, deque
++from math import ceil
++from threading import Lock
++from time import monotonic
++
++from fastapi import Depends, FastAPI, HTTPException, Request
+ from pydantic import BaseModel
+ 
+ app = FastAPI()
+ 
++RATE_LIMIT_REQUESTS = 10
++RATE_LIMIT_WINDOW_SECONDS = 60
++
++# Process-local state: use shared storage when running multiple workers.
++_requests: OrderedDict[str, deque[float]] = OrderedDict()
++_rate_limit_lock = Lock()
++
++
++def limit_messages(request: Request):
++    # Use the ASGI client address, not untrusted forwarded headers.
++    client_ip = request.client.host if request.client else "unknown"
++    with _rate_limit_lock:
++        now = monotonic()
++        cutoff = now - RATE_LIMIT_WINDOW_SECONDS
++
++        # Buckets are ordered by their most recent accepted request.
++        while _requests:
++            oldest_ip = next(iter(_requests))
++            if _requests[oldest_ip][-1] > cutoff:
++                break
++            del _requests[oldest_ip]
++
++        timestamps = _requests.setdefault(client_ip, deque())
++        while timestamps and timestamps[0] <= cutoff:
++            timestamps.popleft()
++
++        if len(timestamps) >= RATE_LIMIT_REQUESTS:
++            retry_after = max(1, ceil(timestamps[0] + RATE_LIMIT_WINDOW_SECONDS - now))
++            raise HTTPException(
++                status_code=429,
++                detail="Too many requests. Please try again later.",
++                headers={"Retry-After": str(retry_after)},
++            )
++
++        timestamps.append(now)
++        _requests.move_to_end(client_ip)
++
+ 
+ class Message(BaseModel):
+     text: str
+ 
+ 
+-@app.post("/messages")
++@app.post("/messages", dependencies=[Depends(limit_messages)])
+ def create_message(message: Message):
+     return {"ok": True, "length": len(message.text)}
+diff --git a/test_main.py b/test_main.py
+new file mode 100644
+index 0000000..9d0982b
+--- /dev/null
++++ b/test_main.py
+@@ -0,0 +1,64 @@
++import unittest
++from concurrent.futures import ThreadPoolExecutor
++from unittest.mock import patch
++
++from fastapi import HTTPException, Request
++from fastapi.testclient import TestClient
++
++import main
++
++
++class RateLimitTests(unittest.TestCase):
++    def setUp(self):
++        main._requests.clear()
++        self.clock = patch("main.monotonic", return_value=100.0)
++        self.now = self.clock.start()
++        self.addCleanup(self.clock.stop)
++        self.client = TestClient(main.app)
++
++    def test_limit_and_expiration(self):
++        for _ in range(main.RATE_LIMIT_REQUESTS):
++            response = self.client.post("/messages", json={"text": "hello"})
++            self.assertEqual(response.status_code, 200)
++            self.assertEqual(response.json(), {"ok": True, "length": 5})
++        response = self.client.post("/messages", json={"text": "hello"})
++        self.assertEqual(response.status_code, 429)
++        self.assertEqual(response.headers["Retry-After"], "60")
++        self.now.return_value = 159.5
++        response = self.client.post("/messages", json={"text": "hello"})
++        self.assertEqual(response.status_code, 429)
++        self.assertEqual(response.headers["Retry-After"], "1")
++        self.now.return_value = 160.0
++        self.assertEqual(self.client.post("/messages", json={"text": "hello"}).status_code, 200)
++
++    def test_clients_are_independent_and_headers_cannot_bypass_limit(self):
++        for _ in range(main.RATE_LIMIT_REQUESTS):
++            self.client.post("/messages", json={"text": "hi"})
++        response = self.client.post(
++            "/messages", json={"text": "hi"}, headers={"X-Forwarded-For": "new-client"}
++        )
++        self.assertEqual(response.status_code, 429)
++        other_client = TestClient(main.app, client=("192.0.2.2", 1234))
++        self.assertEqual(other_client.post("/messages", json={"text": "hi"}).status_code, 200)
++        self.now.return_value = 160.0
++        other_client.post("/messages", json={"text": "hi"})
++        self.assertNotIn("testclient", main._requests)
++
++    def test_concurrent_requests_cannot_exceed_limit(self):
++        request = Request({"type": "http", "client": ("192.0.2.1", 1234)})
++
++        def attempt(_):
++            try:
++                main.limit_messages(request)
++                return 200
++            except HTTPException as exc:
++                return exc.status_code
++
++        with ThreadPoolExecutor(max_workers=20) as pool:
++            results = list(pool.map(attempt, range(50)))
++        self.assertEqual(results.count(200), main.RATE_LIMIT_REQUESTS)
++        self.assertEqual(results.count(429), 50 - main.RATE_LIMIT_REQUESTS)
++
++
++if __name__ == "__main__":
++    unittest.main()
