@@ -39,5 +39,5 @@
 ## 6. Release
 
 - [x] 6.1 CHANGELOG 1.3.0; version bump in all three manifests
-- [ ] 6.2 Harness checklist in TESTING.md for Claude Code, Codex, ZCode
-- [ ] 6.3 Verify: `node scripts/check.cjs && npx --yes markdownlint-cli2@0.23.3 && npx --yes @biomejs/biome@2.5.15 check --error-on-warnings`, `node bench/ab.cjs --fake`, the three mod checks, then `/braid:spec archive`
+- [x] 6.2 Harness checklist in TESTING.md for Claude Code, Codex, ZCode. Claude Code by hand on 2026-10-11 with the local build: core, levels, drift, subagent, stop and back on with the map, review, debt, user-only, BRAID_MAP=0 and a non-git folder all as expected. Codex to be confirmed after the release; ZCode assumed (no change touches what differs there), at the maintainer's call
+- [x] 6.3 Verify: `node scripts/check.cjs && npx --yes markdownlint-cli2@0.23.3 && npx --yes @biomejs/biome@2.5.15 check --error-on-warnings`, `node bench/ab.cjs --fake`, the three mod checks, then `/braid:spec archive`
