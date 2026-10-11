@@ -15,7 +15,10 @@ Read what's already there: a design doc, tokens or theme file, the component
 library in use, two or three existing screens. **Follow it.** One obvious way:
 never add a second button style, spacing scale, or icon set. Nothing there?
 Ask one question (audience and tone), or default to plain: system font stack,
-neutral palette, one accent.
+neutral palette, one accent. Before building, say in one line what you take
+the page to be, for whom and in what tone, so a wrong read costs one reply.
+A redesign replaces the old look outright; polishing the look you were asked
+to drop is the worst of both.
 
 ## The ladder, for UI
 
@@ -31,7 +34,7 @@ or pixel values inside components.
 
 - color: `--bg`, `--surface`, `--text`, `--muted`, `--border`, `--accent`, `--danger`
 - space: one scale (4, 8, 12, 16, 24, 32, 48)
-- radius: one or two values; type: one or two families, about five sizes
+- radius: one or two values; type: one or two families, about five sizes, body lines ≤ ~70ch
 
 ## Tells of generated UI: avoid by default
 
@@ -42,6 +45,10 @@ or pixel values inside components.
 - Gray text on colored backgrounds; color carrying hierarchy that size and weight should
 - Heavy drop shadows and pill shapes on everything
 - Emoji standing in for icons
+- A small uppercase label above every heading; section numbers (01, 02, 03) that carry nothing
+- Gradient text, a thick colored stripe down one side of each card, monospace worn as a "technical" costume
+- A product screenshot faked out of styled divs
+- A section that flips light or dark mid-page
 - Placeholder copy ("Lorem ipsum", "John Doe", "Acme") and clichés ("seamless", "elevate", "unleash")
 
 Instead: hierarchy from size, weight, and spacing first; one accent color,
@@ -49,14 +56,18 @@ used sparingly and for meaning; real copy; layout that follows the content.
 
 ## Pre-ship check
 
-Run it on what you built. Report each item as passed or the fix needed.
+Run it on what you built, once: every width in one pass, fix everything it
+finds in one batch, confirm once more, stop. Report each item as passed or the
+fix needed.
 
 - Contrast: 4.5:1 body text, 3:1 large text and UI controls
 - Keyboard: everything reachable, visible focus, logical order, Escape closes overlays
 - Labels: every input labelled; icon-only buttons have an accessible name
 - Responsive at 360, 768, 1280 px: no horizontal scroll, touch targets ≥ 44 px
 - States: empty, loading, error, and very long text all designed
-- Motion respects `prefers-reduced-motion`; dark mode works if the app has one
+- Copy: buttons say what they do; errors say what went wrong and how to recover
+- Numbers in tables line up (`font-variant-numeric: tabular-nums`)
+- Motion respects `prefers-reduced-motion`, exits run faster than entrances; dark mode works if the app has one
 
 ## Output
 

@@ -23,7 +23,7 @@ Sample, don't read everything:
 
 1. README, manifests (`package.json`, `pyproject.toml`, `go.mod`, `Cargo.toml`, `*.csproj`, ...), CI config.
 2. `git ls-files` for the tree; skip vendored and generated paths.
-3. Churn, to find what matters: `git log --since=6.months --name-only --format= | sort | uniq -c | sort -rn | head -30`.
+3. Churn, to find what matters: `git log --since=6.months --name-only --format= | sort | uniq -c | sort -rn | head -30`. Then fan-in: the modules most other files import are the hubs a newcomer must know.
 4. Open entry points and the most-touched modules; trace one or two real flows end to end.
 
 ## Format
@@ -62,6 +62,7 @@ flowchart LR
 
 Rules:
 
+- No secrets: name `.env` and credential files if they matter, never copy a value.
 - One line per module job. Name where things live; don't explain how they work.
 - The diagram shows module dependencies, ≤15 nodes. Skip it for single-module repos.
 - Behavior belongs in `braid/specs/`, terms in `braid/GLOSSARY.md`, decisions in `braid/adr/`, commands and conventions in `AGENTS.md`. Link them, never copy.
