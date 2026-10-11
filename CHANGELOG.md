@@ -5,6 +5,7 @@ All notable changes to braid. Versions follow semver: major = a skill renamed or
 ## [Unreleased]
 
 - braid syncs on claude.ai again. Since 1.2.0 its sync skipped braid, keeping 1.1.0, because `braid-context`'s `plugin.json` sat inside braid's plugin folder; the mod's manifest now lives in its marketplace entry (ADR 0013). Claude Code installs are unchanged.
+- `design`: the project's own component comes first on the UI ladder, before a native element, matching the core's "a house component beats a native widget".
 
 ## [1.3.0] - 2026-10-11
 

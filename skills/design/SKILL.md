@@ -1,6 +1,6 @@
 ---
 name: design
-description: "Frontend UI under YAGNI > KISS > DRY: native elements first, a few tokens, no generic AI look, and a pre-ship check for contrast, focus, responsive, and empty/error states. Only when the user explicitly invokes it."
+description: "Frontend UI under YAGNI > KISS > DRY: the project's own components, then native elements, a few tokens, no generic AI look, and a pre-ship check for contrast, focus, responsive, and empty/error states. Only when the user explicitly invokes it."
 disable-model-invocation: true
 argument-hint: "[what to build or review]"
 license: MIT
@@ -22,10 +22,10 @@ to drop is the worst of both.
 
 ## The ladder, for UI
 
-1. **Native element?** `<button>`, `<dialog>`, `<details>`, `<select>`, `<input type="date|color|range">`, form validation attributes, `popover`. Use it.
-2. **CSS does it?** Layout (grid, flex, container queries), state (`:has`, `:focus-visible`, `:invalid`), theming (`prefers-color-scheme`), motion (transitions). CSS over JS.
-3. **Component library already installed?** Use its component. Never add a UI dependency for one widget.
-4. **Only then:** the smallest custom component.
+1. **A component for it already in this project?** Its own, or from the library its screens use (`<Button>`, `<Dialog>`). Use it the way those screens do: it carries the app's styling, focus handling and tests. A house component beats a native widget.
+2. **Native element?** `<button>`, `<dialog>`, `<details>`, `<select>`, `<input type="date|color|range">`, form validation attributes, `popover`. Use it.
+3. **CSS does it?** Layout (grid, flex, container queries), state (`:has`, `:focus-visible`, `:invalid`), theming (`prefers-color-scheme`), motion (transitions). CSS over JS.
+4. **Only then:** the smallest custom component. Never add a UI dependency for one widget.
 
 ## Tokens: knowledge with one home
 
