@@ -1,11 +1,11 @@
 ---
-name: ponytail-review
-description: >
-  Quality review of a change: is the logic right, is it safe, does it hold
-  under real load, is risky code tested, is it fast enough, and is every line
-  needed. Reads the connected code, not only the diff. Each finding is
-  explained in plain English. Use for "review this", "code review", "review
-  the last commit", "review my PR", "is this over-engineered", /ponytail-review.
+name: review
+description: "Quality review of a change: is it right, safe, does it hold under load, is risky code tested, is it fast, is every line needed (YAGNI > KISS > DRY). Reads the connected code, not only the diff. Only when the user explicitly invokes it."
+disable-model-invocation: true
+argument-hint: "[diff target, default: uncommitted + branch vs base]"
+license: MIT
+metadata:
+  source: https://github.com/DietrichGebert/ponytail
 ---
 
 Review a change like the senior developer who will be paged when it breaks.
@@ -18,6 +18,8 @@ This is a report the user asked for, so give it in full.
 - Review what the user names: uncommitted or staged changes, a branch, a PR
   link, or files. Nothing named: the uncommitted changes, or the last commit
   if there are none.
+- In braid, nothing named means the uncommitted changes plus the branch
+  against its base.
 - Read the diff, then the code it touches: callers of every changed function,
   the functions it calls, the tests, the README.
 - Trace the real flow: where data comes in, what is stored, what goes out.
@@ -60,11 +62,23 @@ This is a report the user asked for, so give it in full.
   wrong result". No case, no finding.
 - Re-read the lines and confirm: the caller exists, the value can really be
   empty, the code really is unused.
-- A shortcut marked with a `shortcut:` (or older `ponytail:`) comment that names its limit is a
-  decision, not a finding, unless the expected load already crosses it.
+- A shortcut marked with a `shortcut(<strand>):` (or plain `shortcut:`, or older `braid(<strand>):`)
+  comment that names its limit is a decision, not a finding, unless the expected load already crosses it.
 - Propose the smallest fix that works. Prefer fixes that delete code. Never
   add layers, frameworks or config the problem does not need.
 - No style taste, no "consider", no vague worries.
+
+## Lean findings, one line each
+
+Lean findings need no four-part block: `<N>. <file>:L<line>: <tag> <what>. <replacement>.`
+The tags above, plus:
+
+- `kiss:` nested, clever, or magic where a plain form reads cold, or a second style for a job the codebase does one way. Show the plain form.
+- `dry:` the same knowledge (constant, config value, schema, rule) defined twice, code re-implementing a helper the repo has (name it), or a third copy of logic that changes for the same reason. Never flag two copies. Tag reuse and merge findings `dry:`: a merge needs a third copy.
+- `shrink:` same logic, fewer lines. Show the shorter form.
+
+One smoke test or assert-based self-check is the minimum, never too much. For
+a second opinion from a reviewer who didn't write the code, `/braid:xreview`.
 
 ## 4. Output
 

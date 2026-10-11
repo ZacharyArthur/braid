@@ -1,11 +1,11 @@
 ---
-name: ponytail-audit
-description: >
-  Quality audit of a whole repo: bugs, security holes, what breaks under real
-  load, risky code without tests, slow paths, and what to delete, merge or
-  split. Ranked, each finding explained in plain English. One-shot report,
-  changes nothing. Use for "audit this codebase", "review the whole repo",
-  "find bloat", "what can I delete", /ponytail-audit.
+name: audit
+description: "Quality audit of a whole repo or path: bugs, security holes, what breaks under real load, risky code without tests, slow paths, and what to delete, merge or split (YAGNI > KISS > DRY). Ranked, one-shot report. Only when the user explicitly invokes it."
+disable-model-invocation: true
+argument-hint: "[path, default: whole repo]"
+license: MIT
+metadata:
+  source: https://github.com/DietrichGebert/ponytail
 ---
 
 Audit the whole repo like the senior developer who just inherited it and
@@ -17,6 +17,7 @@ tested and fixed later. This is a report the user asked for, so give it in full.
 
 - Audit what the user names: a folder, a package, or the whole repo.
   Nothing named: the whole repo.
+- Read `braid/map.md` first if it exists; it says where things live.
 - Read the README, the deploy and build config, the dependency list, the
   entry points (main, routes, handlers, jobs, CLI commands) and the tests.
 - Find the expected load: one person running a script, or many users and
@@ -60,11 +61,13 @@ tested and fixed later. This is a report the user asked for, so give it in full.
   wrong result". No case, no finding.
 - Before calling code unused, grep the whole tree for it, including tests,
   fixtures, config, and string or dynamic references.
-- A shortcut marked with a `shortcut:` (or older `ponytail:`) comment that names its limit is a
-  decision, not a finding, unless the expected load already crosses it.
+- A shortcut marked with a `shortcut(<strand>):` (or plain `shortcut:`, or older `braid(<strand>):`)
+  comment that names its limit is a decision, not a finding, unless the expected load already crosses it.
 - Propose the smallest fix that works. Prefer fixes that delete code. Never
   add layers, frameworks or config the problem does not need.
 - No style taste, no "consider", no vague worries.
+
+Lean findings take one line each, in `../review/SKILL.md`'s lean format and tags.
 
 ## 4. Output
 
