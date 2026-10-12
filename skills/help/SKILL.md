@@ -51,7 +51,7 @@ a per-prompt reminder, "stop braid" turns it off for the session.
 | `map` (auto) | Orienting in a repo: builds or patches `braid/map.md` | `[rebuild]` |
 | `wayfind` | An effort too big or foggy for one session: a route of decisions in `braid/routes/` | `[effort or idea]` |
 | `spec` | Planning, building and recording changes: `propose`, `apply`, `archive`, `discover` | `<verb> [name or description]` |
-| `standards` | Writing or reviewing the project's `AGENTS.md`: commands, quality gate, conventions, git workflow | `[section]` |
+| `standards` | Writing or reviewing the project's `AGENTS.md`: commands, quality gate, conventions, git workflow, optional subagent delegation | `[section]` |
 | `handoff` | Ending a session someone else will continue: `braid/HANDOFF.md` | - |
 | `review` | A quality review of a change: bugs, risks, load, missing tests, speed, what to cut | `[diff target]` |
 | `audit` | The same review for a whole repo or path | `[path]` |

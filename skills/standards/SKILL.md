@@ -1,8 +1,8 @@
 ---
 name: standards
-description: "Create or review the project's AGENTS.md (plus a CLAUDE.md that imports it): project priorities, stack, exact lint/type/test/dead-code/validation commands, quality gate, conventions, spec workflow, and git workflow. Only when the user explicitly invokes it."
+description: "Create or review the project's AGENTS.md (plus a CLAUDE.md that imports it): project priorities, stack, exact lint/type/test/dead-code/validation commands, quality gate, conventions, spec workflow, git workflow, and optional subagent delegation. Only when the user explicitly invokes it."
 disable-model-invocation: true
-argument-hint: "[section: project|stack|commands|gate|conventions|workflow|git|dont|...]"
+argument-hint: "[section: project|stack|commands|gate|conventions|workflow|delegation|git|dont|...]"
 license: MIT
 ---
 
@@ -43,8 +43,8 @@ enforces), **Git**, **Don't**.
 Optional, offered when they apply: **Dev environment** (a devcontainer, Docker,
 or Nix setup is detected: where commands must run), **Invariants** (hard rules,
 ideally backed by tests: "secrets never reach the client", "only `clients/`
-makes HTTP calls"), **Workflow** (spec framework, below), **Security** (a
-`SECURITY.md` exists or auth/web code is present: link it, say when to walk it),
+makes HTTP calls"), **Workflow** (spec framework, below), **Delegation** (when
+and to which model subagent work goes, below), **Security** (a `SECURITY.md` exists or auth/web code is present: link it, say when to walk it),
 **Reference** (related repos: consult, don't port). No layout tree: where
 things live is `braid/map.md`'s job; name a folder only when an invariant needs it.
 
@@ -79,22 +79,30 @@ things live is `braid/map.md`'s job; name a folder only when an invariant needs 
      never force-push or commit to the main branch). Also offer: "never mention
      AI tools in committed artifacts" and "show the exact commit or PR text and
      confirm before commit, push, or PR".
+   - **Delegation:** offer none (recommended), braid's policy, or custom.
+     None → leave the section out. braid's policy → read `delegation.md` (this
+     folder): ask which harnesses the project uses, write its lines and tiers,
+     then offer each harness's explorer file, written only after a yes.
    - **Optional sections** that apply.
 4. **Write** `AGENTS.md` (format in `template.md`, this folder) and
    `CLAUDE.md` = `@AGENTS.md`.
 5. **Verify.** Run every command once. Report each: passes, fails (first error
    line), or not installed (with its install command). Never install tools or
-   fix findings yourself; the user decides.
+   fix findings yourself; the user decides. Explorer files written → tell the
+   user how to confirm the model that ran (`delegation.md`); never spawn one.
 
 ## Review
 
 1. Summary table: section → what it defines → command.
 2. Findings: **gaps** (a default section or tool category missing), **drift**
-   (AGENTS.md says one tool or workflow, the repo uses another), **broken**
+   (AGENTS.md says one tool or workflow, the repo uses another; Delegation
+   names an explorer but its file is missing or names another model; read
+   `delegation.md` for the files), **broken**
    (run each command: fails or not installed).
 3. Offer to walk through sections, explaining the choice and its alternatives.
    The user picks which, or none.
-4. Write only confirmed changes, then re-run the commands.
+4. Write only confirmed changes, then re-run the commands. Explorer files
+   written → the routing check, as in Create.
 
 ## Rules
 
@@ -106,4 +114,5 @@ things live is `braid/map.md`'s job; name a folder only when an invariant needs 
 - **About 100 lines;** a large monorepo may stretch to about 150. Past that,
   link out (as with `SECURITY.md`) instead of inlining.
 - Documentation only: no commit hooks, branch protection, or host settings.
-  Want enforcement? Offer it as a `/braid:spec propose` change.
+  Want enforcement? Offer it as a `/braid:spec propose` change. The one
+  exception: the explorer files Delegation names, each after a yes.
