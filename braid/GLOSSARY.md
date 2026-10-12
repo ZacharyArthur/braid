@@ -40,6 +40,14 @@ _Avoid_: map (that's the repo map), roadmap
 **Frontier**:
 The open decisions whose prerequisites are already decided.
 
+**Tier**:
+Which model a delegated task runs on: fast (locates), mid (reviews, researches) or main (plans, edits, synthesizes). Named per harness in a project's AGENTS.md.
+_Avoid_: size, class
+
+**Explorer**:
+The read-only agent the fast tier runs: `Explore` in Claude Code, `explorer` in Codex, `braid-explore` in ZCode.
+_Avoid_: scout, searcher
+
 **Mod**:
 A Claude Code-only plugin of TypeScript hooks in `mods/<name>/`, listed in braid's marketplace and installed on its own.
 _Avoid_: extension, add-on

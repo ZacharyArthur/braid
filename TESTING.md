@@ -22,6 +22,7 @@ In a new session:
 - [ ] "stop braid", then `/compact` → no braid rules in context
 - [ ] Then bare `/braid:braid` → back at **full**, with the core and its Project state re-sent
 - [ ] In a repo with code and no `braid/map.md`, ask "what does this code already define?" → it quotes the injected **Codebase map**; with `BRAID_MAP=0` set before launch, no map
+- [ ] In a scratch repo, `/braid:standards`: accept the Delegation round as recommended → no Delegation section, no `.claude/agents/` or `.codex/agents/` file; again with braid's policy, yes to Claude Code only → the section plus `.claude/agents/Explore.md`; after a restart, `/tasks` shows Haiku on the next Explore run
 - [ ] `/braid:humanizer`, `/braid:security-audit`, `/braid:help` and `/braid:skill` appear in the `/` menu; ask "make this sound less AI" without the command → humanizer does **not** auto-load
 
 ## Codex
@@ -38,6 +39,7 @@ Run `codex`, open `/hooks`, review and trust braid's hooks, start a new thread.
 - [ ] "stop braid", then bare `$braid` → back at **full**, core re-sent
 - [ ] `$spec propose add-something` works
 - [ ] User-only skills don't auto-trigger
+- [ ] In a scratch repo, `$standards` with braid's delegation policy, yes to Codex → `.codex/agents/explorer.toml`; on the next explorer run, `/agent` to its thread, then `/status` shows `gpt-6-luna`
 
 ## ZCode
 
@@ -48,6 +50,7 @@ Install from the plugin marketplace (GitHub source `ZacharyArthur/braid`).
 - [ ] After `/compact`: core rules are NOT re-injected (ZCode never fires SessionStart on compact) — the level survives only as the summary's paraphrase; with `drift on` the drift line still restates it on every prompt
 - [ ] Skills listed in Settings → Skills (plugin skills have no switch there)
 - [ ] `/braid:spec propose add-something` → `braid/changes/add-something/`; a new session's Project state shows it
+- [ ] `/braid:standards` with braid's delegation policy, giving the model picker's Flash id: accept the ZCode project explorer → `.zcode/agents/braid-explore.md`; in a new session, ask which subagents it can delegate to and note whether Settings → Subagents lists it on Flash (record both in `delegation.md`). Not available: rerun `/braid:standards delegation`, accept the fallback → `~/.zcode/agents/braid-explore.md`, listed in a new session. Decline both → the Settings step is shown and nothing is written
 
 ## A/B against ponytail
 
