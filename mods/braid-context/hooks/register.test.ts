@@ -22,6 +22,8 @@ function world(
   on: On,
   opts: {
     braid?: boolean;
+    // Settings as read, in place of the ones `braid` picks.
+    settings?: Record<string, unknown>;
     files?: Record<string, string>;
     fiveHour?: { percentUsed: number; resetsAt?: string };
     limits?: { kind: string; percentUsed: number }[];
@@ -38,12 +40,18 @@ function world(
   // The engine hands paths over resolved, in the platform's separators.
   const find = (path: string) => Object.keys(files).find((k) => path.replace(/\\/g, '/').endsWith(k));
   const clock = mock.clock(on, { now: T0 });
-  on('settings.read', () => ({ value: { enabledPlugins: opts.braid === false ? {} : { 'braid@braid': true } } }));
+  on('settings.read', () => ({
+    value: opts.settings ?? { enabledPlugins: opts.braid === false ? {} : { 'braid@braid': true } },
+  }));
   on('fs.read', (_$, e) => {
     const k = find(e.path);
     const text = k === undefined ? undefined : files[k];
     return text === undefined ? { deny: `ENOENT ${e.path}` } : { value: text };
   });
+  on('fs.exists', (_$, e) => ({
+    // A key naming the folder itself stands for an empty one.
+    value: Object.keys(files).some((k) => `${k}/`.startsWith(`${e.path.replace(/\\/g, '/')}/`)),
+  }));
   on('fs.list', (_$, e) =>
     e.path.replace(/\\/g, '/').endsWith('braid/changes')
       ? { value: [{ name: 'add-mods', kind: 'dir', size: 0, mtimeMs: 0, isLink: false }] }
@@ -429,5 +437,46 @@ for (const surface of ['terminal', 'desktop'] as const) {
     });
     await $.classic.SessionStart({ source: 'startup', transcript_path: transcript, session_id: 's1' });
     expect(await text(await band($))).toContain('braid lite');
+  });
+
+  // The Claude app's synced copy runs only with no installed copy enabled; --plugin-dir's replaces an installed one,
+  // enabled or not, which settings still list.
+  for (const [label, settings, id] of [
+    ['synced from the Claude app', {}, 'synced'],
+    ['by --plugin-dir over an enabled install', { enabledPlugins: { 'braid@braid': true } }, 'inline'],
+    ['by --plugin-dir over a disabled install', { enabledPlugins: { 'braid@braid': false } }, 'inline'],
+  ] as const)
+    test(`${surface}: braid loaded ${label} keeps its state in braid-${id}`, async ($, on) => {
+      world(on, {
+        settings,
+        files: { [`C:/home/.claude/plugins/data/braid-${id}/sessions/s1.json`]: '{"mode":"lite"}' },
+      });
+      await start($);
+      expect(await text(await band($))).toContain('braid lite');
+    });
+
+  test(`${surface}: a synced copy never switched reads full`, async ($, on) => {
+    world(on, { settings: {}, files: { 'C:/home/.claude/plugins/data/braid-synced': '' } });
+    await start($);
+    expect(await text(await band($))).toContain('braid full');
+  });
+
+  test(`${surface}: an installed copy's state wins over the synced copy's`, async ($, on) => {
+    world(on, {
+      files: {
+        [STATE]: '{"mode":"ultra"}',
+        'C:/home/.claude/plugins/data/braid-synced/sessions/s1.json': '{"mode":"lite"}',
+      },
+    });
+    await start($);
+    expect(await text(await band($))).toContain('braid ultra');
+  });
+
+  test(`${surface}: the installed copy's state still shows beside an old braid-inline folder`, async ($, on) => {
+    world(on, {
+      files: { [STATE]: '{"mode":"ultra"}', 'C:/home/.claude/plugins/data/braid-inline/sessions/old.json': '{}' },
+    });
+    await start($);
+    expect(await text(await band($))).toContain('braid ultra');
   });
 }
