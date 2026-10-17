@@ -76,15 +76,27 @@ async function activeChange($: $): Promise<string | null> {
 // braid keeps each session's level in its plugin data folder; no file means its default, full.
 async function braidState($: $, s: Session): Promise<Braid | null> {
   const enabled = ((await $.settings.read()).enabledPlugins ?? {}) as Record<string, unknown>;
-  const id = Object.keys(enabled).find((k) => k.startsWith('braid@') && enabled[k] === true);
-  if (!id) return null;
+  const ids = Object.keys(enabled)
+    .filter((k) => k.startsWith('braid@') && enabled[k] === true)
+    .map((k) => k.slice(6));
   // <config>/projects/<project>/<session>.jsonl, cut from the end: the config path may hold a "projects" too.
-  const config = s.transcript.replace(/[\\/]projects[\\/][^\\/]+[\\/][^\\/]+$/, '');
-  const file = `${config}/plugins/data/braid-${id.slice(6)}/sessions/${s.sid.replace(/[^\w-]/g, '_')}.json`;
+  const data = `${s.transcript.replace(/[\\/]projects[\\/][^\\/]+[\\/][^\\/]+$/, '')}/plugins/data/braid-`;
+  // --plugin-dir loads braid@inline in place of an installed copy, which settings still list; the Claude app's
+  // synced copy, braid@synced, loads only when no installed copy is enabled. Only the copy that runs writes
+  // this session's file, so try each in that order.
+  // shortcut(kiss): a folder left by a copy no longer loaded reads as braid on, and a session resumed under
+  // another copy can show the old one's level until a new session; have braid.cjs record its folder if that bites.
+  const has = (id: string) => $.fs.exists(`${data}${id}`).catch(() => false);
+  if (await has('inline')) ids.unshift('inline');
+  if (await has('synced')) ids.push('synced');
+  if (!ids.length) return null;
   let mode: unknown;
-  try {
-    mode = JSON.parse(await $.fs.read(file)).mode;
-  } catch {}
+  for (const id of ids) {
+    try {
+      mode = JSON.parse(await $.fs.read(`${data}${id}/sessions/${s.sid.replace(/[^\w-]/g, '_')}.json`)).mode;
+      break;
+    } catch {}
+  }
   if (mode === 'off') return null;
   const level = typeof mode === 'string' && LEVELS.includes(mode) ? mode : 'full';
   return { level, change: await activeChange($) };

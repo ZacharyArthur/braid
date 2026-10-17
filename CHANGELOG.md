@@ -6,6 +6,7 @@ All notable changes to braid. Versions follow semver: major = a skill renamed or
 
 - README: installing from the Claude app (claude.ai), how its copy relates to Claude Code's, and updating it. TESTING: how to test a branch before it merges.
 - `standards`: an optional Delegation section (recommended off): when to hand work to subagents and on which model tier per harness, and, after a yes per harness, a read-only explorer on the fast model (Claude Code's `Explore` on Haiku, Codex's `explorer` on `gpt-6-luna`, ZCode's `braid-explore` on GLM-5.3-Flash, in the project, or user-wide if ZCode doesn't load project agents). Review flags an explorer file that drifted from AGENTS.md. ADR 0014.
+- `braid-context` 0.1.2: the band shows braid's level when braid comes from the Claude app's synced copy (`braid@synced`, loaded only when no copy installed in Claude Code is enabled) or from `--plugin-dir` (`braid@inline`, which replaces an installed copy).
 
 ## [1.3.1] - 2026-10-11
 

@@ -57,6 +57,7 @@ Commands and conventions: see `AGENTS.md`. Behavior: `braid/specs/`. Terms: `bra
 
 1. `register.tsx` `classic.SessionStart` / `classic.UserPromptSubmit` → `remember` runs after `next(e)`, so braid's own hook has saved the level first.
 2. `braidState` finds the enabled `braid@<marketplace>` plugin and reads `<config>/plugins/data/braid-<marketplace>/sessions/<sid>.json`.
+   It also tries `braid-inline` first and `braid-synced` last, when those folders exist: `--plugin-dir` (`braid@inline`) runs in place of an installed copy, the synced copy (`braid@synced`) only when no installed copy is enabled, and only the copy that runs writes the file.
 3. `turn.step` records cache use; `session.start` ticks `$.clock.every(1000)` until the cache deadline; each calls `$.ui.invalidate('ui.render')`.
 
 ### Repo check
@@ -76,7 +77,7 @@ It then runs `check`, `dry` and the blind `complete` judge, and `report` writes 
 - Scripts are `.cjs` so that a parent `"type": "module"` can't break them; `check.cjs` tests exactly that.
 - `skills/braid/core.md`, `hooks/map.cjs` and `skills/{review,audit,debt}` are based on ponytail. Edit them only by renames or whole added blocks (ADR 0012), which is why `core.md` keeps ponytail's frontmatter.
 - "Active change" counting lives in two places: `braid.cjs` `pointers` and `register.tsx` `activeChange`. Change both together.
-- The mod reads braid's state file by path (`plugins/data/braid-<marketplace>/sessions/`), so moving that path in `braid.cjs` breaks the band silently.
+- The mod reads braid's state file by path (`plugins/data/braid-<marketplace>/sessions/`, or `braid-inline` and `braid-synced`), so moving that path in `braid.cjs` breaks the band silently.
 - The mod's version lives in its marketplace entry, not in `plugin.json`, and is separate from braid's version (ADR 0013).
 - `PONYTAIL_ALWAYS_ON` in `check.cjs` is a hand-measured constant; re-measure it on every ponytail sync.
 - `bench/tasks/` is outside both linters (`biome.json`, `.markdownlint-cli2.jsonc` globs) so fixtures stay as written; its `files/` are deliberately flawed inputs.
