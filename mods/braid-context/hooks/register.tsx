@@ -6,6 +6,7 @@ import type { Braid, Cache, Session, Ttl } from '../types';
 const cache = atom({ plugin: 'braid-context', key: 'cache' } as const, null);
 const braid = atom({ plugin: 'braid-context', key: 'braid' } as const, null);
 const session = atom({ plugin: 'braid-context', key: 'session' } as const, null);
+const branch = atom({ plugin: 'braid-context', key: 'branch' } as const, null);
 // A main-thread response has arrived in this conversation; the cache figures wait for the turn's end.
 const answered = atom({ plugin: 'braid-context', key: 'answered' } as const, false);
 
@@ -24,14 +25,14 @@ const record = (line: string) => {
 // Mods can't read Claude Code's own prompt_cache figures (the status line gets them), so the TTL comes
 // from the transcript's last cache write: Anthropic's own 5m/1h split. Whole response records only, so
 // a "cache_creation" quoted in a prompt or a tool's output can't mislead it.
-// shortcut(yagni): $.fs.read stops at 4 MiB, past that the last TTL read stands; read
-// $.session.usage()'s prompt cache instead once mods get it.
+// shortcut(yagni): $.fs.read rejects past 4 MiB, so a longer transcript's end is read by a child process
+// (tail), ~1 s on Windows; read $.session.usage()'s prompt cache instead once mods get it.
 async function ttlFromTranscript($: $, path: string): Promise<Ttl | undefined> {
   let text: string;
   try {
     text = await $.fs.read(path);
   } catch {
-    return undefined;
+    text = await tail($, path).catch(() => '');
   }
   for (const line of text.split('\n').reverse()) {
     if (!line.includes('"cache_creation"')) continue;
@@ -42,6 +43,21 @@ async function ttlFromTranscript($: $, path: string): Promise<Ttl | undefined> {
     if (w?.ephemeral_5m_input_tokens > 0) return '5m';
   }
   return undefined;
+}
+
+// A file's last MiB, by bytes: a child's output is cut at 4 MiB, and a line tail could pass that. The first,
+// partial line doesn't parse and is skipped. Windows has no `tail` on its PATH; PowerShell seeks instead.
+// Single quotes only, so the script survives however the runtime quotes it onto the Windows command line.
+const TAIL_BYTES = 1 << 20;
+const PS_TAIL = `[Console]::OutputEncoding=[Text.Encoding]::UTF8;$f=[IO.File]::Open($env:BRAID_TAIL,'Open','Read','ReadWrite');$n=[Math]::Min($f.Length,${TAIL_BYTES});[void]$f.Seek(-$n,'End');$b=New-Object byte[] $n;$r=0;while($r -lt $n){$r+=$f.Read($b,$r,$n-$r)};$f.Close();[Console]::Out.Write([Text.Encoding]::UTF8.GetString($b))`;
+async function tail($: $, path: string): Promise<string> {
+  const init = { timeoutMs: 10_000 };
+  try {
+    return (await $.process.run(['tail', '-c', String(TAIL_BYTES), path], init)).stdout;
+  } catch {
+    const ps = ['powershell', '-NoProfile', '-NonInteractive', '-Command', PS_TAIL];
+    return (await $.process.run(ps, { ...init, env: { BRAID_TAIL: path } })).stdout;
+  }
 }
 
 // Subscriptions get usage windows back; API and Bedrock (a gateway's spend_limit included) only a cost.
@@ -102,12 +118,30 @@ async function braidState($: $, s: Session): Promise<Braid | null> {
   return { level, change: await activeChange($) };
 }
 
+// The checked-out branch; null when detached, outside a repository, or without git.
+async function gitBranch($: $): Promise<string | null> {
+  try {
+    // Bounded: this runs as each prompt is submitted.
+    const r = await $.process.run(['git', 'branch', '--show-current'], { timeoutMs: 2000 });
+    return (r.exitCode === 0 && r.stdout.trim()) || null;
+  } catch {
+    return null;
+  }
+}
+
+// The branch first: it never throws, and braidState can (settings unreadable).
+async function refresh($: $, s: Session) {
+  const g = await gitBranch($);
+  await update($, branch, () => g);
+  const b = await braidState($, s);
+  await update($, braid, () => b);
+}
+
 // Called after next(e): braid's own hook, beneath the mods, records a level switch first.
 async function remember($: $, e: { transcript_path: string; session_id: string }) {
   const s = { transcript: e.transcript_path, sid: e.session_id };
   await update($, session, () => s);
-  const b = await braidState($, s);
-  await update($, braid, () => b);
+  await refresh($, s);
 }
 
 const tokens = (n: number) =>
@@ -185,10 +219,14 @@ export const register: Register = (on) => {
 
   on('turn.complete', async ($, e, next) => {
     const result = await next(e);
-    if (e.agentId !== undefined || !e.usage) return result;
+    if (e.agentId !== undefined) return result;
+    const s = await read($, session);
+    // An interrupted or failed turn reports no usage, but its tools may have switched the branch. Caught: a
+    // throw (settings unreadable) would skip this whole hook and lose the turn's cache figures below.
+    if (s) await refresh($, s).catch(() => {});
+    if (!e.usage) return result;
     const u = e.usage;
     const total = u.input_tokens + u.cache_read_input_tokens + u.cache_creation_input_tokens;
-    const s = await read($, session);
     const prev = await read($, cache);
     const ttl =
       (s && (await ttlFromTranscript($, s.transcript))) ??
@@ -201,10 +239,6 @@ export const register: Register = (on) => {
       first: prev == null,
     };
     await update($, cache, () => latest);
-    if (s) {
-      const b = await braidState($, s);
-      await update($, braid, () => b);
-    }
     return result;
   });
 
@@ -215,6 +249,7 @@ export const register: Register = (on) => {
     const window5h = fiveHour(rateLimits, await $.clock.now());
     const c = await read($, cache);
     const b = await read($, braid);
+    const g = await read($, branch);
     const gauge = (fraction: number) => (e.props.bodyColumns >= BAR_MIN_COLUMNS ? bar(fraction) : '');
 
     // The fill arrives with a response; before one, only the window is known.
@@ -283,13 +318,9 @@ export const register: Register = (on) => {
       else if (cost && cost.usd > 0 && !isSubscription(rateLimits))
         parts.push(<Text key="spend">${cost.usd.toFixed(2)}</Text>);
     }
-    if (b)
-      parts.push(
-        <Text key="braid">
-          braid {b.level}
-          {b.change ? ` · ${b.change}` : ''}
-        </Text>,
-      );
+    if (b) parts.push(<Text key="braid">braid {b.level}</Text>);
+    if (g) parts.push(<Text key="branch">git {g}</Text>);
+    if (b?.change) parts.push(<Text key="change">{b.change}</Text>);
 
     // One line, cut at the edge: the end that goes is braid's change.
     return (
