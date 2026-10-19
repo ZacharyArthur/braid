@@ -66,7 +66,7 @@ Optional add-ons for **Claude Code only** (terminal and Desktop app, v2.1.287+),
 
 | Mod | What it shows |
 |---|---|
-| `braid-context` | A line above the prompt: context used, the prompt cache's countdown to going cold (red under 1 min; on a 1h cache, yellow under 5 first; "live" while a turn runs), the last turn's cache hit rate, what the session is spending (`5h 23%` of the 5-hour window on a subscription, or the time it resets once used up; `$1.23` on API or Bedrock), and braid's level and active change. Context, cache time left and the 5-hour window also show as block-character bars on a wide enough band, e.g. `ctx ██░░░░░░ 312k/1M 31%`. Context and the 5-hour window turn yellow from 75% and red from 90%; the hit rate turns yellow under 80% and red under 50%. Enough to stand in for a status line, including in the Desktop app, which has none |
+| `braid-context` | A line above the prompt: context used, the prompt cache's countdown to going cold (red under 1 min; on a 1h cache, yellow under 5 first; "live" while a turn runs), the last turn's cache hit rate, what the session is spending (`5h 23%` of the 5-hour window on a subscription, or the time it resets once used up; `$1.23` on API or Bedrock), braid's level, the git branch checked out, and the active change. Context, cache time left and the 5-hour window also show as block-character bars on a wide enough band, e.g. `ctx ██░░░░░░ 312k/1M 31%`. Context and the 5-hour window turn yellow from 75% and red from 90%; the hit rate turns yellow under 80% and red under 50%. Enough to stand in for a status line, including in the Desktop app, which has none |
 
 ## Benchmarks
 

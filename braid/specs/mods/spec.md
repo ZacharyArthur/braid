@@ -36,7 +36,7 @@ The `braid` plugin SHALL NOT load any mod, and the Codex marketplace SHALL NOT l
 
 ### Requirement: Context band
 
-With `braid-context` installed, the session SHALL show one line above the prompt with the context used against the model's window, the prompt cache's remaining time on its TTL, the last turn's cache hit rate, what the session is spending (the 5-hour usage window on a subscription, the session's cost in dollars otherwise), and braid's level with the active change's task progress when there is one. It stays on one line, cut at the edge when the screen is too narrow. When the band is at least 120 columns wide, context fill, cache time left and the 5-hour window also show as bars of block characters. Context and spend follow each main-thread response, not just each turn's end.
+With `braid-context` installed, the session SHALL show one line above the prompt with the context used against the model's window, the prompt cache's remaining time on its TTL, the last turn's cache hit rate, what the session is spending (the 5-hour usage window on a subscription, the session's cost in dollars otherwise), braid's level, the git branch checked out when there is one, and the active change's task progress when there is one. It stays on one line, cut at the edge when the screen is too narrow. When the band is at least 120 columns wide, context fill, cache time left and the 5-hour window also show as bars of block characters. Context and spend follow each main-thread response, not just each turn's end.
 
 #### Scenario: Before the first response
 
@@ -99,3 +99,14 @@ With `braid-context` installed, the session SHALL show one line above the prompt
 
 - **WHEN** a turn read under 80% of its prompt from cache, and it is not the conversation's first response
 - **THEN** the hit rate turns yellow, or red under 50%
+
+#### Scenario: Git branch
+
+- **WHEN** the session's working directory is on a git branch
+- **THEN** the band shows the branch after braid's level and before the active change, or at the end without braid
+- **AND** shows no branch when HEAD is detached or the directory is not in a repository
+
+#### Scenario: Long session
+
+- **WHEN** the conversation is compacted or resumed, or its transcript grows too large for the mod to read
+- **THEN** the cache countdown still uses the TTL of the session's latest cache write

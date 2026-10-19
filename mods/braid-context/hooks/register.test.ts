@@ -9,6 +9,7 @@ const STATE = 'C:/home/.claude/plugins/data/braid-braid/sessions/s1.json';
 const response = (split: string) =>
   `{"type":"assistant","isSidechain":false,"message":{"usage":{"cache_creation":{${split}}}}}`;
 const write1h = response('"ephemeral_5m_input_tokens":0,"ephemeral_1h_input_tokens":5099');
+const write5m = response('"ephemeral_5m_input_tokens":5099,"ephemeral_1h_input_tokens":0');
 const usage = {
   input_tokens: 100,
   cache_read_input_tokens: 9_700,
@@ -22,14 +23,20 @@ function world(
   on: On,
   opts: {
     braid?: boolean;
-    // Settings as read, in place of the ones `braid` picks.
-    settings?: Record<string, unknown>;
+    // Settings as read, in place of the ones `braid` picks; null: unreadable.
+    settings?: Record<string, unknown> | null;
     files?: Record<string, string>;
     fiveHour?: { percentUsed: number; resetsAt?: string };
     limits?: { kind: string; percentUsed: number }[];
     ctxPercent?: number;
     ctxTokens?: number | null;
     usd?: number;
+    // What `git branch --show-current` prints; null: git fails to start.
+    branch?: string | null;
+    // Files over $.fs.read's 4 MiB: read only by a child process.
+    big?: string[];
+    // No `tail` on the PATH, as on Windows; 'fails': it starts, then exits 1.
+    noTail?: boolean | 'fails';
   } = {},
 ) {
   const files: Record<string, string> = {
@@ -40,10 +47,27 @@ function world(
   // The engine hands paths over resolved, in the platform's separators.
   const find = (path: string) => Object.keys(files).find((k) => path.replace(/\\/g, '/').endsWith(k));
   const clock = mock.clock(on, { now: T0 });
-  on('settings.read', () => ({
-    value: opts.settings ?? { enabledPlugins: opts.braid === false ? {} : { 'braid@braid': true } },
-  }));
+  const ran = (exitCode: number, stdout: string) => ({
+    value: { exitCode, stdout, stderr: '', isStdoutTruncated: false, isStderrTruncated: false },
+  });
+  on('process.run', (_$, e) => {
+    const [cmd, ...args] = e.argv;
+    if (cmd === 'git') {
+      const branch = opts.branch === undefined ? 'change/x' : opts.branch;
+      return branch === null ? { deny: 'ENOENT git' } : ran(0, `${branch}\n`);
+    }
+    if (cmd === 'tail' && opts.noTail) return opts.noTail === 'fails' ? ran(1, '') : { deny: 'ENOENT tail' };
+    const path = cmd === 'tail' ? args.at(-1) : e.init?.env?.BRAID_TAIL;
+    const k = path === undefined ? undefined : find(path);
+    return k === undefined ? ran(1, '') : ran(0, files[k].slice(-(1 << 20)));
+  });
+  on('settings.read', () =>
+    opts.settings === null
+      ? { deny: 'settings unreadable' }
+      : { value: opts.settings ?? { enabledPlugins: opts.braid === false ? {} : { 'braid@braid': true } } },
+  );
   on('fs.read', (_$, e) => {
+    if (opts.big?.some((b) => e.path.replace(/\\/g, '/').endsWith(b))) return { deny: `over 4 MiB ${e.path}` };
     const k = find(e.path);
     const text = k === undefined ? undefined : files[k];
     return text === undefined ? { deny: `ENOENT ${e.path}` } : { value: text };
@@ -134,7 +158,7 @@ for (const surface of ['terminal', 'desktop'] as const) {
     const ui = await band($);
     const shown = await text(ui);
     expect(shown).toContain('ctx 312k/1M 31%');
-    expect(shown).toContain('braid lite · add-mods 1/2');
+    expect(shown).toContain('braid lite · git change/x · add-mods 1/2');
     expect(shown).not.toContain('cache');
   });
 
@@ -180,6 +204,67 @@ for (const surface of ['terminal', 'desktop'] as const) {
     await turn($);
     expect((await cacheText(await band($)))?.text).toBe('cache 5:00 (5m)');
   });
+
+  test(`${surface}: past 4 MiB the TTL comes from the transcript's end, a drop to 5m included`, async ($, on) => {
+    // A subscription, so the account guess would say 1h: only reading the end finds the 5m write.
+    world(on, { fiveHour: { percentUsed: 10 }, big: [TRANSCRIPT], files: { [TRANSCRIPT]: `${write1h}\n${write5m}` } });
+    await start($);
+    await $.classic.SessionStart({ source: 'compact', transcript_path: TRANSCRIPT, session_id: 's1' });
+    await turn($);
+    expect((await cacheText(await band($)))?.text).toBe('cache 5:00 (5m)');
+  });
+
+  test(`${surface}: without tail, as on Windows, PowerShell reads the transcript's end`, async ($, on) => {
+    world(on, { big: [TRANSCRIPT], noTail: true });
+    await start($);
+    await turn($);
+    expect((await cacheText(await band($)))?.text).toBe('cache 60:00 (1h)');
+  });
+
+  test(`${surface}: a tail that starts and fails doesn't fall through to PowerShell`, async ($, on) => {
+    // PowerShell would find the 1h write; with no 5-hour window, the account guess is 5m.
+    world(on, { big: [TRANSCRIPT], noTail: 'fails' });
+    await start($);
+    await turn($);
+    expect((await cacheText(await band($)))?.text).toBe('cache 5:00 (5m)');
+  });
+
+  test(`${surface}: unreadable settings still leave the turn's cache countdown and the branch`, async ($, on) => {
+    world(on, { settings: null });
+    await start($);
+    await turn($);
+    const ui = await band($);
+    expect((await cacheText(ui))?.text).toBe('cache 60:00 (1h)');
+    expect(await text(ui)).toContain('git change/x');
+  });
+
+  test(`${surface}: a turn ending without usage still shows a branch switched during it`, async ($, on) => {
+    const opts: { branch?: string } = {};
+    world(on, opts);
+    await start($);
+    const ui = await band($);
+    opts.branch = 'fix/y';
+    await $.turn.complete({ reason: 'aborted', answer: '', durationMs: 1, isAborted: true, turnId: 't1' });
+    expect(await text(ui)).toContain('git fix/y');
+  });
+
+  test(`${surface}: the git branch follows braid's level, or ends the band without braid`, async ($, on) => {
+    world(on, { braid: false });
+    await start($);
+    expect(await text(await band($))).toMatch(/ · git change\/x$/);
+  });
+
+  for (const [label, branch] of [
+    ['a detached HEAD', ''],
+    ['no git', null],
+  ] as const)
+    test(`${surface}: no branch with ${label}`, async ($, on) => {
+      world(on, { branch });
+      await start($);
+      const shown = await text(await band($));
+      expect(shown).not.toContain('git');
+      expect(shown).toContain('braid full · add-mods 1/2');
+    });
 
   test(`${surface}: a 5m cache skips yellow and turns red under 1 minute`, { timeoutMs: 20_000 }, async ($, on) => {
     const clock = world(on);

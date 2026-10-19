@@ -1,4 +1,4 @@
-<!-- braid:map sha=5a22cd0 date=2026-10-12 -->
+<!-- braid:map sha=f3a369e date=2026-10-19 -->
 # Repo map
 
 braid: a clean-code harness plugin (an always-on core plus workflow skills) for Claude Code, Codex and ZCode,
@@ -30,7 +30,7 @@ Commands and conventions: see `AGENTS.md`. Behavior: `braid/specs/`. Terms: `bra
 | `.claude-plugin/`, `.codex-plugin/`, `.zcode-plugin/` | one manifest per harness, one shared version | `plugin.json` |
 | `.claude-plugin/marketplace.json` | Claude marketplace: `braid` plus the mod's entry (the mod's manifest and version live here) | |
 | `.agents/plugins/marketplace.json` | Codex marketplace, which installs from GitHub `main` | |
-| `mods/braid-context/` | Claude Code band: context, cache countdown, spend, braid level and change | `hooks/register.tsx`, `hooks/register.test.ts`, `types/index.d.ts` |
+| `mods/braid-context/` | Claude Code band: context, cache countdown, spend, braid level, git branch and change | `hooks/register.tsx`, `hooks/register.test.ts`, `types/index.d.ts` |
 | `scripts/` | repo check and upstream drift | `check.cjs`, `upstream.cjs` |
 | `bench/` | A/B harness, tasks and published results | `ab.cjs`, `tasks/<task>/{task.json,files,solution,check.*}`, `results/<run>/report.md` |
 | `braid/` | braid's own specs, changes, ADRs, glossary and routes | `specs/*/spec.md`, `changes/archive/`, `adr/`, `routes/v1.md` |
@@ -58,7 +58,8 @@ Commands and conventions: see `AGENTS.md`. Behavior: `braid/specs/`. Terms: `bra
 1. `register.tsx` `classic.SessionStart` / `classic.UserPromptSubmit` → `remember` runs after `next(e)`, so braid's own hook has saved the level first.
 2. `braidState` finds the enabled `braid@<marketplace>` plugin and reads `<config>/plugins/data/braid-<marketplace>/sessions/<sid>.json`.
    It also tries `braid-inline` first and `braid-synced` last, when those folders exist: `--plugin-dir` (`braid@inline`) runs in place of an installed copy, the synced copy (`braid@synced`) only when no installed copy is enabled, and only the copy that runs writes the file.
-3. `turn.step` records cache use; `session.start` ticks `$.clock.every(1000)` until the cache deadline; each calls `$.ui.invalidate('ui.render')`.
+3. `refresh` also reads the branch with `git branch --show-current` (`$.process.run`).
+4. `turn.step` records cache use; `turn.complete` takes the TTL from the transcript, past `$.fs.read`'s 4 MiB from its last MiB via `tail -c` or, on Windows, PowerShell (`$.process.run`); `session.start` ticks `$.clock.every(1000)` until the cache deadline; each calls `$.ui.invalidate('ui.render')`.
 
 ### Repo check
 
