@@ -25,6 +25,11 @@ At session start, inside a git repo with no `braid/map.md`, the session hook SHA
 - **WHEN** the repo ignores a folder in `.gitignore`
 - **THEN** untracked files in that folder never appear in the map; files git already tracks still do, as git itself lists them
 
+#### Scenario: Links and unsafe names
+
+- **WHEN** a source path is a symlink, sits under a linked folder (symlink or junction), or contains a character that is not a visible letter, mark or digit in any script, nor one of `._-@+$()[]/`
+- **THEN** it is not read and never appears in the map
+
 #### Scenario: Switching back on
 
 - **WHEN** braid is switched back on after "stop braid"

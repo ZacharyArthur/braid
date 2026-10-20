@@ -6,7 +6,9 @@ after compaction, can pick up from it.
 1. **Pick the change.** The named one, or the only active folder in
    `braid/changes/` (not `archive/`). Several and none named → ask.
 2. **Load context.** Read `proposal.md`, the delta specs, `design.md` if it
-   exists, `tasks.md`, and `braid/map.md`.
+   exists, `tasks.md`, and `braid/map.md`. For each REMOVED or MODIFIED
+   requirement, also read its current text in `braid/specs/<domain>/spec.md`
+   (OpenSpec: `openspec/specs/`): the delta alone doesn't show what goes.
 3. **Work the first unchecked task**, then the next, in order:
    - Implement it under braid's core rules. The deltas say *what*; the core's
      smallest complete change

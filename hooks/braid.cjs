@@ -182,10 +182,10 @@ function inRepo(dir) {
 
 function generatedMap(cwd) {
   if (process.env.BRAID_MAP === '0' || fs.existsSync(path.join(cwd, 'braid', 'map.md')) || !inRepo(cwd)) return '';
-  // Its own process, killed at 1.5 s: a huge folder or file can't stall the session hook into its timeout.
+  // Its own process, killed at 3 s (a contended Windows start takes 1.5-2.3 s): a huge folder or file can't stall the session hook into its timeout.
   try {
     return execFileSync(process.execPath, [path.join(__dirname, 'map.cjs'), cwd], {
-      timeout: 1500,
+      timeout: 3000,
       stdio: ['ignore', 'pipe', 'ignore'],
     })
       .toString()
@@ -293,9 +293,8 @@ function run(raw) {
           ? core(st.mode)
           : '';
   if (context && EVENT_NAME) {
-    process.stdout.write(
-      JSON.stringify({ hookSpecificOutput: { hookEventName: EVENT_NAME, additionalContext: context } }),
-    );
+    // Synchronous: process.exit follows, and on macOS a pending pipe write dies with the process.
+    fs.writeSync(1, JSON.stringify({ hookSpecificOutput: { hookEventName: EVENT_NAME, additionalContext: context } }));
   }
 }
 

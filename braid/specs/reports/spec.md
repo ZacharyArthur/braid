@@ -74,3 +74,8 @@ Review, audit and `xreview` SHALL NOT flag a corner cut marked `shortcut(<strand
 
 - **WHEN** a comment says "shortcut: Ctrl+S saves"
 - **THEN** it is not a ledger row
+
+#### Scenario: Ignored folders
+
+- **WHEN** a marker sits in a folder the project's `.gitignore` ignores (dependencies, a virtualenv, build output)
+- **THEN** it is not a ledger row
