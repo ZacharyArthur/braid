@@ -29,5 +29,7 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: '22'
+      # Again on Node 22, where node:sqlite exists, so retro's ZCode reader is checked too.
+      - run: node scripts/check.cjs
       - run: npx --yes markdownlint-cli2@0.23.3
       - run: npx --yes @biomejs/biome@2.5.15 check --error-on-warnings

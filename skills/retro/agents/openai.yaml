@@ -1,0 +1,5 @@
+interface:
+  display_name: "Braid Retro"
+  short_description: "Turn repeated agent failures into AGENTS.md rules"
+policy:
+  allow_implicit_invocation: false

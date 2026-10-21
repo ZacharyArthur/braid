@@ -48,6 +48,14 @@ _Avoid_: size, class
 The read-only agent the fast tier runs: `Explore` in Claude Code, `explorer` in Codex, `braid-explore` in ZCode.
 _Avoid_: scout, searcher
 
+**Failure signature**:
+One kind of tool failure, the same in every harness: the tool (or `shell` and the program it ran) plus the error line with numbers, paths and quoted strings collapsed. `retro` proposes a rule only for one seen in 2 or more sessions.
+_Avoid_: error type, failure pattern
+
+**Router**:
+The closing part of `retro` that names the harness's own tool for each kind of finding, instead of braid rebuilding it.
+_Avoid_: orchestrator
+
 **Mod**:
 A Claude Code-only plugin of TypeScript hooks in `mods/<name>/`, listed in braid's marketplace and installed on its own.
 _Avoid_: extension, add-on

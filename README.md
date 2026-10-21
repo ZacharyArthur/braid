@@ -56,6 +56,7 @@ Then run `codex`, open `/hooks`, review and trust braid's hooks, and start a new
 | `humanizer` | Make AI-written prose read like you |
 | `adhd` | Action-first answers; stays on until "stop adhd mode" |
 | `skill` | Write a new skill that stays small and triggers right; hands off to Anthropic's `skill-creator` for evals |
+| `retro` | Failures agents repeat across sessions, read from Claude Code, Codex and ZCode transcripts, turned into AGENTS.md rules after a yes; then the harness's own usage, cost and config tools |
 | `help` | What each skill does and how to call it in your harness; `help <skill>` for one in depth |
 
 Only `braid`, `grilling`, `domain-modeling` and `map` load on their own; the rest wait for you to call them. Adding a skill or syncing upstream: [CONTRIBUTING.md](CONTRIBUTING.md).

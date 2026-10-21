@@ -457,6 +457,184 @@ let alwaysOn = 0;
   }
 }
 
+// retro's extractor on a fake home with all three stores: recurring failures counted across harnesses, one-offs,
+// other projects and prompt text left out, the window and `all` honored, insights read, nothing written.
+{
+  // realpath: macOS's tmpdir is a symlink, and retro compares against the physical cwd.
+  const tmp = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'braid-retro-')));
+  const write = (p, text) => {
+    fs.mkdirSync(path.dirname(path.join(tmp, p)), { recursive: true });
+    fs.writeFileSync(path.join(tmp, p), text);
+  };
+  const jsonl = (...lines) => `${lines.map((l) => JSON.stringify(l)).join('\n')}\n`;
+  try {
+    const proj = path.join(tmp, 'proj');
+    const other = path.join(tmp, 'other');
+    fs.mkdirSync(proj);
+    const claude = (dir, id, cmd, err, prompt = 'hi') =>
+      write(
+        `.claude/projects/${dir.replace(/[^a-zA-Z0-9]/g, '-')}/${id}.jsonl`,
+        jsonl(
+          { type: 'user', cwd: dir, message: { content: prompt } },
+          {
+            type: 'assistant',
+            cwd: dir,
+            message: { content: [{ type: 'tool_use', id: 't1', name: 'Bash', input: { command: cmd } }] },
+          },
+          {
+            type: 'user',
+            cwd: dir,
+            message: {
+              content: [{ type: 'tool_result', tool_use_id: 't1', is_error: true, content: `Exit code 1\n${err}` }],
+            },
+          },
+        ),
+      );
+    // The error lines differ only in a quoted value, after an apostrophe that must not open a quote.
+    // Each command reaches `git` its own way: past set/export/cd, and an env prefix before a quoted path.
+    claude(
+      proj,
+      's1',
+      'set -e; export X=1 && cd x && git push',
+      `fatal: can't find upstream "a"`,
+      'my token is SECRET_TOKEN_123',
+    );
+    claude(proj, 's2', 'GIT_TERMINAL_PROMPT=0 "/usr/bin/git" push origin', `fatal: can't find upstream 'b'`);
+    // A rejection with the user's feedback, in two sessions: the feedback must not be printed.
+    const rejected = (w) =>
+      `The user doesn't want to proceed with this tool use. The tool use was rejected. To tell you how to proceed, the user said:\nno, push failed last time; SECRET_FEEDBACK_${w}`;
+    claude(proj, 'r1', 'git push', rejected(1));
+    claude(proj, 'r2', 'git push', rejected(2));
+    claude(proj, 's3', 'npm run x', 'npm error Missing script: "x"');
+    claude(other, 'o1', 'npm run y', 'npm error Missing script: "y"');
+    write('.claude/projects/.DS_Store', ''); // a stray file must not stop the run
+    // Codex sessions, each a list of [script input, output text] calls.
+    const codex = (id, ...calls) =>
+      write(
+        `.codex/sessions/2026/10/01/rollout-${id}.jsonl`,
+        jsonl(
+          { type: 'session_meta', payload: { id, cwd: proj } },
+          ...calls.flatMap(([input, text], n) => [
+            { type: 'response_item', payload: { type: 'custom_tool_call', call_id: `${n}`, name: 'exec', input } },
+            {
+              type: 'response_item',
+              payload: { type: 'custom_tool_call_output', call_id: `${n}`, output: [{ type: 'input_text', text }] },
+            },
+          ]),
+        ),
+      );
+    // A captured call to a quoted Windows path: still `git`, on every OS.
+    const two = String.raw`tools.exec_command({cmd:"node -v"}); tools.exec_command({cmd:"$out = & \"C:\\Program Files\\Git\\bin\\git.exe\" push"})`;
+    const noUpstream = (b) => ({ exit_code: 1, output: `fatal: can't find upstream '${b}'` });
+    // One step fanning out to several results: positions no longer name steps, so nothing is blamed on `node -v`.
+    const fanOut = [
+      '[1, 2].map((session_id) => tools.write_stdin({ session_id })); tools.exec_command({cmd:"node -v"})',
+      ['{"exit_code":0}', JSON.stringify(noUpstream('f')), '{"exit_code":0}'].join('\n'),
+    ];
+    const patchFail =
+      'Script failed\nWall time 0.0 seconds\nOutput:\n\nScript error:\napply_patch verification failed: x';
+    // Parallel steps keyed by i; an array behind headers; a command finished by a write_stdin poll.
+    codex('c1', [
+      two,
+      ['Wall time 0.1s', '{"i":0,"value":{"exit_code":0}}', JSON.stringify({ i: 1, value: noUpstream('c') })].join(
+        '\n',
+      ),
+    ]);
+    codex(
+      'c2',
+      [two, `Wall time 0.1s\nOutput:\n\n${JSON.stringify([{ exit_code: 0 }, noUpstream('d')])}`],
+      ['tools.apply_patch("x")', patchFail],
+      fanOut,
+    );
+    codex(
+      'c3',
+      [`tools.exec_command({cmd:"$env:GIT_PAGER = 'cat'; git push"})`, '{"session_id":7,"output":"..."}'],
+      ['tools.write_stdin({session_id:7,chars:""})', JSON.stringify(noUpstream('e'))],
+      ['tools.apply_patch("y")', patchFail],
+      fanOut,
+    );
+    const dbFile = path.join(tmp, '.zcode/cli/db/db.sqlite');
+    let sqlite = false;
+    try {
+      process.removeAllListeners('warning');
+      write('.zcode/cli/db/db.sqlite', ''); // present either way, so an older Node shows the skip note
+      const db = new (require('node:sqlite').DatabaseSync)(dbFile);
+      // WAL like the real store: retro's read-only open may add SQLite's -wal and -shm files, nothing else.
+      db.exec(`PRAGMA journal_mode = WAL;
+        CREATE TABLE session (id, parent_id, directory, time_updated, time_deleted);
+        CREATE TABLE tool_usage (session_id, tool_call_id, tool_name, status, exit_code, error_message);
+        CREATE TABLE part (session_id, data);
+        INSERT INTO session VALUES ('z1', NULL, '${proj.replace(/'/g, "''")}', ${Date.now()}, NULL);
+        INSERT INTO tool_usage VALUES ('z1', 'c', 'Bash', 'completed', 1, NULL);
+        INSERT INTO part VALUES ('z1', '{"callID":"c","state":{"input":{"command":"git push"},"output":"fatal: can''t find upstream \\"z\\""}}');`);
+      db.close();
+      sqlite = true;
+    } catch {} // Node < 22.13: retro says it skipped ZCode, asserted below
+    write(
+      '.claude/usage-data/report.html',
+      '<input type="checkbox" class="cmd-checkbox" checked data-text="- Use `gh` with &apos;--repo&apos;">',
+    );
+    write(
+      '.claude/usage-data/session-meta/s1.json',
+      JSON.stringify({ project_path: proj, start_time: new Date().toISOString() }),
+    );
+    write(
+      '.claude/usage-data/facets/s1.json',
+      JSON.stringify({ friction_counts: { wrong_approach: 1 }, friction_detail: 'tried X' }),
+    );
+
+    const tree = (d) =>
+      fs
+        .readdirSync(d, { withFileTypes: true })
+        .flatMap((e) => (e.isDirectory() ? tree(path.join(d, e.name)) : [path.join(d, e.name)]));
+    const files = () => String(tree(tmp).filter((f) => !/db\.sqlite-(wal|shm)$/.test(f)));
+    const before = files();
+    const retro = (...args) =>
+      execFileSync(process.execPath, [path.join(root, 'skills', 'retro', 'retro.cjs'), ...args], {
+        cwd: proj,
+        env: { ...process.env, HOME: tmp, USERPROFILE: tmp, CLAUDE_CONFIG_DIR: '', CODEX_HOME: '' },
+        stdio: ['ignore', 'pipe', 'pipe'],
+      }).toString();
+    const out = retro();
+    const want = sqlite
+      ? '1. 6 sessions (claude, codex, zcode) · shell git'
+      : '1. 5 sessions (claude, codex) · shell git';
+    if (!out.includes(want)) throw new Error(`no "${want}" in:\n${out}`);
+    if (!out.includes('2 sessions (codex) · apply_patch'))
+      throw new Error(`Codex script failures not counted:\n${out}`);
+    if (!sqlite && !out.includes('zcode: skipped')) throw new Error(`no ZCode skip note in:\n${out}`);
+    if (/npm|SECRET|shell node/.test(out))
+      throw new Error(`one-off, other project, prompt text or a passing step in:\n${out}`);
+    if (!retro('all').includes('2 sessions (claude) · shell npm'))
+      throw new Error('`all` did not count the other project');
+    if (!retro('1').includes('no failure recurs'))
+      throw new Error('a 1-session window still found a recurring failure');
+    if (!retro('100000000d').includes('· shell git')) throw new Error('a huge window failed');
+    const ins = retro('insights');
+    if (!ins.includes("- Use `gh` with '--repo'") || !ins.includes('wrong_approach: 1 sessions · tried X'))
+      throw new Error(`insights not read:\n${ins}`);
+    if (files() !== before) throw new Error('retro wrote files');
+    fs.rmSync(path.join(tmp, '.claude/usage-data/report.html'));
+    const noReport = retro('insights');
+    if (!noReport.includes('run /insights first') || !noReport.includes('· shell git'))
+      throw new Error(`no report: missing the "run /insights first" note or the transcript pass:\n${noReport}`);
+    if (sqlite) {
+      for (const f of tree(path.dirname(dbFile))) fs.rmSync(f);
+      fs.writeFileSync(dbFile, 'not a database');
+      const broken = retro();
+      if (
+        !broken.includes('zcode: skipped, its store could not be read') ||
+        !broken.includes('5 sessions (claude, codex)')
+      )
+        throw new Error(`a broken ZCode store stopped the other harnesses:\n${broken}`);
+    }
+  } catch (e) {
+    fail(`retro: ${e.message}`);
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+}
+
 // Always-on budget: worst-case session injection + model-invocable skill descriptions, bytes/4.
 for (const dir of skillDirs) {
   const fm = exists(`skills/${dir}/SKILL.md`) && frontmatter(read(`skills/${dir}/SKILL.md`));

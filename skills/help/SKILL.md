@@ -63,6 +63,7 @@ a per-prompt reminder, "stop braid" turns it off for the session.
 | `humanizer` | Making AI-written prose sound like you | - |
 | `adhd` | Action-first answers; stays on until "stop adhd mode" | - |
 | `skill` | Creating a new skill that stays small and triggers right | `[what it should do]` |
+| `retro` | Agents keep repeating the same failed commands: rules for AGENTS.md from every harness's transcripts, then the harness's own usage and config tools | `[all] [insights] [<sessions>] [<days>d]` |
 | `help` | This overview, or `help <skill>` for one in depth | `[skill]` |
 
 ### Typical flow
