@@ -16,11 +16,15 @@ const { execFileSync } = require('child_process');
 
 const BUDGET = 2000;
 // The session hook must never block: stop reading files at this point and list what was read.
-const MAX_MS = 1000;
+const MAX_MS = 2500;
 const MAX_FILES = 4000;
 const SRC = /\.(py|js|jsx|mjs|cjs|ts|tsx|go|rs|rb|java|kt|php|swift|cs)$/;
 const SKIP_DIR = /(^|\/)(node_modules|\.git|dist|build|out|vendor|venv|\.venv|__pycache__|coverage|\.next|target|migrations|versions|fixtures|tests?|__tests__|spec)(\/|$)/;
 const SKIP_FILE = /(^|\/)(test_[^/]*|[^/]*(_test|\.test|\.spec|\.gen|\.min|\.d)\.[a-z]+)$/;
+const NAME = /^(?:type\s+)?(?:[\w$]+\s+as\s+)?([A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)?)$/;
+// Paths reach the context: letters (with their accents and marks) and digits in any script, but no spaces, quotes or other prose,
+// and nothing invisible (\p{DI}: variation selectors can smuggle hidden bytes, Hangul fillers render as spaces).
+const SAFE_PATH = /^(?!.*\p{DI})[\p{L}\p{M}\p{N}_.@+$()[\]\/-]+$/u;
 const SHARED = /(util|helper|lib|common|shared|service|component|hook|core|model|schema|api)/i;
 
 const PATTERNS = {
@@ -62,7 +66,7 @@ function namesIn(file, text) {
   const names = [];
   for (const re of PATTERNS[lang] || []) {
     for (const m of text.matchAll(re)) {
-      for (const n of m[1].replace(/\/\/.*|\/\*[\s\S]*?\*\//g, '').split(',').map((s) => s.trim().split(/\s+as\s+/).pop()).filter((s) => /^[A-Za-z_$][\w$.]*$/.test(s))) {
+      for (const n of m[1].replace(/\/\/.*|\/\*[\s\S]*?\*\//g, '').split(',').map((s) => (s.trim().match(NAME) || [])[1]).filter(Boolean)) {
         if (!n.startsWith('_') && !names.includes(n)) names.push(n);
       }
     }
@@ -71,9 +75,17 @@ function namesIn(file, text) {
 }
 
 function buildMap(root = process.cwd()) {
-  const deadline = Date.now() + MAX_MS;
+  // Counted from the process start: a slow node start must still leave time to print, not get the child killed.
+  const deadline = Date.now() - process.uptime() * 1000 + MAX_MS;
+  // A folder that is, or sits under, a link (symlink or junction) can point out of the repo.
+  const linked = new Map();
+  const isLinked = (dir) => {
+    if (dir === '.') return false;
+    if (!linked.has(dir)) linked.set(dir, isLinked(path.dirname(dir)) || fs.lstatSync(path.join(root, dir)).isSymbolicLink());
+    return linked.get(dir);
+  };
   const files = listFiles(root)
-    .filter((f) => SRC.test(f) && !SKIP_DIR.test(f) && !SKIP_FILE.test(f))
+    .filter((f) => SAFE_PATH.test(f) && SRC.test(f) && !SKIP_DIR.test(f) && !SKIP_FILE.test(f))
     .slice(0, MAX_FILES)
     .sort((a, b) => (SHARED.test(b) - SHARED.test(a)) || a.localeCompare(b));
   // One line per directory: names are enough to know something exists; grep finds the file.
@@ -81,7 +93,10 @@ function buildMap(root = process.cwd()) {
   for (const f of files) {
     if (Date.now() > deadline) break;
     let text;
-    try { text = fs.readFileSync(path.join(root, f), 'utf8').slice(0, 65536); } catch (e) { continue; }
+    try {
+      if (isLinked(path.dirname(f)) || !fs.lstatSync(path.join(root, f)).isFile()) continue;
+      text = fs.readFileSync(path.join(root, f), 'utf8').slice(0, 65536);
+    } catch (e) { continue; }
     const names = namesIn(f, text);
     if (!names.length) continue;
     const dir = path.dirname(f) === '.' ? '.' : path.dirname(f);

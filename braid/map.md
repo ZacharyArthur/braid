@@ -44,7 +44,7 @@ Commands and conventions: see `AGENTS.md`. Behavior: `braid/specs/`. Terms: `bra
 2. `load(sid)` reads the session state `{mode, drift, adhd}` from `$CLAUDE_PLUGIN_DATA|ZCODE_PLUGIN_DATA|PLUGIN_DATA/sessions/<sid>.json` (falls back to tmpdir).
 3. `core(mode)` takes `skills/braid/core.md`, strips its frontmatter and keeps only the active level's table row.
 4. `pointers(cwd)` adds active and queued changes (`braid/changes` or `openspec/changes`, counted from `tasks.md` checkboxes), open routes, and the map and handoff staleness read from their `sha=` headers.
-5. `generatedMap(cwd)` runs `hooks/map.cjs` in a child process (1.5 s kill), but only when `braid/map.md` is absent and cwd is in a git repo.
+5. `generatedMap(cwd)` runs `hooks/map.cjs` in a child process (3 s kill; it reads nothing through a link and drops paths with spaces or quotes), but only when `braid/map.md` is absent and cwd is in a git repo.
 6. Prints the result as `hookSpecificOutput.additionalContext`.
 
 ### Level switch

@@ -17,6 +17,10 @@ never add a second button style, spacing scale, or icon set. Nothing there?
 Ask one question (audience and tone), or default to plain: system font stack,
 neutral palette, one accent. Before building, say in one line what you take
 the page to be, for whom and in what tone, so a wrong read costs one reply.
+Part of that read: will people pass through it once, or work in it every
+day? A one-visit page may take a strong, unusual look. A daily screen earns
+its look by staying out of the way, with the conventions its users already
+know, dense tables and plain, repeated layouts. The tells below still apply.
 A redesign replaces the old look outright; polishing the look you were asked
 to drop is the worst of both.
 
@@ -48,6 +52,8 @@ or pixel values inside components.
 - A small uppercase label above every heading; section numbers (01, 02, 03) that carry nothing
 - Gradient text, a thick colored stripe down one side of each card, monospace worn as a "technical" costume
 - A product screenshot faked out of styled divs
+- Numbers nobody measured ("10× faster", "99.9% uptime") and charts drawn from invented data
+- A different color for every chart series by default, where one hue and the accent would do
 - A section that flips light or dark mid-page
 - Placeholder copy ("Lorem ipsum", "John Doe", "Acme") and clichés ("seamless", "elevate", "unleash")
 
