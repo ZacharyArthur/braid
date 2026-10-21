@@ -57,3 +57,4 @@ Every kind: bump the SHA to the commit you reviewed, even when you took nothing,
 | `standards` | clean-room | - | - | - | - |
 | `skill` | clean-room | anthropics/skills | skills/skill-creator | dbd4588f9e1033efb41dad4bef2f7947c8993d44 | Apache-2.0 (ideas only) |
 | `help` | clean-room | - | - | - | - |
+| `retro` | clean-room | - | - | - | - |
