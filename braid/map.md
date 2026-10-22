@@ -1,15 +1,16 @@
-<!-- braid:map sha=31953d1 date=2026-10-20 -->
+<!-- braid:map sha=98a7115 date=2026-10-21 -->
 # Repo map
 
-braid: a clean-code harness plugin (an always-on core plus workflow skills) for Claude Code, Codex and ZCode,
+braid: a clean-code harness plugin (an always-on core plus workflow skills) for Claude Code, Codex, ZCode and Pi,
 and the separate Claude Code-only `braid-context` mod. For plugin maintainers.
 
 Commands and conventions: see `AGENTS.md`. Behavior: `braid/specs/`. Terms: `braid/GLOSSARY.md`. Decisions: `braid/adr/`.
 
 ## Entry points
 
-- `hooks/hooks.json`: what every harness loads. It runs `hooks/braid.cjs session|prompt|subagent` on SessionStart, UserPromptSubmit and SubagentStart.
-- `skills/<name>/SKILL.md`: each skill, invoked as `/braid:<name>` (`$braid` in Codex and ZCode).
+- `extensions/braid.js`: what Pi loads instead of `hooks.json`. It spawns `node hooks/braid.cjs session|prompt` on `session_start` and `input`, and sets the `braid` system prompt section in `before_agent_start`.
+- `hooks/hooks.json`: what Claude Code, Codex and ZCode load. It runs `hooks/braid.cjs session|prompt|subagent` on SessionStart, UserPromptSubmit and SubagentStart.
+- `skills/<name>/SKILL.md`: each skill, invoked as `/braid:<name>` (`$braid` in Codex and ZCode, `/skill:<name>` in Pi).
 - `mods/braid-context/hooks/register.tsx`: the mod's `register`, which Claude Code itself loads through the mod's `hooks/hooks.json` (`modules`).
 - `scripts/check.cjs`: the repo check that CI runs (`.github/workflows/check.yml`).
 - `bench/ab.cjs`: the A/B benchmark (braid vs ponytail vs none).
@@ -20,6 +21,7 @@ Commands and conventions: see `AGENTS.md`. Behavior: `braid/specs/`. Terms: `bra
 | Path | Job | Key files |
 |---|---|---|
 | `hooks/` | the only runtime: injects the core, project state and generated map, and tracks the level per session | `braid.cjs`, `map.cjs`, `hooks.json` |
+| `extensions/` | Pi's adapter: runs `hooks/braid.cjs` and puts its output in Pi's system prompt | `braid.js` |
 | `skills/braid/` | the always-on rules and the level switch | `core.md` (injected text), `SKILL.md` |
 | `skills/spec/` | propose → apply → archive over `braid/changes/` | `propose.md`, `apply.md`, `archive.md`, `discover.md` |
 | `skills/standards/` | writes a project's AGENTS.md and optional delegation | `template.md`, `stacks.md`, `delegation.md` |
@@ -75,6 +77,7 @@ It then runs `check`, `dry` and the blind `complete` judge, and `report` writes 
 ## Gotchas
 
 - Creating this file switches off the generated map (`hooks/map.cjs`) in this repo's sessions; the session hook then points to `braid/map.md` and its staleness instead.
+- Pi's state lives in `<Pi agent folder>/braid/sessions/`: the extension passes it as `PLUGIN_DATA` and drops `CLAUDE_PLUGIN_DATA`/`ZCODE_PLUGIN_DATA` in any case, which the hook would prefer. The extension re-runs the session hook after any prompt reply starting `BRAID`, so that prefix is an interface: every state change, ADHD toggles included, must confirm with a `BRAID` line.
 - `hooks/braid.cjs` must never throw or block. The stdin fallback timer stays ref'd on purpose, because Windows can swallow stdin's `end`.
 - Scripts are `.cjs` so that a parent `"type": "module"` can't break them; `check.cjs` tests exactly that.
 - `skills/braid/core.md`, `hooks/map.cjs` and `skills/{review,audit,debt}` are based on ponytail. Edit them only by renames or whole added blocks (ADR 0012), which is why `core.md` keeps ponytail's frontmatter.

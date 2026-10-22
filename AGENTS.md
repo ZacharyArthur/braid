@@ -1,14 +1,14 @@
 # braid
 
-Clean-code harness plugin (always-on core plus workflow skills) for Claude Code, Codex and ZCode.
+Clean-code harness plugin (always-on core plus workflow skills) for Claude Code, Codex, ZCode and Pi.
 Optimizes for, in order: always-on cost within ~300 tokens of ponytail's, YAGNI > KISS > DRY in its own code,
-identical behavior across the three harnesses. When a feature and simplicity conflict, simplicity wins.
+identical behavior across the four harnesses. When a feature and simplicity conflict, simplicity wins.
 
 ## Stack
 
-- Markdown skills; Node ≥ 18 CommonJS (`.cjs`), stdlib only: `hooks/braid.cjs`, `scripts/*.cjs`, `bench/ab.cjs`. Python 3 only for bench checks.
+- Markdown skills; Node ≥ 18 CommonJS (`.cjs`), stdlib only: `hooks/braid.cjs`, `scripts/*.cjs`, `bench/ab.cjs`, and Pi's `extensions/braid.js`. Python 3 only for bench checks.
 - Claude Code-only mods in `mods/<name>/`: TypeScript hooks modules run by Claude Code itself (no Node, no build), each its own plugin with its own version, its manifest in its marketplace entry (ADR 0011, 0013).
-- One plugin; runtime is one hook process per harness event. CI: `check.cjs` on Node 18 (Ubuntu, Windows); lints on Node 22 (Ubuntu).
+- One plugin; runtime is one hook process per harness event (in Pi, spawned by `extensions/braid.js`, which Pi loads in place of `hooks.json`). CI: `check.cjs` on Node 18 (Ubuntu, Windows); lints on Node 22 (Ubuntu).
 - No npm dependencies, no `package.json`. Vendored skills enter only via UPSTREAM.md, pinned by SHA (ADR 0003).
 
 ## Invariants
@@ -43,7 +43,7 @@ CI runs the same three. Changed `bench/` → also `node bench/ab.cjs --fake`. Ch
 
 ## Conventions
 
-- Scripts are `.cjs`, Node stdlib only. The hook never blocks (1 s stdin fallback); Node 18 is the floor. Mods are the one exception: `.ts`/`.tsx` against `claude-code` types, no imports beyond the plugin.
+- Scripts are `.cjs`, Node stdlib only. The hook never blocks (1 s stdin fallback); Node 18 is the floor. Exceptions: mods are `.ts`/`.tsx` against `claude-code` types, no imports beyond the plugin; Pi's extension is `.js` (still CommonJS), since Pi discovers only `.ts` and `.js`.
 - New or reversed decisions get an ADR in `braid/adr/` (numbered, one paragraph); domain terms go in `braid/GLOSSARY.md`.
 - Vendored skills: surgical edits only, committed separately from the verbatim copy; upstream syncs bump the SHA in UPSTREAM.md.
 - Based files (ponytail's text): braid edits only by renames and whole added blocks, so `git merge-file` syncs stay clean (ADR 0012).

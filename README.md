@@ -2,7 +2,7 @@
 
 Clean-code harness for AI coding agents. Three strands: **YAGNI > KISS > DRY**.
 
-A plugin for **Claude Code**, **Codex** and **ZCode**: an always-on core that keeps generated code minimal, plus a workflow for grilling plans, writing specs, mapping repos, handing off and reviewing.
+A plugin for **Claude Code**, **Codex**, **ZCode** and **Pi**: an always-on core that keeps generated code minimal, plus a workflow for grilling plans, writing specs, mapping repos, handing off and reviewing.
 
 > Status: released and in use since v1.0.0. What each release changed: [CHANGELOG.md](CHANGELOG.md). Decisions: [braid/adr/](braid/adr/).
 
@@ -32,7 +32,15 @@ Then run `codex`, open `/hooks`, review and trust braid's hooks, and start a new
 
 **ZCode:** add `ZacharyArthur/braid` as a GitHub plugin marketplace source and enable braid. Two gaps to know about. ZCode has no "user-invoked only" flag, and its Settings can't switch off a plugin's skills one at a time, so every braid skill's description costs context and the user-only ones, such as `humanizer`, can load when a prompt matches them. And ZCode never fires SessionStart on compact, so after a `/compact` the core rules are not re-injected; only the summary's paraphrase remains. `/braid:braid drift on` partly makes up for it: the drift line restates the mode on every prompt.
 
-**Updating:** in Claude Code, run `claude plugin marketplace update braid`, then `claude plugin update braid@braid` (in the Desktop app: sync the marketplace, then update the plugin), and start a new session. It finds an update only once a release raises the version. In the Claude app, sync the braid marketplace, then update the plugin. In Codex, `codex plugin marketplace upgrade braid` (or syncing the marketplace in the ChatGPT app) updates the plugin too. In ZCode, sync the marketplace, then uninstall and reinstall braid; updating alone keeps the old cached copy.
+**Pi**
+
+```bash
+pi install git:github.com/ZacharyArthur/braid
+```
+
+Then start a new session. Skills are `/skill:<name>`, so the level is `/skill:braid lite`. braid's core is part of the system prompt on every run, so it survives compaction. It keeps each session's level in `braid/` inside Pi's agent folder (`~/.pi/agent`, or `$PI_CODING_AGENT_DIR`). Two differences: Pi has no subagent event, so subagents don't get the core (as in ZCode), and without Node on the PATH Pi starts without the core and shows no error.
+
+**Updating:** in Claude Code, run `claude plugin marketplace update braid`, then `claude plugin update braid@braid` (in the Desktop app: sync the marketplace, then update the plugin), and start a new session. It finds an update only once a release raises the version. In the Claude app, sync the braid marketplace, then update the plugin. In Codex, `codex plugin marketplace upgrade braid` (or syncing the marketplace in the ChatGPT app) updates the plugin too. In ZCode, sync the marketplace, then uninstall and reinstall braid; updating alone keeps the old cached copy. In Pi, run `pi update git:github.com/ZacharyArthur/braid` (plain `pi update` updates only Pi itself), then start a new session.
 
 ## What's in it
 

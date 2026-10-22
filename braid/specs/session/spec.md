@@ -52,5 +52,49 @@ At session start, inside a git repo with no `braid/map.md`, the session hook SHA
 
 #### Scenario: Any harness
 
-- **WHEN** a session starts in Claude Code, Codex or ZCode
+- **WHEN** a session starts in Claude Code, Codex, ZCode or Pi
 - **THEN** the map behaves the same
+
+### Requirement: Pi harness
+
+Installed in Pi as a package, braid SHALL inject the same core, project state and map as in the other harnesses, track the same per-session level, and keep Pi working when anything in braid fails.
+
+#### Scenario: Session starts in Pi
+
+- **WHEN** a Pi session starts, is resumed, forked or made new, with braid on
+- **THEN** each run's system prompt carries the core for the session's level, the project pointers and, under the same conditions as elsewhere, the generated map
+
+#### Scenario: Level switch in Pi
+
+- **WHEN** the user sends `/skill:braid lite`, `/skill:braid off` or `stop braid`
+- **THEN** the level changes for that session as `/braid:braid lite` does in Claude Code, and the next run carries the matching core, or none when off
+
+#### Scenario: Command sent while a run streams in Pi
+
+- **WHEN** the user steers or queues `stop braid` (or any braid command) while a run is streaming
+- **THEN** the state changes at once, the steered prompt costs no extra model turn, and the next run carries the matching section and the command's confirmation
+
+#### Scenario: ADHD mode in Pi
+
+- **WHEN** the user sends `/skill:adhd`, then later "normal mode"
+- **THEN** the next run's section carries ADHD mode, and after "normal mode" it no longer does, compaction or not
+
+#### Scenario: Level kept in Pi
+
+- **WHEN** a Pi session set to lite is resumed, even after a reboot
+- **THEN** it resumes at lite, read from `braid/sessions/` in Pi's agent folder (`$PI_CODING_AGENT_DIR` with a leading `~` expanded, or `~/.pi/agent`), never from another harness's folder named in an inherited variable
+
+#### Scenario: After compaction in Pi
+
+- **WHEN** Pi compacts the conversation
+- **THEN** the next run still carries the core
+
+#### Scenario: Subagents in Pi
+
+- **WHEN** a Pi session runs subagents through another extension
+- **THEN** they get no core from braid, since Pi has no subagent event (as in ZCode)
+
+#### Scenario: Broken environment in Pi
+
+- **WHEN** `node` is missing, the hook times out, or its output can't be read or isn't text
+- **THEN** the run starts without braid's section and Pi shows no error from braid

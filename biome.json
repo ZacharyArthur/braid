@@ -2,6 +2,7 @@
   "files": {
     "includes": [
       "hooks/**",
+      "extensions/**",
       "scripts/**",
       "bench/ab.cjs",
       "skills/retro/*.cjs",

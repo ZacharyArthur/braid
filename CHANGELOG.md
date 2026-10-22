@@ -2,6 +2,11 @@
 
 All notable changes to braid. Versions follow semver: major = a skill renamed or removed, or the `braid/` layout changed; minor = a new skill or verb; patch = wording and upstream syncs.
 
+## [1.5.0] - 2026-10-21
+
+- Pi is a fourth harness: `pi install git:github.com/ZacharyArthur/braid`. A small extension (`extensions/braid.js`) runs the same hook and puts the core in Pi's system prompt on every run, so it survives compaction. Skills are `/skill:<name>`, and the level is `/skill:braid lite`, kept per session in `braid/` inside Pi's agent folder. Pi has no subagent event, so subagents there don't get the core, as in ZCode. ADR 0002 amended.
+- ADHD toggles (`/braid:adhd`, "stop adhd mode", "normal mode") now confirm with one line, `BRAID ADHD MODE: on|off`, in every harness, as the level and drift commands do.
+
 ## [1.4.0] - 2026-10-20
 
 - New user-only skill `retro`: reads this project's last 30 sessions within 30 days from Claude Code, Codex and ZCode transcripts (ZCode needs Node 22.13+), finds tool failures that recur in 2 or more sessions, and proposes AGENTS.md rules as one numbered diff, written only after a yes. `all` covers every project and writes to each harness's user-level file; `insights` also reads Claude Code's `/insights` report. It ends by pointing to the harness's own tools for what it found (permissions, config, MCP, skills, memory) and for cost. ADR 0015.
