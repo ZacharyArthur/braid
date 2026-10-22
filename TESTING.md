@@ -53,6 +53,22 @@ Install from the plugin marketplace (GitHub source `ZacharyArthur/braid`).
 - [ ] `/braid:spec propose add-something` → `braid/changes/add-something/`; a new session's Project state shows it
 - [ ] `/braid:standards` with braid's delegation policy, giving the model picker's Flash id: accept the ZCode project explorer → `.zcode/agents/braid-explore.md`; in a new session, ask which subagents it can delegate to and note whether Settings → Subagents lists it on Flash (record both in `delegation.md`). Not available: rerun `/braid:standards delegation`, accept the fallback → `~/.zcode/agents/braid-explore.md`, listed in a new session. Decline both → the Settings step is shown and nothing is written
 
+## Pi
+
+```bash
+pi install git:github.com/ZacharyArthur/braid
+```
+
+To test a branch, `pi install <path to your checkout>` instead, and `pi remove <path to your checkout>` when done. In a new session:
+
+- [ ] Ask "what braid level are you at?" → **full**
+- [ ] `/skill:braid lite`, quit, `pi --continue`, ask again → still **lite** (state in `~/.pi/agent/braid/sessions/`)
+- [ ] `/compact`, ask again → still **lite** (the core is in the system prompt on every run)
+- [ ] `/skill:adhd` → ADHD-shaped answers; "normal mode" ends it, and they stay normal after `/compact`
+- [ ] While an answer is streaming, send "stop braid" → the answer adjusts; the next prompt's answer says braid is off
+- [ ] Then `/skill:braid` → back at **full**
+- [ ] `/skill:help` lists every skill; ask "make this sound less AI" without the command → humanizer does **not** auto-load
+
 ## A/B against ponytail
 
 `bench/ab.cjs` runs every task in `bench/tasks/` three ways: braid, ponytail (at the commit braid is pinned to in UPSTREAM.md), and no plugin. Each run gets a fresh git repo outside your home folder and only that arm's rules. Nothing you have installed changes.

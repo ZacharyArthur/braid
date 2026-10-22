@@ -309,6 +309,23 @@ let alwaysOn = 0;
     hook('prompt', { prompt: '/braid:braid drift on' });
     hook('prompt', { prompt: '[$braid:braid](C:/x/skills/braid/SKILL.md) drift off' });
     expect(hook('prompt', { prompt: 'fix the bug' }) === '', 'Codex picker link form not parsed');
+    // Pi invokes skills as "/skill:<name> args".
+    hook('prompt', { prompt: '/braid:braid drift on' });
+    hook('prompt', { prompt: '/skill:braid drift off' });
+    expect(hook('prompt', { prompt: 'fix the bug' }) === '', 'Pi skill command form not parsed');
+    // ADHD toggles confirm like the other commands.
+    expect(
+      hook('prompt', { session_id: 'pi-adhd', prompt: '/skill:adhd' }) === 'BRAID ADHD MODE: on',
+      'Pi /skill:adhd not confirmed',
+    );
+    expect(
+      hook('session', { session_id: 'pi-adhd', source: 'compact' }).includes('ADHD MODE ACTIVE'),
+      'Pi /skill:adhd not parsed',
+    );
+    expect(
+      hook('prompt', { session_id: 'pi-adhd', prompt: 'stop adhd mode' }) === 'BRAID ADHD MODE: off',
+      '"stop adhd mode" not confirmed',
+    );
     hook('prompt', { prompt: '/braid:braid drift on' });
     expect(
       hook('prompt', { prompt: '/braid:spec propose' }) ===
@@ -684,10 +701,114 @@ for (const row of rows) {
   }
 }
 
-if (errors.length) {
-  console.error([...new Set(errors)].map((e) => `✗ ${e}`).join('\n'));
-  process.exit(1);
-}
-console.log(
-  `✓ ${manifests.length} manifests, ${skillDirs.length} skills, ${rows.length} upstream rows, hook ok, always-on ~${tokens} tokens (ponytail ~${PONYTAIL_ALWAYS_ON})`,
-);
+// Pi's extension, driven by a stub `pi` as Pi drives it, spawning the real hook. Last, because it sets
+// process.env for the hook it spawns.
+const piCheck = (async () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'braid-pi-'));
+  // `~` must expand to the home folder, as Pi expands it. Mixed case: Windows env lookups ignore case.
+  const env = {
+    HOME: path.join(tmp, 'home'),
+    USERPROFILE: path.join(tmp, 'home'),
+    PI_CODING_AGENT_DIR: '~/pi',
+    Claude_Plugin_Data: path.join(tmp, 'claude'),
+    ZCODE_PLUGIN_DATA: path.join(tmp, 'zcode'),
+  };
+  const saved = Object.fromEntries(Object.keys(env).map((k) => [k, process.env[k]]));
+  const expect = (cond, msg) => {
+    if (!cond) fail(`pi extension: ${msg}`);
+  };
+  // Pi's side, stubbed: a nextTurn message joins the next run; a steer or followUp would join the run streaming now.
+  const load = (file) => {
+    const on = {};
+    let nextTurn = [];
+    const queued = [];
+    const pi = {
+      on: (name, fn) => (on[name] = fn),
+      sendMessage: (m, o) => (o?.deliverAs === 'nextTurn' ? nextTurn : queued).push(m.content),
+    };
+    require(file)(pi);
+    const ctx = { cwd: tmp, sessionManager: { getSessionId: () => 'pi-check' } };
+    return {
+      queued,
+      start: () => on.session_start({ reason: 'startup' }, ctx),
+      steer: (text) => on.input({ text, source: 'interactive', streamingBehavior: 'steer' }),
+      input: (text, source) => on.input({ text, source }),
+      run: async (text) => {
+        if (text !== undefined) await on.input({ text, source: 'interactive' });
+        const event = { systemPromptOptions: { sections: {} } };
+        await on.before_agent_start(event);
+        const message = nextTurn.join('\n');
+        nextTurn = [];
+        return { section: event.systemPromptOptions.sections.braid || '', message };
+      },
+    };
+  };
+  const cwd = process.cwd();
+  try {
+    Object.assign(process.env, env);
+    // From inside tmp: an unexpanded `~/pi` (a regression) then lands here, not as a `~` folder in the repo.
+    process.chdir(tmp);
+    const pi = load(path.join(root, 'extensions', 'braid.js'));
+    await pi.start();
+    let r = await pi.run();
+    expect(r.section.includes('BRAID ACTIVE — level: full') && !r.message, 'no core section at session start');
+    r = await pi.run('/skill:braid lite');
+    expect(r.section.includes('level: lite') && r.message.startsWith('BRAID LEVEL: lite'), 'level switch not applied');
+    expect(
+      fs.existsSync(path.join(tmp, 'home', 'pi', 'braid', 'sessions', 'pi-check.json')) &&
+        !fs.existsSync(env.Claude_Plugin_Data) &&
+        !fs.existsSync(env.ZCODE_PLUGIN_DATA),
+      "state not kept in Pi's agent folder",
+    );
+    r = await pi.run('/skill:adhd');
+    expect(r.section.includes('ADHD MODE ACTIVE') && r.message === 'BRAID ADHD MODE: on', 'ADHD on not in the section');
+    r = await pi.run('normal mode');
+    expect(!r.section.includes('ADHD MODE ACTIVE'), 'ADHD still in the section after "normal mode"');
+    // A command steered into a streaming run: confirmed and applied from the next run, costing no turn of its own.
+    await pi.steer('stop braid');
+    r = await pi.run();
+    expect(
+      !pi.queued.length && !r.section && r.message === 'BRAID OFF for this session.',
+      'steered command not applied and confirmed at the next run, or steered on its own',
+    );
+    r = await pi.run('/skill:braid');
+    expect(
+      r.section.includes('level: full') && r.message === 'BRAID ACTIVE — level: full',
+      'coming back on: no section, or the core repeated as a message',
+    );
+    // Another extension's sendUserMessage isn't the user: it can't switch braid off.
+    await pi.input('stop braid', 'extension');
+    r = await pi.run();
+    expect(r.section.includes('level: full') && !r.message, 'a message from another extension ran a braid command');
+    // A hook whose output can't be read, or isn't text, injects nothing and throws nothing.
+    for (const out of ['{', '{"hookSpecificOutput":{"additionalContext":5}}']) {
+      const broken = fs.mkdtempSync(path.join(tmp, 'broken-'));
+      fs.mkdirSync(path.join(broken, 'hooks'));
+      fs.cpSync(path.join(root, 'extensions'), path.join(broken, 'extensions'), { recursive: true });
+      fs.writeFileSync(path.join(broken, 'hooks', 'braid.cjs'), `process.stdout.write(${JSON.stringify(out)});`);
+      const bad = load(path.join(broken, 'extensions', 'braid.js'));
+      await bad.start();
+      r = await bad.run('/skill:braid lite');
+      expect(!r.section && !r.message, `hook output ${out} injected`);
+    }
+  } catch (e) {
+    fail(`pi extension: ${e.message}`);
+  } finally {
+    for (const [k, v] of Object.entries(saved)) {
+      if (v === undefined) delete process.env[k];
+      else process.env[k] = v;
+    }
+    process.chdir(cwd);
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+})();
+
+piCheck.then(() => {
+  if (errors.length) {
+    console.error([...new Set(errors)].map((e) => `✗ ${e}`).join('\n'));
+    process.exit(1);
+  }
+  console.log(
+    `✓ ${manifests.length} manifests, ${skillDirs.length} skills, ${rows.length} upstream rows, hook ok, always-on ~${tokens} tokens (ponytail ~${PONYTAIL_ALWAYS_ON})`,
+  );
+});

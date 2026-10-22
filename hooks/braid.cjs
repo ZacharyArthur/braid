@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// braid hook: one script for Claude Code, Codex and ZCode.
+// braid hook: one script for Claude Code, Codex and ZCode, and for Pi through extensions/braid.js.
 //   node braid.cjs session    SessionStart: inject core rules + project pointers + codebase map
 //   node braid.cjs prompt     UserPromptSubmit: track level / drift / adhd per session
 //   node braid.cjs subagent   SubagentStart: inject core rules into subagents
@@ -228,6 +228,7 @@ function onSession(input, st) {
 
 function onPrompt(input, st, sid) {
   // ZCode's and Codex's skill pickers deliver invocations raw: "[$braid](<path>) lite" — normalize to "$braid lite".
+  // Pi invokes skills as "/skill:braid lite".
   const prompt = String(input.prompt || '')
     .trim()
     .toLowerCase()
@@ -235,7 +236,7 @@ function onPrompt(input, st, sid) {
   const out = [];
   let changed = false;
 
-  const cmd = prompt.match(/^[/$@](?:braid:)?braid(?:\s+(.*))?$/);
+  const cmd = prompt.match(/^[/$@](?:braid:|skill:)?braid(?:\s+(.*))?$/);
   if (cmd) {
     const arg = (cmd[1] || '').trim();
     const drift = arg.match(/^drift\s+(on|off)$/);
@@ -263,12 +264,15 @@ function onPrompt(input, st, sid) {
     out.push('BRAID OFF for this session.');
   }
 
-  if (/^[/$@](?:braid:)?adhd\b/.test(prompt)) {
+  // Confirmed like every other state change: a "BRAID" reply is how Pi's extension knows to rebuild its section.
+  if (/^[/$@](?:braid:|skill:)?adhd\b/.test(prompt)) {
     st.adhd = true;
     changed = true;
+    out.push('BRAID ADHD MODE: on');
   } else if (/^(stop adhd mode|normal mode)[.!]?$/.test(prompt)) {
     st.adhd = false;
     changed = true;
+    out.push('BRAID ADHD MODE: off');
   }
 
   if (changed && sid) save(sid, st);
