@@ -8,12 +8,17 @@ What `/braid:retro` reads, what it proposes and where it writes, and how it rout
 
 ### Requirement: Retro reads every harness's sessions for the project
 
-`/braid:retro` SHALL run only when the user invokes it, and SHALL read the Claude Code, Codex and ZCode session stores present on the machine for the current project, newest first across stores, within a window of the 30 most recent sessions and 30 days by default. Either bound SHALL accept any value the user passes, with no maximum.
+`/braid:retro` SHALL run only when the user invokes it, and SHALL read the Claude Code, Codex, ZCode and Pi session stores present on the machine for the current project, newest first across stores, within a window of the 30 most recent sessions and 30 days by default. Either bound SHALL accept any value the user passes, with no maximum.
 
 #### Scenario: Two harnesses used on one project
 
 - **WHEN** the project has Claude Code and Codex sessions in the window and the user runs `/braid:retro` from Claude Code
 - **THEN** failures from both harnesses' sessions are counted together
+
+#### Scenario: Pi sessions
+
+- **WHEN** the project has Pi sessions in the window, in Pi's default store or the folder Pi's session-folder variable names
+- **THEN** their failed tool calls are counted with the other harnesses'
 
 #### Scenario: Window overridden
 
@@ -123,3 +128,8 @@ Retro SHALL end with the vendor tools its findings call for, plus one line namin
 
 - **WHEN** retro runs in ZCode
 - **THEN** the standing line says ZCode ships no usage or cost tool
+
+#### Scenario: Pi
+
+- **WHEN** retro runs in Pi
+- **THEN** the standing line names Pi's session stats command for the current session's tokens and cost

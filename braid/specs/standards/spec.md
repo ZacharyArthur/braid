@@ -23,7 +23,7 @@ What `/braid:standards` offers for a project's AGENTS.md, and what it asks befor
 
 ### Requirement: Explorer routed to the fast tier
 
-When braid's policy is chosen, `standards` SHALL offer, per harness the user picked, a read-only explorer agent on the fast tier model, and SHALL write each one only after the user says yes to it.
+When braid's policy is chosen, `standards` SHALL offer, per harness the user picked, a read-only explorer agent on the fast tier model, and SHALL write each one only after the user says yes to it. A harness that ships no subagents SHALL get no explorer offer.
 
 #### Scenario: Claude Code or Codex
 
@@ -45,6 +45,11 @@ When braid's policy is chosen, `standards` SHALL offer, per harness the user pic
 
 - **WHEN** the user declines both ZCode agents
 - **THEN** `standards` shows the Settings step that sets the built-in Explore's model, and writes nothing
+
+#### Scenario: Pi
+
+- **WHEN** the user picks Pi
+- **THEN** `standards` says Pi ships no subagents, writes no agent file for it, and the tier line names no Pi agent
 
 #### Scenario: Confirming the routing
 

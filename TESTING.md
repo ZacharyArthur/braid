@@ -24,7 +24,7 @@ In a new session:
 - [ ] In a repo with code and no `braid/map.md`, ask "what does this code already define?" → it quotes the injected **Codebase map**; with `BRAID_MAP=0` set before launch, no map
 - [ ] In a scratch repo, `/braid:standards`: accept the Delegation round as recommended → no Delegation section, no `.claude/agents/` or `.codex/agents/` file; again with braid's policy, yes to Claude Code only → the section plus `.claude/agents/Explore.md`; after a restart, `/tasks` shows Haiku on the next Explore run
 - [ ] `/braid:humanizer`, `/braid:security-audit`, `/braid:help` and `/braid:skill` appear in the `/` menu; ask "make this sound less AI" without the command → humanizer does **not** auto-load
-- [ ] In a repo you've also used Codex or ZCode in, `/braid:retro` → its header counts sessions from each harness; cancel at the diff and nothing changes; `/braid:retro insights` with no `/insights` report says to run it first
+- [ ] In a repo you've also used Codex, ZCode or Pi in, `/braid:retro` → its header counts sessions from each harness; cancel at the diff and nothing changes; `/braid:retro insights` with no `/insights` report says to run it first
 
 ## Codex
 
@@ -68,6 +68,7 @@ To test a branch, `pi install <path to your checkout>` instead, and `pi remove <
 - [ ] While an answer is streaming, send "stop braid" → the answer adjusts; the next prompt's answer says braid is off
 - [ ] Then `/skill:braid` → back at **full**
 - [ ] `/skill:help` lists every skill; ask "make this sound less AI" without the command → humanizer does **not** auto-load
+- [ ] After a Pi session with a failed command in a repo, `/skill:retro` in that repo → its header counts `pi` sessions; the standing line names `/session`
 
 ## A/B against ponytail
 

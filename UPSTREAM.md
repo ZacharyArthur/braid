@@ -56,5 +56,7 @@ Every kind: bump the SHA to the commit you reviewed, even when you took nothing,
 | `design` | clean-room | nextlevelbuilder/ui-ux-pro-max-skill | .claude/skills/ui-ux-pro-max/SKILL.md | 56ea9cf174ed86786187daa9de0e6247cb0747e4 | MIT (ideas only) |
 | `standards` | clean-room | - | - | - | - |
 | `skill` | clean-room | anthropics/skills | skills/skill-creator | dbd4588f9e1033efb41dad4bef2f7947c8993d44 | Apache-2.0 (ideas only) |
+| `skill` | clean-room | openai/codex | codex-rs/skills/src/assets/samples/skill-creator | 84aa75204ad604bcf498df180d128181c89b2f0b | Apache-2.0 (ideas only) |
+| `skill` | clean-room | agentskills/agentskills | docs/skill-creation | 69ef37e9424c0a7ea9dd2293b559e43ec8176379 | Apache-2.0 (ideas only) |
 | `help` | clean-room | - | - | - | - |
 | `retro` | clean-room | - | - | - | - |

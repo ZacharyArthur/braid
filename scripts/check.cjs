@@ -474,7 +474,7 @@ let alwaysOn = 0;
   }
 }
 
-// retro's extractor on a fake home with all three stores: recurring failures counted across harnesses, one-offs,
+// retro's extractor on a fake home with all four stores: recurring failures counted across harnesses, one-offs,
 // other projects and prompt text left out, the window and `all` honored, insights read, nothing written.
 {
   // realpath: macOS's tmpdir is a symlink, and retro compares against the physical cwd.
@@ -570,6 +570,45 @@ let alwaysOn = 0;
       ['tools.apply_patch("y")', patchFail],
       fanOut,
     );
+    // Pi sessions: a failed shell call ends with Pi's exit line; a passing one adds nothing. p2-p4 sit in another
+    // agent folder's sessions/, reached through PI_CODING_AGENT_DIR or PI_CODING_AGENT_SESSION_DIR, either replacing
+    // the default store: p3 fails the same way from `powershell`, p4 belongs to another project.
+    const pi = (file, err, shell = 'bash', cwd = proj) =>
+      write(
+        file,
+        jsonl(
+          { type: 'session', id: path.basename(file), cwd },
+          { type: 'message', message: { role: 'user', content: [{ type: 'text', text: 'SECRET_PI_PROMPT' }] } },
+          {
+            type: 'message',
+            message: {
+              role: 'assistant',
+              content: [
+                // The failing call sits between two others, so only a lookup by toolCallId finds its command.
+                { type: 'toolCall', id: 'a', name: 'bash', arguments: { command: 'node -v' } },
+                { type: 'toolCall', id: 'b', name: shell, arguments: { command: 'git push' } },
+                { type: 'toolCall', id: 'c', name: 'bash', arguments: { command: 'npm -v' } },
+              ],
+            },
+          },
+          { type: 'message', message: { role: 'toolResult', toolCallId: 'a', toolName: 'bash', isError: false } },
+          {
+            type: 'message',
+            message: {
+              role: 'toolResult',
+              toolCallId: 'b',
+              toolName: shell,
+              content: [{ type: 'text', text: `${err}\n\nCommand exited with code 128` }],
+              isError: true,
+            },
+          },
+        ),
+      );
+    pi('.pi/agent/sessions/--proj--/p1.jsonl', `fatal: can't find upstream 'p'`);
+    pi('pi-agent/sessions/--proj--/p2.jsonl', `fatal: can't find upstream 'q'`);
+    pi('pi-agent/sessions/--proj--/p3.jsonl', `fatal: can't find upstream 'r'`, 'powershell');
+    pi('pi-agent/sessions/--other--/p4.jsonl', `fatal: can't find upstream 's'`, 'bash', other);
+    pi('pi-agent/git/stray.jsonl', `fatal: can't find upstream 't'`); // outside sessions/: never read
     const dbFile = path.join(tmp, '.zcode/cli/db/db.sqlite');
     let sqlite = false;
     try {
@@ -606,17 +645,42 @@ let alwaysOn = 0;
         .flatMap((e) => (e.isDirectory() ? tree(path.join(d, e.name)) : [path.join(d, e.name)]));
     const files = () => String(tree(tmp).filter((f) => !/db\.sqlite-(wal|shm)$/.test(f)));
     const before = files();
-    const retro = (...args) =>
+    const run = (env, ...args) =>
       execFileSync(process.execPath, [path.join(root, 'skills', 'retro', 'retro.cjs'), ...args], {
         cwd: proj,
-        env: { ...process.env, HOME: tmp, USERPROFILE: tmp, CLAUDE_CONFIG_DIR: '', CODEX_HOME: '' },
+        env: {
+          ...process.env,
+          HOME: tmp,
+          USERPROFILE: tmp,
+          CLAUDE_CONFIG_DIR: '',
+          CODEX_HOME: '',
+          PI_CODING_AGENT_DIR: '',
+          PI_CODING_AGENT_SESSION_DIR: '',
+          ...env,
+        },
         stdio: ['ignore', 'pipe', 'pipe'],
       }).toString();
+    const retro = (...args) => run({}, ...args);
     const out = retro();
     const want = sqlite
-      ? '1. 6 sessions (claude, codex, zcode) · shell git'
-      : '1. 5 sessions (claude, codex) · shell git';
+      ? '1. 7 sessions (claude, codex, pi, zcode) · shell git'
+      : '1. 6 sessions (claude, codex, pi) · shell git';
     if (!out.includes(want)) throw new Error(`no "${want}" in:\n${out}`);
+    if (!out.includes('pi 1)')) throw new Error(`Pi's default store not read alone:\n${out}`);
+    // The other folder's two project sessions join the `git` group whichever shell ran it; p4 stays out.
+    const wantOther = sqlite
+      ? '1. 8 sessions (claude, codex, pi, zcode) · shell git'
+      : '1. 7 sessions (claude, codex, pi) · shell git';
+    for (const [name, value] of [
+      ['PI_CODING_AGENT_SESSION_DIR', '~/pi-agent/sessions'],
+      ['PI_CODING_AGENT_DIR', '~/pi-agent'],
+    ]) {
+      const piOut = run({ [name]: value });
+      if (!piOut.includes('pi 2)') || !piOut.includes(wantOther))
+        throw new Error(`no "${wantOther}" from ${name}=${value}:\n${piOut}`);
+      if (/npm|SECRET|shell node/.test(piOut))
+        throw new Error(`Pi: other project, prompt text or a passing step in:\n${piOut}`);
+    }
     if (!out.includes('2 sessions (codex) · apply_patch'))
       throw new Error(`Codex script failures not counted:\n${out}`);
     if (!sqlite && !out.includes('zcode: skipped')) throw new Error(`no ZCode skip note in:\n${out}`);
@@ -641,7 +705,7 @@ let alwaysOn = 0;
       const broken = retro();
       if (
         !broken.includes('zcode: skipped, its store could not be read') ||
-        !broken.includes('5 sessions (claude, codex)')
+        !broken.includes('6 sessions (claude, codex, pi)')
       )
         throw new Error(`a broken ZCode store stopped the other harnesses:\n${broken}`);
     }

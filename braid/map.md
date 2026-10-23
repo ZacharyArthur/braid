@@ -1,4 +1,4 @@
-<!-- braid:map sha=98a7115 date=2026-10-21 -->
+<!-- braid:map sha=c9d702b date=2026-10-22 -->
 # Repo map
 
 braid: a clean-code harness plugin (an always-on core plus workflow skills) for Claude Code, Codex, ZCode and Pi,
@@ -26,7 +26,7 @@ Commands and conventions: see `AGENTS.md`. Behavior: `braid/specs/`. Terms: `bra
 | `skills/spec/` | propose → apply → archive over `braid/changes/` | `propose.md`, `apply.md`, `archive.md`, `discover.md` |
 | `skills/standards/` | writes a project's AGENTS.md and optional delegation | `template.md`, `stacks.md`, `delegation.md` |
 | `skills/{review,audit,debt}/` | ponytail-based review skills | `SKILL.md` |
-| `skills/{map,wayfind,handoff,xreview,design,skill,help}/` | braid's own clean-room skills | `SKILL.md` |
+| `skills/{map,wayfind,handoff,xreview,design,skill,help}/` | braid's own clean-room skills | `SKILL.md`; `skill/evals.md` (evals and trigger tuning) |
 | `skills/retro/` | clean-room: recurring tool failures from every harness's transcripts → AGENTS.md rules, then a router to vendor tools | `SKILL.md`, `retro.cjs` (the extractor) |
 | `skills/{grilling,grill-me,grill-with-docs,domain-modeling,adhd,humanizer,security-audit,systematic-debugging}/` | vendored verbatim, pinned in `UPSTREAM.md` | `LICENSE`, `SKILL.md` |
 | `skills/*/agents/openai.yaml` | Codex policy; marks user-only skills | per skill |
@@ -88,7 +88,7 @@ It then runs `check`, `dry` and the blind `complete` judge, and `report` writes 
 - `bench/tasks/` is outside both linters (`biome.json`, `.markdownlint-cli2.jsonc` globs) so fixtures stay as written; its `files/` are deliberately flawed inputs.
 - `bench/results/` is committed output; most of `git ls-files` lives there.
 - `/braid:help` must list every skill; `check.cjs` fails otherwise.
-- `skills/retro/retro.cjs` parses three transcript formats as they were in 2026-10 (Claude Code JSONL, Codex rollouts, ZCode's SQLite store); `check.cjs` builds a fake home with all three, and the ZCode part runs only where `node:sqlite` exists (the Node 22 CI job).
+- `skills/retro/retro.cjs` parses four transcript formats as they were in 2026-10 (Claude Code JSONL, Codex rollouts, ZCode's SQLite store, Pi JSONL); `check.cjs` builds a fake home with all four, and the ZCode part runs only where `node:sqlite` exists (the Node 22 CI job).
 
 ## Diagram
 

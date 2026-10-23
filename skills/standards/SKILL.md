@@ -6,8 +6,8 @@ argument-hint: "[section: project|stack|commands|gate|conventions|workflow|deleg
 license: MIT
 ---
 
-`AGENTS.md` is the project's rulebook for every agent: Codex and ZCode read it
-directly, Claude Code through a `CLAUDE.md` containing `@AGENTS.md`. It loads
+`AGENTS.md` is the project's rulebook for every agent: Codex, ZCode and Pi
+read it directly, Claude Code through a `CLAUDE.md` containing `@AGENTS.md`. It loads
 every session, so it holds commands and decisions, never explanations.
 
 ## Which mode
