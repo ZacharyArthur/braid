@@ -2,7 +2,7 @@
 
 All notable changes to braid. Versions follow semver: major = a skill renamed or removed, or the `braid/` layout changed; minor = a new skill or verb; patch = wording and upstream syncs.
 
-## [Unreleased]
+## [1.6.0] - 2026-10-23
 
 - `skill`: the heavy path no longer stops when Anthropic's `skill-creator` isn't installed. braid's own `evals.md` runs output evals against a baseline (fresh runs with and without the skill, assertions graded with quoted evidence, the user's review) and opt-in trigger tuning (about 20 queries, 3 runs each, a held-out set), with a fresh-run recipe for each harness. An installed `skill-creator` still takes the work when you prefer it. Also: a baseline-first check before writing, a gotchas slot in the template, Pi's folders and `/skill:<name>`. ADR 0016.
 - Pi in the skills that list harnesses: `retro` reads Pi's sessions (`$PI_CODING_AGENT_SESSION_DIR` or the agent folder's `sessions/`), writes `all` rules to `~/.pi/agent/AGENTS.md` and routes to Pi's tools; `standards` says Pi has no subagents, so delegation writes no Pi explorer.
