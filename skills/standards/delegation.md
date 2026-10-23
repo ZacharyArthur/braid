@@ -31,7 +31,11 @@ the user's own lines, same section.
 | Codex | `gpt-6-luna`, effort `high` (Codex's starting point for Luna) | `gpt-6.1-sol`, effort `medium` | the session's |
 | ZCode | `GLM-5.3-Flash` | `GLM-5.3` | the session's |
 
-Why: every harness runs subagents on (or near) the main model unless told
+Pi ships no subagents (Pi 1.4.0): picking it adds nothing to the tier line and
+no explorer file. Say so; Pi's sessions read the section and do the work
+themselves.
+
+Why: every harness with subagents runs them on (or near) the main model unless told
 otherwise.
 Per million tokens, input / output: Haiku 5.5 $0.10 / $0.50 for prompts up to
 100K, $0.50 / $2.50 above (keep explorer tasks scoped); Sonnet 5.5 $2 / $10;

@@ -26,7 +26,7 @@ The `braid` plugin SHALL NOT load any mod, and the Codex marketplace SHALL NOT l
 
 #### Scenario: braid alone
 
-- **WHEN** a user installs only braid, in any of the three harnesses
+- **WHEN** a user installs only braid, in any of the four harnesses
 - **THEN** no mod runs
 
 #### Scenario: Codex marketplace

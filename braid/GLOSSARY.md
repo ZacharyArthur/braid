@@ -45,7 +45,7 @@ Which model a delegated task runs on: fast (locates), mid (reviews, researches) 
 _Avoid_: size, class
 
 **Explorer**:
-The read-only agent the fast tier runs: `Explore` in Claude Code, `explorer` in Codex, `braid-explore` in ZCode.
+The read-only agent the fast tier runs: `Explore` in Claude Code, `explorer` in Codex, `braid-explore` in ZCode, none in Pi (no subagents).
 _Avoid_: scout, searcher
 
 **Failure signature**:

@@ -27,6 +27,11 @@ const home = os.homedir();
 const claudeDir = process.env.CLAUDE_CONFIG_DIR || path.join(home, '.claude');
 const codexDir = process.env.CODEX_HOME || path.join(home, '.codex');
 const zcodeDb = path.join(home, '.zcode', 'cli', 'db', 'db.sqlite');
+// Pi's session folder as Pi resolves it, `~` included; a `sessionDir` in Pi's settings file is not read.
+const tilde = (p) => p.replace(/^~(?=$|[\\/])/, home);
+const piSessionsDir = tilde(
+  process.env.PI_CODING_AGENT_SESSION_DIR || path.join(process.env.PI_CODING_AGENT_DIR || '~/.pi/agent', 'sessions'),
+);
 const since = Math.max(0, Date.now() - days * 86400000); // any window, however large
 const norm = (p) => (process.platform === 'win32' ? path.resolve(p).toLowerCase() : path.resolve(p));
 const root = (() => {
@@ -66,7 +71,7 @@ const headCwd = (file) => {
 // The program a shell command runs: the first segment's executable, past cd, export and set, env prefixes
 // (`FOO=1 git`), PowerShell assignments (`$x = git ...`; a literal `$x = 'a'` is skipped), the `&` call operator, a
 // quoted path (`"/usr/bin/git" push`) and here-string bodies.
-const SHELL_TOOLS = new Set(['Bash', 'PowerShell', 'exec', 'exec_command']);
+const SHELL_TOOLS = new Set(['Bash', 'PowerShell', 'exec', 'exec_command', 'bash', 'powershell']);
 const program = (cmd) => {
   const text = String(cmd || '').replace(/@(['"])\r?\n[\s\S]*?\r?\n\1@/g, '');
   for (const seg of text.split(/&&|\|\||;|\||\n/)) {
@@ -271,7 +276,33 @@ function zcodeSessions() {
   }
 }
 
-const sessions = [...claudeSessions(), ...codexSessions(), ...zcodeSessions()]
+// Pi: one JSONL per session, a failed call a `toolResult` message with isError, its command in the matching
+// assistant `toolCall` block.
+function piSessions() {
+  return files(piSessionsDir, (n) => n.endsWith('.jsonl')).map((file) => ({
+    harness: 'pi',
+    id: path.basename(file, '.jsonl'),
+    time: fs.statSync(file).mtimeMs,
+    cwd: () => headCwd(file),
+    failures() {
+      const calls = new Map();
+      const out = [];
+      for (const j of fs.readFileSync(file, 'utf8').split('\n').map(parse)) {
+        const m = j?.type === 'message' && j.message;
+        if (!m) continue;
+        if (m.role === 'assistant' && Array.isArray(m.content))
+          for (const c of m.content) if (c.type === 'toolCall') calls.set(c.id, c.arguments?.command);
+        if (m.role === 'toolResult' && m.isError) {
+          const text = Array.isArray(m.content) ? m.content.map((x) => x.text || '').join('\n') : m.content;
+          out.push({ tool: m.toolName || '?', cmd: calls.get(m.toolCallId), text });
+        }
+      }
+      return out;
+    },
+  }));
+}
+
+const sessions = [...claudeSessions(), ...codexSessions(), ...zcodeSessions(), ...piSessions()]
   .filter((s) => s.time >= since && inProject(s.cwd()))
   .sort((a, b) => b.time - a.time)
   .slice(0, limit);
@@ -291,7 +322,7 @@ const day = (t) => {
   const d = new Date(t);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
-const counts = ['claude', 'codex', 'zcode'].map((h) => `${h} ${sessions.filter((s) => s.harness === h).length}`);
+const counts = ['claude', 'codex', 'zcode', 'pi'].map((h) => `${h} ${sessions.filter((s) => s.harness === h).length}`);
 console.log(
   `retro: ${all ? 'all projects' : root} · ${sessions.length} sessions (${counts.join(', ')}) · since ${day(since)}`,
 );

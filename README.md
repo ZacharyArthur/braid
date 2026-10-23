@@ -63,15 +63,15 @@ Then start a new session. Skills are `/skill:<name>`, so the level is `/skill:br
 | `security-audit` | Multi-phase security audit with verified findings |
 | `humanizer` | Make AI-written prose read like you |
 | `adhd` | Action-first answers; stays on until "stop adhd mode" |
-| `skill` | Write a new skill that stays small and triggers right; hands off to Anthropic's `skill-creator` for evals |
-| `retro` | Failures agents repeat across sessions, read from Claude Code, Codex and ZCode transcripts, turned into AGENTS.md rules after a yes; then the harness's own usage, cost and config tools |
+| `skill` | Write a new skill that stays small and triggers right; evals against a baseline and trigger tuning in any harness, or Anthropic's `skill-creator` when you prefer it |
+| `retro` | Failures agents repeat across sessions, read from Claude Code, Codex, ZCode and Pi transcripts, turned into AGENTS.md rules after a yes; then the harness's own usage, cost and config tools |
 | `help` | What each skill does and how to call it in your harness; `help <skill>` for one in depth |
 
 Only `braid`, `grilling`, `domain-modeling` and `map` load on their own; the rest wait for you to call them. Adding a skill or syncing upstream: [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Mods
 
-Optional add-ons for **Claude Code only** (terminal and Desktop app, v2.1.287+), each a separate plugin in the same marketplace. Codex never lists them; ZCode lists them but can't run them. Install one with `claude plugin install <mod>@braid` (or `/plugin install <mod>@braid`), and switch it off or on in `/plugin`.
+Optional add-ons for **Claude Code only** (terminal and Desktop app, v2.1.287+), each a separate plugin in the same marketplace. Codex never lists them; ZCode lists them but can't run them; Pi never loads them. Install one with `claude plugin install <mod>@braid` (or `/plugin install <mod>@braid`), and switch it off or on in `/plugin`.
 
 | Mod | What it shows |
 |---|---|
@@ -103,7 +103,7 @@ braid stands on these projects. Vendored files keep their upstream `LICENSE`, no
 
 **Vendored:** [mattpocock/skills](https://github.com/mattpocock/skills), [i-have-adhd](https://github.com/ayghri/i-have-adhd), [humanizer](https://github.com/blader/humanizer), [cloudflare/security-audit-skill](https://github.com/cloudflare/security-audit-skill), [superpowers](https://github.com/obra/superpowers).
 
-**Derived or inspired by:** [OpenSpec](https://github.com/Fission-AI/openspec) (spec format), mattpocock's wayfinder (wayfind), [graphify](https://github.com/Graphify-Labs/graphify) (map), [impeccable](https://github.com/pbakaus/impeccable), [taste-skill](https://github.com/Leonxlnx/taste-skill) and [ui-ux-pro-max](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill) (design), superpowers (verification rule), Anthropic's [skill-creator](https://github.com/anthropics/skills) and skill-authoring guide (skill).
+**Derived or inspired by:** [OpenSpec](https://github.com/Fission-AI/openspec) (spec format), mattpocock's wayfinder (wayfind), [graphify](https://github.com/Graphify-Labs/graphify) (map), [impeccable](https://github.com/pbakaus/impeccable), [taste-skill](https://github.com/Leonxlnx/taste-skill) and [ui-ux-pro-max](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill) (design), superpowers (verification rule), Anthropic's [skill-creator](https://github.com/anthropics/skills) and skill-authoring guide, Codex's [skill-creator](https://github.com/openai/codex) and [agentskills.io](https://agentskills.io)'s skill-creation guides (skill).
 
 **Companions worth installing when you need the full thing:** impeccable, ui-ux-pro-max, taste-skill, [diagram-design](https://github.com/cathrynlavery/diagram-design), [Agent-Skills-for-Context-Engineering](https://github.com/muratcankoylan/Agent-Skills-for-Context-Engineering), OpenSpec, graphify.
 

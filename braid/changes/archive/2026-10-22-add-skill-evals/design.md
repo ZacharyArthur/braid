@@ -1,0 +1,19 @@
+# Design
+
+## Own heavy path, not a vendored skill-creator
+
+Weighed: vendoring Anthropic's `skill-creator` (Apache-2.0) into `skills/skill/`, or writing braid's own.
+
+Vendoring brings ~250 KB of skill, Python scripts and an HTML viewer, and its description tuning shells out to `claude -p`, so in Codex, ZCode and Pi it would measure Claude's triggering rather than that harness's. Its `SKILL.md` would also need renaming so harnesses that scan skill folders recursively (Pi does; Codex's depth is undocumented) don't load it as a second skill. Nesting a vendored folder inside a clean-room skill would also need new provenance rules in `check.cjs`.
+
+Chosen: braid's own `evals.md`, one level from `SKILL.md`, under the 8 KB file cap, no scripts. It keeps the method all three sources agree on (fresh runs with and without the skill, assertions written after the first outputs, graded with quoted evidence, the user's review, iterate) and agentskills.io's trigger-tuning numbers, with a fresh-run recipe per harness. An installed creator still wins when the user wants it.
+
+## Trigger checks by hand
+
+Each harness's headless mode can run one query in a fresh session (`claude -p`, `codex exec --ephemeral`, `pi -p --no-session`; ZCode has none). All three read piped stdin, so the commands carry `</dev/null` (round 4: Codex and Pi hung under a shell tool that left stdin open; round 5: `claude -p` waits 3 s a run, and PowerShell rejects `<`, where `$null |` closes stdin instead). Only Claude Code's skill tool call is a documented trigger signal; for Codex and Pi a read of the skill's `SKILL.md` is the likely sign, untested. So `evals.md` tells the agent to inspect one run's output by hand before counting, and ships no script.
+
+Pi needs two more things headless. Loading: print and JSON modes can't answer Pi's trust prompt, and trusting the copy (`--approve`, round 1) also runs its project extensions, MCP servers and packages at startup, before any tool allowlist applies (reproduced in round 2 with a project extension writing outside the folder, no model call). So Pi runs `--no-approve`, and trigger runs add `--skill <skill folder>`: the copy stays untrusted and the skill under test still registers (checked over RPC `get_commands`). Output evals leave `--skill` out, so their baseline has no skill. Pi keeps the first skill it finds by name, and another installed copy beats `--skill` (round 3; when the copy under test is the installed one, `--skill` pointing at it collides with nothing); then trigger runs add `--no-skills`, at the cost of neighbouring skills in near-miss queries, rather than braid moving the user's installed copy aside. Fencing: Pi asks no approval before a tool call and a scratch folder doesn't contain its tools, so trigger runs add `--tools read --no-mcp --exclude-tools 'mcp__*'` (a load is a `read`, so detection survives; `--tools` alone keeps MCP tools, and `--no-mcp` leaves an extension's own MCP support alone), and output evals, which need write tools, run only in a container or throwaway VM holding only the model key.
+
+## Pi in retro
+
+Pi's sessions are JSONL like Codex's, one folder per working directory, the first line a `session` entry with `cwd`. A failed call is a `toolResult` message with `isError: true`; its `toolCallId` points at the assistant's `toolCall` block, whose `arguments.command` is the shell command (the `bash` tool, or `powershell` on Windows). A non-zero exit ends the text with `Command exited with code N`, after the command's output or `(no output)`, so the error line above it is picked and signatures match the other harnesses'. The folder is `$PI_CODING_AGENT_SESSION_DIR`, else `<agent folder>/sessions`, the agent folder resolved as the extension does (`$PI_CODING_AGENT_DIR` with `~` expanded, else `~/.pi/agent`). A `sessionDir` set in Pi's settings file is not read.
