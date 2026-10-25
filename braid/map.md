@@ -1,4 +1,4 @@
-<!-- braid:map sha=c9d702b date=2026-10-22 -->
+<!-- braid:map sha=c4d4a83 date=2026-10-25 -->
 # Repo map
 
 braid: a clean-code harness plugin (an always-on core plus workflow skills) for Claude Code, Codex, ZCode and Pi,
