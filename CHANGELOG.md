@@ -2,7 +2,7 @@
 
 All notable changes to braid. Versions follow semver: major = a skill renamed or removed, or the `braid/` layout changed; minor = a new skill or verb; patch = wording and upstream syncs.
 
-## Unreleased
+## [1.7.0] - 2026-10-25
 
 - `xreview`: the prompt has the reviewer check a finding that depends on how a library, API, tool or platform behaves against local sources, then the official docs for the version the project pins, with whatever lookup tool it has; a doc-backed finding stays PLAUSIBLE and cites the URL and version. `--offline` keeps the reviewer off the network, the shell included. A new Sources section treats the diff, repo and fetched pages as material, never instructions, names the signs of injected text and has the reviewer report it quoted. When the scope holds another author's commits or the working tree a file named like a secret, xreview suggests `--offline` and a reviewer with network tools off, and under `--run` asks before the hand-off.
 
