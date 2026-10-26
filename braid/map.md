@@ -1,4 +1,4 @@
-<!-- braid:map sha=c4d4a83 date=2026-10-25 -->
+<!-- braid:map sha=63749aa date=2026-10-25 -->
 # Repo map
 
 braid: a clean-code harness plugin (an always-on core plus workflow skills) for Claude Code, Codex, ZCode and Pi,
@@ -26,7 +26,7 @@ Commands and conventions: see `AGENTS.md`. Behavior: `braid/specs/`. Terms: `bra
 | `skills/spec/` | propose → apply → archive over `braid/changes/` | `propose.md`, `apply.md`, `archive.md`, `discover.md` |
 | `skills/standards/` | writes a project's AGENTS.md and optional delegation | `template.md`, `stacks.md`, `delegation.md` |
 | `skills/{review,audit,debt}/` | ponytail-based review skills | `SKILL.md` |
-| `skills/{map,wayfind,handoff,xreview,design,skill,help}/` | braid's own clean-room skills | `SKILL.md`; `skill/evals.md` (evals and trigger tuning) |
+| `skills/{map,wayfind,handoff,xreview,design,skill,help}/` | braid's own clean-room skills | `SKILL.md`; `skill/evals.md` (evals and trigger tuning); `xreview/next.md` (the next round), `xreview/exposure.md` (author and secrets check) |
 | `skills/retro/` | clean-room: recurring tool failures from every harness's transcripts → AGENTS.md rules, then a router to vendor tools | `SKILL.md`, `retro.cjs` (the extractor) |
 | `skills/{grilling,grill-me,grill-with-docs,domain-modeling,adhd,humanizer,security-audit,systematic-debugging}/` | vendored verbatim, pinned in `UPSTREAM.md` | `LICENSE`, `SKILL.md` |
 | `skills/*/agents/openai.yaml` | Codex policy; marks user-only skills | per skill |

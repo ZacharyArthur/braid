@@ -14,6 +14,8 @@
   "ignores": [
     "skills/{adhd,domain-modeling,grill-me,grill-with-docs,grilling,humanizer,security-audit,systematic-debugging}/**",
     "skills/{review,audit,debt}/SKILL.md",
-    "skills/braid/core.md"
+    "skills/braid/core.md",
+    // Written by reviewers, not by braid.
+    "braid/reviews/**"
   ]
 }

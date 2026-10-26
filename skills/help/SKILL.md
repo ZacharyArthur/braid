@@ -57,7 +57,7 @@ a per-prompt reminder, "stop braid" turns it off for the session.
 | `review` | A quality review of a change: bugs, risks, load, missing tests, speed, what to cut | `[diff target]` |
 | `audit` | The same review for a whole repo or path | `[path]` |
 | `debt` | Listing every `shortcut(<strand>):` corner cut, flagging ones with no upgrade trigger | `[marker word]` |
-| `xreview` | A review by another model: writes the prompt, `--run` hands it to a fresh subagent; external claims checked against the pinned version's docs, `--offline` for no network | `[--open] [--offline] [--run] [diff\|<path>\|all]` |
+| `xreview` | A review by another model: writes the prompt in a review folder, reviewers write result files there, `--run` hands it to a fresh subagent; `next` fixes or declines the findings and readies the next round; external claims checked against the pinned version's docs, `--offline` for no network | `[--open] [--offline] [--run] [diff\|<path>\|all]` or `next [<folder>] [--run]` |
 | `systematic-debugging` | A bug or failing test: root cause before any fix | - |
 | `security-audit` | A security review or full audit with verified findings | - |
 | `design` | Building or reviewing UI: native elements, few tokens, no generic AI look | `[what to build or review]` |
