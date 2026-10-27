@@ -60,5 +60,16 @@ _Avoid_: orchestrator
 A Claude Code-only plugin of TypeScript hooks in `mods/<name>/`, listed in braid's marketplace and installed on its own.
 _Avoid_: extension, add-on
 
+**Review folder**:
+One xreview review, `braid/reviews/<date>-<scope>/`: its `prompt.md` and every round's result files. The date is round 1's.
+
+**Review round**:
+One pass of reviewers over the prompt. The Output section names the current one; `next` records each in a `Round <N>` section of `prompt.md`.
+_Avoid_: iteration, pass
+
+**Result file**:
+One reviewer's report for one round, `r<N>-<name>.md` in the review folder, ending in a `Verdict:` line.
+_Avoid_: review file, report file
+
 **Vendored / based / derived / clean-room**:
 How a skill relates to its upstream: verbatim copy with surgical edits; upstream's text as the base with braid's renames and added blocks, synced by three-way merge; substantial rewrite; or written from scratch with credit only.

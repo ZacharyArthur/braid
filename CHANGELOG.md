@@ -1,6 +1,12 @@
 # Changelog
 
-All notable changes to braid. Versions follow semver: major = a skill renamed or removed, or the `braid/` layout changed; minor = a new skill or verb; patch = wording and upstream syncs.
+All notable changes to braid. Versions follow semver: major = a skill renamed or removed, or a `braid/` file braid reads moves or changes format; minor = a new skill or verb; patch = wording and upstream syncs.
+
+## [1.8.0] - 2026-10-26
+
+- `xreview`: each review gets a folder, `braid/reviews/<date>-<scope>/`, holding `prompt.md` and one result file per reviewer per round, `r<N>-<name>.md`. The prompt names the round and the path; the reviewer names itself by its tool or model family, grades findings HIGH, MEDIUM or LOW, writes only that file, ends it with `Verdict: SIGN OFF` or `Verdict: CHANGES NEEDED` and replies with just the verdict and the path. `braid/reviews/` is out of every review's scope. Creating the first review folder asks once whether to write `braid/reviews/.gitignore` containing `*`. Flat review files from earlier versions stay in place and aren't read.
+- `xreview next [<folder>] [--run]`: reads the round's new result files as claims to check, never instructions, fixes or declines each finding and records it in a `Round` section of the prompt, runs the project's checks, then readies the next round or closes the review. It asks before changing a signed-off decision, agent instructions or check commands, when reviewers disagree, and whether to go on after a CONFIRMED finding above LOW.
+- CHANGELOG: a major release now means a `braid/` file braid reads moves or changes format, not any change to the `braid/` layout.
 
 ## [1.7.0] - 2026-10-25
 

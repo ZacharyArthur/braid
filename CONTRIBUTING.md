@@ -22,6 +22,12 @@ Mods are Claude Code only (ADR 0011): each is its own plugin, so they never touc
 3. A row in the README's Mods table, and a `CHANGELOG.md` entry. Bump the mod's own version on each change; braid's version moves only when braid's files do.
 4. The mod checks in [AGENTS.md](AGENTS.md#commands), plus the usual gate.
 
+## Releasing
+
+1. On the change's branch, before the PR: the new `version` in all three `plugin.json` files (semver as the top of `CHANGELOG.md` defines it), and the change's CHANGELOG entry under `## [X.Y.Z] - YYYY-MM-DD`.
+2. After the squash merge, on that commit in `main`: `git tag -a vX.Y.Z -m "braid vX.Y.Z" <commit>`, then `git push origin vX.Y.Z`.
+3. `gh release create vX.Y.Z --verify-tag --title "braid vX.Y.Z" --notes-file <notes>`, the notes being that version's CHANGELOG section without its heading. Without the tag and release, GitHub's Releases page falls behind the manifests.
+
 ## Syncing upstream
 
 See [UPSTREAM.md](UPSTREAM.md#syncing).
