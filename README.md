@@ -57,7 +57,7 @@ Then start a new session. Skills are `/skill:<name>`, so the level is `/skill:br
 | `handoff` | `braid/HANDOFF.md` for whoever picks this up next |
 | `review` / `audit` | Quality review of a change / the whole repo: bugs, risks, load, missing tests, speed, and what to cut |
 | `debt` | Ledger of every `shortcut(<strand>):` corner cut |
-| `xreview` | A review prompt for a different model; adversarial or `--open`; external claims checked against the pinned version's docs, or `--offline` for no network. Reviewers write result files in `braid/reviews/<date>-<scope>/`, and `next` fixes or declines their findings and readies the next round |
+| `xreview` | A review prompt for a different model; adversarial or `--open`; external claims checked against the pinned version's docs, or `--offline` for no network. Reviewers write result files in `braid/reviews/<date>-<scope>/`, and `next` fixes or declines their findings and readies the next round. `--run codex,pi` starts those reviewers' own programs headless, without approval prompts, and goes on round after round |
 | `design` | Native-first UI without the generic AI look |
 | `systematic-debugging` | Root cause before any fix |
 | `security-audit` | Multi-phase security audit with verified findings |

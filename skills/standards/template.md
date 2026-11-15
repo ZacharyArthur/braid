@@ -32,6 +32,7 @@ Run from the repo root.
 ## Workflow                                     (optional)
 - Specs: <framework> (`<dir>`). New features, behavior changes, and architecture decisions go through a spec change first; fixes restoring specified behavior, docs, chores, and dependency bumps go straight to a branch.
 - Order: <propose → branch → apply → archive on the branch before merging>.
+- Reviewers: <codex, pi>                        (optional: who `/braid:xreview --run` starts)
 
 ## Delegation                                   (optional)
 - <braid's policy lines from delegation.md, tier line filled for the harnesses picked; or the user's own>

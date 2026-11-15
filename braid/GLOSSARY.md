@@ -68,8 +68,18 @@ One pass of reviewers over the prompt. The Output section names the current one;
 _Avoid_: iteration, pass
 
 **Result file**:
-One reviewer's report for one round, `r<N>-<name>.md` in the review folder, ending in a `Verdict:` line.
+One reviewer's report for one round, `r<N>-<name>.md` in the review folder, ending in a `Verdict:` line; without that line it is not a report yet. A hand-started reviewer names its own; in a fan-out the runner assigns `r<N>-<program>[-<model>].md`.
 _Avoid_: review file, report file
+
+**Fan-out**:
+xreview's `--run` starting a round's reviewer programs (`claude`, `codex`, `pi`, `vibe`, and `glm`, which is Codex on the user's `zai` profile) headless and at once in the working tree, through `skills/xreview/run.cjs`. While it runs, the review folder holds its marker, `fanout-<runner pid>.json`.
+_Avoid_: dispatch, orchestration
+
+**Reviewers line**:
+`Reviewers: codex, pi` in the Workflow section of a project's AGENTS.md: who `--run` starts when no list follows it.
+
+**Hand-off line**:
+`Read <prompt path> and do what it says.` What a reviewer is started with, pasted by the user or passed by the runner, which adds the result path.
 
 **Vendored / based / derived / clean-room**:
 How a skill relates to its upstream: verbatim copy with surgical edits; upstream's text as the base with braid's renames and added blocks, synced by three-way merge; substantial rewrite; or written from scratch with credit only.

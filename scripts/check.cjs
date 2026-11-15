@@ -716,6 +716,419 @@ let alwaysOn = 0;
   }
 }
 
+// xreview's runner against fake programs on a PATH of its own: `claude`, `codex` and `pi` are shims of one fake
+// (a .cmd on Windows, so the shell path runs), `vibe` is missing. The fake's behavior is its model's name.
+{
+  const tmp = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'braid-run-')));
+  const win = process.platform === 'win32';
+  const sleep = (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+  const alive = (pid) => {
+    try {
+      process.kill(pid, 0);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+  const waitFor = (cond, what) => {
+    for (let i = 0; i < 150 && !cond(); i++) sleep(100);
+    if (!cond()) throw new Error(`timed out waiting for ${what}`);
+  };
+  try {
+    const bin = path.join(tmp, 'bin');
+    const log = path.join(tmp, 'log');
+    const repo = path.join(tmp, 'repo');
+    for (const d of [bin, log, repo]) fs.mkdirSync(d);
+    fs.writeFileSync(
+      path.join(bin, 'fake.cjs'),
+      `const fs = require('node:fs');
+const path = require('node:path');
+const { spawn } = require('node:child_process');
+const [name, ...args] = process.argv.slice(2);
+const log = process.env.FAKE_LOG;
+const model = args[args.findIndex((a) => a === '--model' || a === '-m') + 1];
+const stdin = fs.readFileSync(0, 'utf8');
+const result = stdin.trim().split('this path: ')[1];
+fs.appendFileSync(path.join(log, 'calls'), \`start \${name} \${args.join(' ')} | \${stdin}\`);
+const ok = () => fs.writeFileSync(result, 'LOW PLAUSIBLE a.txt:1: nit.\\nVerdict: SIGN OFF\\n');
+if (model === 'fail') {
+  console.error('boom');
+  process.exit(3);
+} else if (model === 'noverdict') fs.writeFileSync(result, 'HIGH CONFIRMED half a rep');
+else if (model === 'hang') {
+  const child = spawn(process.execPath, ['-e', 'setInterval(() => {}, 1000)'], { stdio: 'ignore' });
+  fs.writeFileSync(path.join(log, 'hang.pids'), \`\${process.pid} \${child.pid}\`);
+  setInterval(() => {}, 1000);
+} else if (model === 'mess') {
+  require(path.join(log, 'mess.cjs'));
+  ok();
+} else if (model === 'killed') {
+  ok();
+  process.kill(process.pid, 'SIGKILL');
+} else if (model === 'stray') {
+  ok();
+  spawn(process.execPath, ['-e', 'setTimeout(() => {}, 4000)'], { detached: true, stdio: ['ignore', 'inherit', 'inherit'] }).unref();
+} else if (model !== 'nofile')
+  setTimeout(() => {
+    ok();
+    fs.appendFileSync(path.join(log, 'calls'), \`end \${name}\\n\`);
+  }, 400);
+`,
+    );
+    for (const name of ['claude', 'codex', 'pi']) {
+      if (win) fs.writeFileSync(path.join(bin, `${name}.cmd`), `@"${process.execPath}" "%~dp0fake.cjs" ${name} %*\r\n`);
+      else
+        fs.writeFileSync(
+          path.join(bin, name),
+          `#!/bin/sh\nexec "${process.execPath}" "$(dirname "$0")/fake.cjs" ${name} "$@"\n`,
+          {
+            mode: 0o755,
+          },
+        );
+    }
+    const gitDir = (process.env.PATH || '')
+      .split(path.delimiter)
+      .find((d) => fs.existsSync(path.join(d, win ? 'git.exe' : 'git')));
+    const env = {
+      ...process.env,
+      PATH: [bin, gitDir, win && path.join(process.env.SystemRoot, 'System32')].filter(Boolean).join(path.delimiter),
+      FAKE_LOG: log,
+      GIT_AUTHOR_NAME: 't',
+      GIT_AUTHOR_EMAIL: 't@example.invalid',
+      GIT_COMMITTER_NAME: 't',
+      GIT_COMMITTER_EMAIL: 't@example.invalid',
+      GIT_CONFIG_GLOBAL: path.join(tmp, 'gitconfig'),
+      CODEX_HOME: path.join(tmp, 'codexhome'),
+    };
+    const { spawnSync } = require('node:child_process');
+    const git = (...args) => execFileSync('git', args, { cwd: repo, env, stdio: 'pipe' }).toString();
+    const put = (p, text) => {
+      fs.mkdirSync(path.dirname(path.join(repo, p)), { recursive: true });
+      fs.writeFileSync(path.join(repo, p), text);
+    };
+    const review = 'braid/reviews/2026-11-02-diff';
+    for (const f of ['a.txt', 'b.txt', 'c.txt', `${review}/prompt.md`, 'braid/reviews/50%&done/prompt.md'])
+      put(f, 'one\n');
+    put('.gitignore', 'braid/reviews/\n');
+    git('init', '-q', '-b', 'main');
+    git('add', '-A');
+    git('commit', '-qm', 'init');
+    const runner = path.join(root, 'skills', 'xreview', 'run.cjs');
+    const run = (args, extra = {}) => {
+      const r = spawnSync(process.execPath, [runner, ...args], {
+        cwd: repo,
+        env: { ...env, ...extra },
+        encoding: 'utf8',
+      });
+      return { code: r.status, out: r.stdout + r.stderr };
+    };
+    const calls = () =>
+      fs.existsSync(path.join(log, 'calls')) ? fs.readFileSync(path.join(log, 'calls'), 'utf8') : '';
+    const files = (d = review) => fs.readdirSync(path.join(repo, d)).sort().join(' ');
+    const expect = (cond, msg, r) => {
+      if (!cond) throw new Error(`${msg}${r ? `:\n${r.out}` : ''}`);
+    };
+
+    let r = run(['--list']);
+    expect(r.out.trim().split(/\s+/).join(' ') === 'claude codex pi', '--list should name the three shims', r);
+
+    // Nothing starts on an entry or a folder the runner won't pass on.
+    for (const [args, says] of [
+      [[review, '1', 'codex,gemini'], 'unknown reviewer'],
+      [[review, '1', 'codex,vibe'], 'not installed'],
+      [[review, '1', 'codex,glm'], 'no zai profile'],
+      [[review, '1', 'pi:'], 'a model is'],
+      [[review, '1', 'pi:a&b'], 'a model is'],
+      [[review, '1', 'pi:-x'], 'a model is'],
+      [['braid/reviews/50%&done', '1', 'codex'], "can't fan out"],
+    ]) {
+      r = run(args);
+      expect(r.code === 2 && r.out.includes(says) && !calls(), `${args.join(' ')} should start nothing`, r);
+    }
+
+    // A live marker starts nothing; a dead one is ignored and replaced.
+    const marker = path.join(repo, review, 'fanout-1.json');
+    const marks = () => fs.readdirSync(path.join(repo, review)).filter((f) => f.startsWith('fanout-'));
+    fs.writeFileSync(marker, JSON.stringify({ pids: [process.pid] }));
+    r = run([review, '1', 'codex']);
+    expect(r.code === 2 && r.out.includes('still running') && !calls(), 'a live marker should start nothing', r);
+    r = run(['--running', review]);
+    expect(r.code === 0 && r.out.includes('fanout-1.json'), '--running should exit 0 and name a live marker', r);
+    fs.writeFileSync(marker, JSON.stringify({ pids: [spawnSync(process.execPath, ['-e', '']).pid] }));
+    expect(run(['--running', review]).code === 1, '--running should exit 1 on a dead marker');
+    r = run(['--running', 'diff']);
+    expect(r.code === 2 && r.out.includes('no prompt.md'), '--running should refuse a folder it cannot find', r);
+    // A runner given the pid of a killed one, whose program still runs: the marker it finds under its own name
+    // stops it and stays. The runner is loaded into a process that has planted that marker first.
+    const own = spawnSync(
+      process.execPath,
+      [
+        '-e',
+        `require('node:fs').writeFileSync(${JSON.stringify(path.join(repo, review))} + '/fanout-' + process.pid + '.json', JSON.stringify({ pids: [process.pid, ${process.pid}] })); process.argv = [process.argv[0], ${JSON.stringify(runner)}, ${JSON.stringify(review)}, '1', 'codex']; require(${JSON.stringify(runner)});`,
+      ],
+      { cwd: repo, env, encoding: 'utf8' },
+    );
+    expect(
+      own.status === 2 && own.stderr.includes('still running') && !calls() && marks().length === 2,
+      `a live marker under the runner's own pid should start nothing and stay:\n${own.stdout}${own.stderr}`,
+    );
+    for (const f of marks()) if (f !== 'fanout-1.json') fs.rmSync(path.join(repo, review, f));
+
+    // Round 1: two succeed side by side, one fails, one leaves no file, one leaves half a report.
+    r = run([review, '1', ' claude , codex', 'pi:fail,pi:nofile,claude:noverdict']);
+    expect(r.code === 0, 'round 1 should exit 0', r);
+    for (const line of [
+      `claude: Verdict: SIGN OFF ${review}/r1-claude.md`,
+      `codex: Verdict: SIGN OFF ${review}/r1-codex.md`,
+      'pi:fail: failed (exit 3), no result file. Last output: boom',
+      'pi:nofile: no result file',
+      `claude:noverdict: incomplete result file ${review}/r1-claude-noverdict.md`,
+      'No leftovers found.',
+      'not a guarantee',
+    ])
+      expect(r.out.includes(line), `round 1 should print "${line}"`, r);
+    const order = calls().split('\n');
+    expect(
+      order.findIndex((l) => l.startsWith('end ')) > order.findIndex((l) => l.startsWith('start codex')),
+      'programs should start at once',
+      r,
+    );
+    expect(
+      calls().includes(
+        `| Read ${review}/prompt.md and do what it says. Write your report to exactly this path: ${review}/r1-codex.md`,
+      ),
+      'the hand-off line should give both relative paths',
+      r,
+    );
+    expect(!marks().length, 'no marker should be left after a run, the dead one included');
+
+    // Round 2: one program twice with two models, the same entry twice, a colon in the model, a taken path.
+    put(`${review}/R2-Codex.md`, 'taken\n');
+    // glm is Codex on a zai profile, which this machine now has: listed, and started beside plain Codex.
+    fs.mkdirSync(path.join(tmp, 'codexhome'));
+    fs.writeFileSync(path.join(tmp, 'codexhome', 'zai.config.toml'), '');
+    expect(run(['--list']).out.includes('glm'), '--list should name glm once Codex has a zai profile');
+    r = run([review, '2', 'pi:m1,pi:m2,codex,codex,pi:zai/glm-5.3:high,codex:_m,glm,glm:glm-5.3-flash']);
+    for (const argv of [
+      'start codex exec --approve-for-me - |',
+      'start codex exec -p zai --approve-for-me - |',
+      'start codex exec -p zai --approve-for-me -m glm-5.3-flash - |',
+    ])
+      expect(calls().includes(argv), `round 2 should run "${argv}"`, r);
+    expect(files().includes('r2-glm.md') && files().includes('r2-glm-glm-5.3-flash.md'), 'glm names its own files', r);
+    for (const f of ['r2-pi-m1.md', 'r2-pi-m2.md', 'r2-codex-2.md', 'r2-codex-3.md', 'r2-pi-zai-glm-5.3-high.md'])
+      expect(files().includes(f), `round 2 should write ${f}`, r);
+    expect(calls().includes('--model zai/glm-5.3:high'), 'a model keeps its colon', r);
+    expect(calls().includes('-m _m -'), 'a model may start with any allowed character but a dash', r);
+
+    // Every program failing: nobody reported.
+    r = run([review, '5', 'pi:fail,pi:fail']);
+    expect(r.code === 1 && r.out.includes('No reviewer reported'), 'all failing should exit 1', r);
+
+    // A program ended by a signal is said to be, its finished report still counted. Windows reports no signal.
+    if (!win) {
+      r = run([review, '5', 'codex:killed']);
+      expect(r.out.includes('codex:killed: killed (SIGKILL), Verdict: SIGN OFF'), 'a signal should be named', r);
+    }
+
+    // A program that exits leaving a child on its output pipes (for 4 s) doesn't hold the runner up. Timed
+    // against a plain run on this machine, since a fan-out alone can take seconds on Windows.
+    let t1 = Date.now();
+    run([review, '5', 'codex']);
+    const plain = Date.now() - t1;
+    t1 = Date.now();
+    r = run([review, '5', 'codex:stray']);
+    expect(
+      r.out.includes('codex:stray: Verdict: SIGN OFF') && Date.now() - t1 < plain + 2000,
+      `a stray child held the runner (a plain run took ${plain} ms)`,
+      r,
+    );
+
+    // Two fan-outs started at once on one review, over a dead marker: at most one starts, and no report is
+    // written twice. (Each may see the other and both start nothing.)
+    fs.writeFileSync(marker, JSON.stringify({ pids: [spawnSync(process.execPath, ['-e', '']).pid] }));
+    execFileSync(
+      process.execPath,
+      [
+        '-e',
+        `for (const _ of [1, 2]) require('node:child_process').spawn(process.execPath, ${JSON.stringify([runner, review, '6', 'codex'])}, { detached: true, stdio: 'ignore' }).unref();`,
+      ],
+      { cwd: repo, env },
+    );
+    sleep(1500);
+    waitFor(() => !marks().length, 'the two fan-outs to end');
+    expect(calls().split('/r6-codex').length <= 2, `two fan-outs at once started two programs:\n${calls()}`);
+
+    // Windows: a same-named file in the tree under review must not stand in for the reviewer on PATH.
+    if (win) {
+      put('pi.bat', '@echo impostor\r\n@exit /b 9\r\n');
+      const bare = Object.fromEntries(
+        Object.entries(env).filter(([k]) => k.toLowerCase() !== 'nodefaultcurrentdirectoryinexepath'),
+      );
+      const out = spawnSync(process.execPath, [runner, review, '7', 'pi'], { cwd: repo, env: bare, encoding: 'utf8' });
+      expect(out.stdout.includes('pi: Verdict: SIGN OFF'), `a pi.bat in the tree ran as the reviewer:\n${out.stdout}`);
+      fs.rmSync(path.join(repo, 'pi.bat'));
+      // A program that is an .exe, as claude and codex are, through the wrapper's other branch: a copy of
+      // node.exe as codex.exe, which runs the script `exec` at the repo's root for `codex exec ... -`.
+      const exeBin = path.join(tmp, 'exebin');
+      fs.mkdirSync(exeBin);
+      fs.copyFileSync(process.execPath, path.join(exeBin, 'codex.exe'));
+      put(
+        'exec',
+        "const r = require('node:fs').readFileSync(0, 'utf8').trim().split('this path: ')[1];\nrequire('node:fs').writeFileSync(r, 'Verdict: SIGN OFF\\n');\nprocess.exit(4);\n",
+      );
+      r = run([review, '10', 'codex'], { PATH: [exeBin, env.PATH].join(path.delimiter) });
+      expect(r.out.includes(`codex: failed (exit 4), Verdict: SIGN OFF ${review}/r10-codex.md`), 'an .exe reviewer', r);
+      fs.rmSync(path.join(repo, 'exec'));
+    }
+
+    // A program past the limit is stopped with its child, and nobody reported.
+    const t0 = Date.now();
+    r = run([review, '3', 'codex:hang'], { BRAID_XREVIEW_LIMIT_MS: '1500' });
+    const hung = () => fs.readFileSync(path.join(log, 'hang.pids'), 'utf8').split(' ').map(Number);
+    expect(
+      r.code === 1 && r.out.includes('stopped at the limit') && r.out.includes('No reviewer reported'),
+      'the limit should stop a program',
+      r,
+    );
+    expect(Date.now() - t0 < 20000, 'the runner should exit near the limit');
+    waitFor(() => !hung().some(alive), "the stopped program's tree to go");
+
+    // The runner killed outright: its program runs on and the marker stays live. Started through a launcher that
+    // exits, so the runner is nobody's unreaped child here.
+    const launch = () => {
+      fs.rmSync(path.join(log, 'hang.pids'), { force: true });
+      const pid = Number(
+        execFileSync(
+          process.execPath,
+          [
+            '-e',
+            `const c = require('node:child_process').spawn(process.execPath, ${JSON.stringify([runner, review, '3', 'codex:hang'])}, { detached: true, stdio: 'ignore' }); console.log(c.pid); c.unref();`,
+          ],
+          { cwd: repo, env },
+        ),
+      );
+      waitFor(
+        () =>
+          fs.existsSync(path.join(log, 'hang.pids')) &&
+          marks().some((f) => fs.readFileSync(path.join(repo, review, f), 'utf8').includes(',')),
+        'the fan-out to start',
+      );
+      return pid;
+    };
+    process.kill(launch(), 'SIGKILL');
+    sleep(300);
+    expect(hung().every(alive), 'a killed runner should leave its program running');
+    expect(run(['--running', review]).code === 0, 'the marker should stay live while a program runs');
+    for (const pid of hung()) process.kill(pid, 'SIGKILL');
+    waitFor(() => run(['--running', review]).code === 1, 'the marker to go dead');
+    for (const f of marks()) fs.rmSync(path.join(repo, review, f));
+    // Told to stop, the runner takes the tree along. Windows has no terminate signal to send.
+    if (!win) {
+      process.kill(launch(), 'SIGTERM');
+      waitFor(() => !hung().some(alive) && !marks().length, 'a terminated runner to stop its programs');
+    }
+
+    // Leftovers, each one named; nothing undone.
+    fs.writeFileSync(
+      path.join(log, 'mess.cjs'),
+      `const fs = require('node:fs');
+const git = (...a) => require('node:child_process').execFileSync(process.env.FAKE_GIT, a, { stdio: 'pipe' });
+fs.writeFileSync('a.txt', 'stashed\\n');
+git('stash');
+fs.writeFileSync('a.txt', 'edited\\n');
+fs.writeFileSync('stray.txt', 'x');
+git('commit', '--allow-empty', '-qm', 'moved');
+git('branch', 'left');
+git('worktree', 'add', '-q', '../wt', '-b', 'wtb');
+fs.writeFileSync('.git/hooks/pre-commit', 'x');
+git('config', '--local', 'x.y', 'z');
+fs.writeFileSync('b.txt', 'staged\\n');
+git('add', 'b.txt');
+git('update-index', '--assume-unchanged', 'c.txt');
+fs.writeFileSync('c.txt', 'hidden\\n');
+fs.appendFileSync('.git/info/exclude', 'unseen.txt\\n');
+fs.writeFileSync('${review}/prompt.md', 'edited\\n');
+fs.writeFileSync('${review}/r4-extra.md', 'Verdict: SIGN OFF\\n');
+fs.writeFileSync('${review}/fanout-99.json', '{"pids":[]}');
+fs.writeFileSync('.git/index.lock', '');
+`,
+    );
+    // A git in the tree under review (on Windows, Node itself, which fails on git's arguments) must not stand
+    // in for git on PATH, or the leftovers below go unseen: not through a relative PATH entry, and on Windows
+    // not through older Node's look in the current directory, also when a git shim comes earlier on PATH.
+    if (win) {
+      fs.copyFileSync(process.execPath, path.join(repo, 'git.exe'));
+      fs.writeFileSync(path.join(bin, 'git.cmd'), '@exit /b 99\r\n');
+    } else fs.writeFileSync(path.join(repo, 'git'), '#!/bin/sh\nexit 1\n', { mode: 0o755 });
+    r = run([review, '4', 'claude:mess'], {
+      FAKE_GIT: path.join(gitDir, win ? 'git.exe' : 'git'),
+      PATH: `.${path.delimiter}${env.PATH}`,
+    });
+    for (const line of [
+      'file: a.txt (git status M)',
+      'file: stray.txt (git status ??)',
+      'checked-out commit (changed)',
+      'ref: refs/heads/left (new)',
+      'ref: refs/stash (new)',
+      'wt (new)',
+      'git hook: pre-commit (new)',
+      'local git config (changed)',
+      'index: b.txt (changed)',
+      'index flags: c.txt (changed)',
+      'local exclude file (changed)',
+      'git index lock (new)',
+      `review folder: ${review}/prompt.md (changed)`,
+      `review folder: ${review}/r4-extra.md (new)`,
+    ])
+      expect(r.out.includes(line), `a leftover should be named: "${line}"`, r);
+    expect(!r.out.includes('r4-claude-mess.md ('), 'an assigned result file is not a leftover', r);
+    expect(
+      r.out.includes(`review folder: ${review}/fanout-99.json (new)`),
+      "only the runner's own marker is left out",
+      r,
+    );
+    expect(fs.existsSync(path.join(repo, 'stray.txt')), 'the runner should undo nothing');
+    // A conflicted file has an index entry per stage: a change to the first alone is named.
+    fs.rmSync(path.join(repo, '.git', 'index.lock'));
+    const realGit = path.join(gitDir, win ? 'git.exe' : 'git');
+    const blob = (text) =>
+      execFileSync(realGit, ['hash-object', '-w', '--stdin'], { cwd: repo, env, input: text }).toString().trim();
+    execFileSync(realGit, ['update-index', '--index-info'], {
+      cwd: repo,
+      env,
+      input: [1, 2, 3].map((n) => `100644 ${blob(`${n}\n`)} ${n}\tconflict.txt\n`).join(''),
+    });
+    fs.writeFileSync(
+      path.join(log, 'mess.cjs'),
+      `require('node:child_process').execFileSync(process.env.FAKE_GIT, ['update-index', '--index-info'], { input: '100644 ${blob('other\n')} 1\\tconflict.txt\\n' });\n`,
+    );
+    r = run([review, '11', 'claude:mess'], { FAKE_GIT: realGit });
+    expect(r.out.includes('index: conflict.txt (changed)'), 'a changed conflict stage should be named', r);
+    // A repository git can't read, and on Windows no git.exe on PATH (only the shim): not compared, and said.
+    r = run([review, '8', 'codex'], { GIT_DIR: path.join(tmp, 'nowhere') });
+    expect(r.code === 0 && r.out.includes('git could not read it'), 'an unreadable repository should be said', r);
+    if (win) {
+      r = run([review, '9', 'codex'], { PATH: [bin, path.join(process.env.SystemRoot, 'System32')].join(';') });
+      expect(r.code === 0 && r.out.includes('(no git on PATH)'), 'a missing git.exe should be said', r);
+    }
+  } catch (e) {
+    fail(`xreview runner: ${e.message}`);
+  } finally {
+    // A failure above may leave the hanging fake running, which holds the folder on Windows.
+    try {
+      for (const pid of fs.readFileSync(path.join(tmp, 'log', 'hang.pids'), 'utf8').split(' '))
+        process.kill(Number(pid));
+    } catch {}
+    // A stray child may still hold it; that must not hide the failures above behind a stack trace.
+    try {
+      fs.rmSync(tmp, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+    } catch (e) {
+      console.warn(`xreview runner: left ${tmp} (${e.code})`);
+    }
+  }
+}
+
 // Always-on budget: worst-case session injection + model-invocable skill descriptions, bytes/4.
 for (const dir of skillDirs) {
   const fm = exists(`skills/${dir}/SKILL.md`) && frontmatter(read(`skills/${dir}/SKILL.md`));
