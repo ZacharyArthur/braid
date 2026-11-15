@@ -45,4 +45,6 @@ A review round still starts with the user opening one session per reviewer and p
 
 ## Follow-ups
 
+- Dropped at archive, at the user's word, as out of reach of the session that applied the change: task 1.5 (Codex, Pi and Vibe on Linux or macOS; a fan-out started from inside a Codex, a ZCode and a Pi session; how those three treat an hour-long command; whether a shell command in Codex's sandbox reaches the network) and most of task 5.1 (the walkthrough of the skill text with `--plugin-dir`: choosing and saving reviewers, the `--auto` and five-round stops, the exposure question before a fan-out, a round from a Codex session). A reduced 5.1 was run and is in `design.md`'s "Measured" section. If one of those harnesses turns out to stop a long command, the detached mode and `wait` verb of task 1.3 are the follow-up.
+
 - `zcode` as a fifth reviewer program, asked for during the review of this change. ZCode's bundled CLI runs a prompt headless (`node <ZCode>/resources/glm/zcode.cjs -p <text>`, `--mode` for its permission mode), but on a Coding Plan account it does not reach a model at 0.17.1; `design.md`'s "Measured" section has the details. Add it once that works: it is not on PATH, takes the hand-off line as an argument and has no model flag, so it needs its own way to be found and its own row in the runner's table.
