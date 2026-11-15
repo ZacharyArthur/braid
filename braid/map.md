@@ -1,4 +1,4 @@
-<!-- braid:map sha=63749aa date=2026-10-25 -->
+<!-- braid:map sha=7787c98 date=2026-11-15 -->
 # Repo map
 
 braid: a clean-code harness plugin (an always-on core plus workflow skills) for Claude Code, Codex, ZCode and Pi,
@@ -26,7 +26,7 @@ Commands and conventions: see `AGENTS.md`. Behavior: `braid/specs/`. Terms: `bra
 | `skills/spec/` | propose → apply → archive over `braid/changes/` | `propose.md`, `apply.md`, `archive.md`, `discover.md` |
 | `skills/standards/` | writes a project's AGENTS.md and optional delegation | `template.md`, `stacks.md`, `delegation.md` |
 | `skills/{review,audit,debt}/` | ponytail-based review skills | `SKILL.md` |
-| `skills/{map,wayfind,handoff,xreview,design,skill,help}/` | braid's own clean-room skills | `SKILL.md`; `skill/evals.md` (evals and trigger tuning); `xreview/next.md` (the next round), `xreview/exposure.md` (author and secrets check) |
+| `skills/{map,wayfind,handoff,xreview,design,skill,help}/` | braid's own clean-room skills | `SKILL.md`; `skill/evals.md` (evals and trigger tuning); `xreview/next.md` (the next round), `xreview/run.md` and `xreview/run.cjs` (`--run`: who reviews, and the runner that starts the programs), `xreview/sources.md` (the prompt's Sources section), `xreview/exposure.md` (author and secrets check) |
 | `skills/retro/` | clean-room: recurring tool failures from every harness's transcripts → AGENTS.md rules, then a router to vendor tools | `SKILL.md`, `retro.cjs` (the extractor) |
 | `skills/{grilling,grill-me,grill-with-docs,domain-modeling,adhd,humanizer,security-audit,systematic-debugging}/` | vendored verbatim, pinned in `UPSTREAM.md` | `LICENSE`, `SKILL.md` |
 | `skills/*/agents/openai.yaml` | Codex policy; marks user-only skills | per skill |
@@ -87,6 +87,7 @@ It then runs `check`, `dry` and the blind `complete` judge, and `report` writes 
 - `PONYTAIL_ALWAYS_ON` in `check.cjs` is a hand-measured constant; re-measure it on every ponytail sync.
 - `bench/tasks/` is outside both linters (`biome.json`, `.markdownlint-cli2.jsonc` globs) so fixtures stay as written; its `files/` are deliberately flawed inputs.
 - `bench/results/` is committed output; most of `git ls-files` lives there.
+- `skills/xreview/run.cjs` holds the reviewer programs' command lines (`glm` being Codex with `-p zai`) as verified by hand on 2026-11-13 and 2026-11-14 (`claude` 2.1.325, `codex-cli` 0.169.0, `pi` 1.5.2, `vibe` 3.1.2, on Windows). `check.cjs` runs it against fake programs only, so a flag one of them renames breaks `--run` without a failing check.
 - `/braid:help` must list every skill; `check.cjs` fails otherwise.
 - `skills/retro/retro.cjs` parses four transcript formats as they were in 2026-10 (Claude Code JSONL, Codex rollouts, ZCode's SQLite store, Pi JSONL); `check.cjs` builds a fake home with all four, and the ZCode part runs only where `node:sqlite` exists (the Node 22 CI job).
 
