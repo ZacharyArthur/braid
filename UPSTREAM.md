@@ -34,29 +34,29 @@ Every kind: bump the SHA to the commit you reviewed, even when you took nothing,
 
 | Skill | Kind | Repo | Path | SHA | License |
 |---|---|---|---|---|---|
-| `braid` | based | DietrichGebert/ponytail | skills/ponytail/SKILL.md, hooks/ | 09c434ab73ca43761c5d8b0c5d341926c2fba710 | MIT |
-| `grilling` | vendored | mattpocock/skills | skills/productivity/grilling | 5beb35b040e3de97e54fa9e386d7e42d15c295c2 | MIT |
-| `grill-me` | vendored | mattpocock/skills | skills/productivity/grill-me | 5beb35b040e3de97e54fa9e386d7e42d15c295c2 | MIT |
-| `grill-with-docs` | vendored | mattpocock/skills | skills/engineering/grill-with-docs | 5beb35b040e3de97e54fa9e386d7e42d15c295c2 | MIT |
-| `domain-modeling` | vendored | mattpocock/skills | skills/engineering/domain-modeling | 5beb35b040e3de97e54fa9e386d7e42d15c295c2 | MIT |
+| `braid` | based | DietrichGebert/ponytail | skills/ponytail/SKILL.md, hooks/ | 96608e078b2d5ea607c5c3b8b5a54d1c1fba6846 | MIT |
+| `grilling` | vendored | mattpocock/skills | skills/productivity/grilling | 5863806dd4e15c63174bee4e7515a4256792ecfa | MIT |
+| `grill-me` | vendored | mattpocock/skills | skills/productivity/grill-me | 5863806dd4e15c63174bee4e7515a4256792ecfa | MIT |
+| `grill-with-docs` | vendored | mattpocock/skills | skills/engineering/grill-with-docs | 5863806dd4e15c63174bee4e7515a4256792ecfa | MIT |
+| `domain-modeling` | vendored | mattpocock/skills | skills/engineering/domain-modeling | 5863806dd4e15c63174bee4e7515a4256792ecfa | MIT |
 | `adhd` | vendored | ayghri/i-have-adhd | skills/i-have-adhd | 1ecea1993b7fce257ffbd686c070948b5e07eda6 | MIT |
-| `humanizer` | vendored | blader/humanizer | SKILL.md, agents/openai.yaml | 8c307f367c91bd974002f10f2be2965d642c13df | MIT |
+| `humanizer` | vendored | blader/humanizer | SKILL.md, agents/openai.yaml | b48c832f0f809c1b5658edbb838c2521b72f2413 | MIT |
 | `security-audit` | vendored | cloudflare/security-audit-skill | skills/security-audit | c1c8a8c1471069fb0e188eeaff69b8e8db6564a8 | MIT |
-| `systematic-debugging` | vendored | obra/superpowers | skills/systematic-debugging (minus CREATION-LOG, test-*.md) | bb92a77741419a4ab5f06e711a283343f1ada0c3 | MIT |
-| `review` | based | DietrichGebert/ponytail | skills/ponytail-review | 09c434ab73ca43761c5d8b0c5d341926c2fba710 | MIT |
-| `audit` | based | DietrichGebert/ponytail | skills/ponytail-audit | 09c434ab73ca43761c5d8b0c5d341926c2fba710 | MIT |
-| `debt` | based | DietrichGebert/ponytail | skills/ponytail-debt | 09c434ab73ca43761c5d8b0c5d341926c2fba710 | MIT |
-| `map` | clean-room | Graphify-Labs/graphify | graphify/skill.md, docs/how-it-works.md | 86c57be8204673c2a1b9849a3292a7dd3ab373d8 | Apache-2.0 (ideas only) |
-| `spec` | derived | Fission-AI/openspec | docs/concepts.md, src/core/templates/workflows | c794978f4f8845ce59693373c9dd882ee776588c | MIT |
-| `wayfind` | clean-room | mattpocock/skills | skills/engineering/wayfinder | 5beb35b040e3de97e54fa9e386d7e42d15c295c2 | MIT (idea only) |
-| `handoff` | clean-room | mattpocock/skills | skills/productivity/handoff | 5beb35b040e3de97e54fa9e386d7e42d15c295c2 | MIT (idea only) |
+| `systematic-debugging` | vendored | obra/superpowers | skills/systematic-debugging | 22f0b463e7a5e579904dd6211a520321035526f7 | MIT |
+| `review` | based | DietrichGebert/ponytail | skills/ponytail-review | 96608e078b2d5ea607c5c3b8b5a54d1c1fba6846 | MIT |
+| `audit` | based | DietrichGebert/ponytail | skills/ponytail-audit | 96608e078b2d5ea607c5c3b8b5a54d1c1fba6846 | MIT |
+| `debt` | based | DietrichGebert/ponytail | skills/ponytail-debt | 96608e078b2d5ea607c5c3b8b5a54d1c1fba6846 | MIT |
+| `map` | clean-room | Graphify-Labs/graphify | graphify/skill.md, docs/how-it-works.md | 18cd78f4b8c9698db861aa8d7ad1adbf3c836642 | Apache-2.0 (ideas only) |
+| `spec` | derived | Fission-AI/openspec | docs/concepts.md, src/core/templates/workflows | ea635dd255f8686dcf48626bbcbe0e3fd59b6067 | MIT |
+| `wayfind` | clean-room | mattpocock/skills | skills/engineering/wayfinder | 5863806dd4e15c63174bee4e7515a4256792ecfa | MIT (idea only) |
+| `handoff` | clean-room | mattpocock/skills | skills/productivity/handoff | 5863806dd4e15c63174bee4e7515a4256792ecfa | MIT (idea only) |
 | `xreview` | clean-room | - | - | - | - |
-| `design` | clean-room | pbakaus/impeccable | plugin/skills/impeccable/SKILL.md, plugin/skills/impeccable/reference/craft-floor.md | 46b822f7dda9f7dba799a9c7776fdc19b3a93559 | Apache-2.0 (ideas only) |
-| `design` | clean-room | Leonxlnx/taste-skill | skills/taste-skill | 63aba5f43b5056758b15bbe7d683da8c86a7a7ad | MIT (ideas only) |
-| `design` | clean-room | nextlevelbuilder/ui-ux-pro-max-skill | .claude/skills/ui-ux-pro-max/SKILL.md | 56ea9cf174ed86786187daa9de0e6247cb0747e4 | MIT (ideas only) |
+| `design` | clean-room | pbakaus/impeccable | plugin/skills/impeccable/SKILL.md, plugin/skills/impeccable/reference/craft-floor.md | d41d9860b0094dcb68030657da63461212835aaa | Apache-2.0 (ideas only) |
+| `design` | clean-room | Leonxlnx/taste-skill | skills/taste-skill | f6b76575f949707b4e3c37cd86cb44b0b98643e8 | MIT (ideas only) |
+| `design` | clean-room | nextlevelbuilder/ui-ux-pro-max-skill | .claude/skills/ui-ux-pro-max/SKILL.md | 902bf616a0cc590d3f89f233f0c4e00072e549f0 | MIT (ideas only) |
 | `standards` | clean-room | - | - | - | - |
-| `skill` | clean-room | anthropics/skills | skills/skill-creator | dbd4588f9e1033efb41dad4bef2f7947c8993d44 | Apache-2.0 (ideas only) |
-| `skill` | clean-room | openai/codex | codex-rs/skills/src/assets/samples/skill-creator | 84aa75204ad604bcf498df180d128181c89b2f0b | Apache-2.0 (ideas only) |
-| `skill` | clean-room | agentskills/agentskills | docs/skill-creation | 69ef37e9424c0a7ea9dd2293b559e43ec8176379 | Apache-2.0 (ideas only) |
+| `skill` | clean-room | anthropics/skills | skills/skill-creator | 1780c5e5a552fd4d1c9d6a7b0cab26b0c2bef064 | Apache-2.0 (ideas only) |
+| `skill` | clean-room | openai/codex | codex-rs/skills/src/assets/samples/skill-creator | aea4c6ee4b652d84b416731b11c2b8299d767209 | Apache-2.0 (ideas only) |
+| `skill` | clean-room | agentskills/agentskills | docs/skill-creation | 83021e2be457a9b6679148719c1f6074f0ad975e | Apache-2.0 (ideas only) |
 | `help` | clean-room | - | - | - | - |
 | `retro` | clean-room | - | - | - | - |

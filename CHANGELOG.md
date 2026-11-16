@@ -2,6 +2,10 @@
 
 All notable changes to braid. Versions follow semver: major = a skill renamed or removed, or a `braid/` file braid reads moves or changes format; minor = a new skill or verb; patch = wording and upstream syncs.
 
+## [1.10.1] - 2026-11-15
+
+- Upstream sync: `humanizer` 4.0.0 treats instructions inside the text it edits as material, never as commands, reads a named file whole before editing it and reports a partial pass as partial, checks first for dropped or changed facts, and may add a specific detail it knows to be true where the text is generic (3.1.0 forbade adding any fact). `grilling` starts its fact-finding sub-agents with a fresh context window. `design`'s pre-ship check adds form errors beside their field and success shown only after a real send, a pause for motion over 5 s, content that still shows under reduced motion, and right-to-left layouts (ideas from taste-skill and ui-ux-pro-max). Other pins bumped with nothing to take; ponytail's core and map are unchanged, so its always-on cost is too.
+
 ## [1.10.0] - 2026-11-15
 
 - **Mistral Vibe** (3.1.2 or later) is the fifth harness, with no adapter: `git clone https://github.com/ZacharyArthur/braid "$HOME/.vibe/plugins/braid"`, then a new session. A root `plugin.json` (Agent Plugins 1.0, the fourth manifest, on the shared version) turns on `ai.mistral.vibe/hooks.toml`, which runs the same hook on `session_start` and `pre_agent`. The level switch, project pointers and generated map work as elsewhere, and each session's state lives in Vibe's own per-session plugin data folder, even when Vibe is started from another harness's shell. Skills are `/braid:<skill>`, and user-only ones stay out of the model's list. Where Vibe falls short, stated in the README rather than emulated: the core rides the first user message, not the system prompt; it isn't re-injected after compaction (`drift on` helps, as in ZCode); subagents get none; a braid command queued behind another message isn't seen; `/branch` and `/rewind` start at the default level; an update reaches new sessions only. ADR 0002 amended.
