@@ -72,8 +72,10 @@ fix needed.
 - Responsive at 360, 768, 1280 px: no horizontal scroll, touch targets ≥ 44 px
 - States: empty, loading, error, and very long text all designed
 - Copy: buttons say what they do; errors say what went wrong and how to recover
+- Forms: each error sits beside its field; "sent" or "saved" shows only once the request succeeded
 - Numbers in tables line up (`font-variant-numeric: tabular-nums`)
-- Motion respects `prefers-reduced-motion`, exits run faster than entrances; dark mode works if the app has one
+- Motion respects `prefers-reduced-motion`, and content that waits on an animation still shows under it; anything moving over 5 s can be paused; exits run faster than entrances
+- Dark mode and right-to-left work if the app has them (logical properties like `margin-inline-start`, direction icons mirrored)
 
 ## Output
 
