@@ -35,6 +35,11 @@ Pi ships no subagents (Pi 1.4.0): picking it adds nothing to the tier line and
 no explorer file. Say so; Pi's sessions read the section and do the work
 themselves.
 
+Vibe ships a read-only `explore` subagent (Vibe 3.1.2), but a Vibe agent file
+names its model by an alias from the user's own `[[models]]`, which a project
+can't name for everyone. So picking Vibe adds `Vibe: explore` to the tier line,
+with no models, and no explorer file. Say so.
+
 Why: every harness with subagents runs them on (or near) the main model unless told
 otherwise.
 Per million tokens, input / output: Haiku 5.5 $0.10 / $0.50 for prompts up to
@@ -120,7 +125,8 @@ follows, so no agent outlives what AGENTS.md names.
 
 Review: a harness's tier line names an explorer but its file is missing or
 names another model → drift, naming the file it would write. A line naming
-only models expects no file, nor does ZCode's naming `Explore`. ZCode's
+only models expects no file, nor does ZCode's naming `Explore`, nor Vibe's
+naming `explore`. ZCode's
 `braid-explore` may be in the project or in `~/.zcode/agents/`; found in the
 project, ask whether a new session sees it, and not → the fallbacks above.
 

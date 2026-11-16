@@ -19,11 +19,11 @@ What `/braid:standards` offers for a project's AGENTS.md, and what it asks befor
 
 - **WHEN** the user picks braid's policy
 - **THEN** AGENTS.md's Delegation section says to delegate reads rather than writes, to delegate only when the output is large and the answer small, which tier locates, reviews, and plans and edits, what a subagent returns, to verify a subagent's claim before acting on it, and to fan out only for independent questions
-- **AND** it names the fast and mid tier models for each harness the user picked, and the explorer agent for each one not declined (see Explorer declined)
+- **AND** it names the fast and mid tier models for each harness the user picked whose tiers a project file can set, Vibe's built-in `explore` with no models when the user picked Vibe, and the explorer agent for each one not declined (see Explorer declined)
 
 ### Requirement: Explorer routed to the fast tier
 
-When braid's policy is chosen, `standards` SHALL offer, per harness the user picked, a read-only explorer agent on the fast tier model, and SHALL write each one only after the user says yes to it. A harness that ships no subagents SHALL get no explorer offer.
+When braid's policy is chosen, `standards` SHALL offer, per harness the user picked, a read-only explorer agent on the fast tier model, and SHALL write each one only after the user says yes to it. A harness that ships no subagents SHALL get no explorer offer, and neither SHALL a harness whose agent files can name a model only by a per-user alias.
 
 #### Scenario: Claude Code or Codex
 
@@ -51,6 +51,11 @@ When braid's policy is chosen, `standards` SHALL offer, per harness the user pic
 - **WHEN** the user picks Pi
 - **THEN** `standards` says Pi ships no subagents, writes no agent file for it, and the tier line names no Pi agent
 
+#### Scenario: Vibe
+
+- **WHEN** the user picks Vibe
+- **THEN** `standards` says a project file can't set the model of Vibe's built-in `explore` subagent, writes no agent file for it, and the tier line names `explore` and no Vibe models
+
 #### Scenario: Confirming the routing
 
 - **WHEN** the explorer files are written
@@ -58,7 +63,7 @@ When braid's policy is chosen, `standards` SHALL offer, per harness the user pic
 
 ### Requirement: Delegation drift
 
-`standards` review SHALL report drift when AGENTS.md's Delegation section names an explorer agent but that agent is missing or names a different model.
+`standards` review SHALL report drift when AGENTS.md's Delegation section names an explorer agent but that agent is missing or names a different model. A built-in explorer that a project file can't define SHALL NOT count as missing.
 
 #### Scenario: Explorer file missing
 
@@ -69,3 +74,8 @@ When braid's policy is chosen, `standards` SHALL offer, per harness the user pic
 
 - **WHEN** the user declined a harness's explorer
 - **THEN** that harness's tier line names only its models (ZCode after the Settings step: its built-in Explore), and review reports no drift for it
+
+#### Scenario: Vibe's built-in explorer
+
+- **WHEN** AGENTS.md's Vibe tier line names `explore` and the project defines no Vibe agent
+- **THEN** review reports no drift for it and offers no file

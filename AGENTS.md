@@ -1,20 +1,20 @@
 # braid
 
-Clean-code harness plugin (always-on core plus workflow skills) for Claude Code, Codex, ZCode and Pi.
+Clean-code harness plugin (always-on core plus workflow skills) for Claude Code, Codex, ZCode, Pi and Vibe.
 Optimizes for, in order: always-on cost within ~300 tokens of ponytail's, YAGNI > KISS > DRY in its own code,
-identical behavior across the four harnesses. When a feature and simplicity conflict, simplicity wins.
+identical behavior across the five harnesses. When a feature and simplicity conflict, simplicity wins.
 
 ## Stack
 
 - Markdown skills; Node ≥ 18 CommonJS (`.cjs`), stdlib only: `hooks/braid.cjs`, `scripts/*.cjs`, `bench/ab.cjs`, and Pi's `extensions/braid.js`. Python 3 only for bench checks.
 - Claude Code-only mods in `mods/<name>/`: TypeScript hooks modules run by Claude Code itself (no Node, no build), each its own plugin with its own version, its manifest in its marketplace entry (ADR 0011, 0013).
-- One plugin; runtime is one hook process per harness event (in Pi, spawned by `extensions/braid.js`, which Pi loads in place of `hooks.json`). CI: `check.cjs` on Node 18 (Ubuntu, Windows); lints on Node 22 (Ubuntu).
+- One plugin; runtime is one hook process per harness event (in Pi, spawned by `extensions/braid.js`, which Pi loads in place of `hooks.json`; in Vibe, run by `ai.mistral.vibe/hooks.toml`, named by the root `plugin.json`). CI: `check.cjs` on Node 18 (Ubuntu, Windows); lints on Node 22 (Ubuntu).
 - No npm dependencies, no `package.json`. Vendored skills enter only via UPSTREAM.md, pinned by SHA (ADR 0003).
 
 ## Invariants
 
 1. **Always-on injection ≤ ~2.5k tokens and within ~300 of ponytail's, worst case** (ADR 0007, 0012) (enforced by `node scripts/check.cjs`)
-2. **All three manifests carry one version** (enforced by `node scripts/check.cjs`)
+2. **All four manifests carry one version** (enforced by `node scripts/check.cjs`)
 3. **Every skill has an UPSTREAM.md row; vendored ones keep their `LICENSE`, based and derived ones have a notice in THIRD-PARTY-NOTICES** (enforced by `node scripts/check.cjs`)
 4. **User-only skills are marked three ways: `disable-model-invocation`, `agents/openai.yaml`, description suffix** (ADR 0002) (enforced by `node scripts/check.cjs`)
 

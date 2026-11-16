@@ -52,7 +52,7 @@ At session start, inside a git repo with no `braid/map.md`, the session hook SHA
 
 #### Scenario: Any harness
 
-- **WHEN** a session starts in Claude Code, Codex, ZCode or Pi
+- **WHEN** a session starts in Claude Code, Codex, ZCode, Pi or Vibe
 - **THEN** the map behaves the same
 
 ### Requirement: Pi harness
@@ -98,3 +98,62 @@ Installed in Pi as a package, braid SHALL inject the same core, project state an
 
 - **WHEN** `node` is missing, the hook times out, or its output can't be read or isn't text
 - **THEN** the run starts without braid's section and Pi shows no error from braid
+
+### Requirement: Vibe harness
+
+Installed in Mistral Vibe as a native plugin, braid SHALL inject the same core, project state and map as in the other harnesses, through Vibe's own hooks. It SHALL track the same per-session level, and SHALL keep Vibe working when anything in braid fails.
+
+#### Scenario: Session starts in Vibe
+
+- **WHEN** a Vibe session starts, is resumed, cleared or forked, with braid on
+- **THEN** the session's next user message carries, for the model only, the core for the session's level, the project pointers and, under the same conditions as elsewhere, the generated map
+
+#### Scenario: Level switch in Vibe
+
+- **WHEN** the user sends `/braid:braid lite`, `/braid:braid off` or `stop braid`
+- **THEN** the level changes for that session as in Claude Code, and the confirmation line reaches the model with that message
+
+#### Scenario: Level kept in Vibe
+
+- **WHEN** a Vibe session set to lite is resumed
+- **THEN** it resumes at lite, read from the session's plugin data folder, never from another harness's folder named in an inherited variable
+
+#### Scenario: Installed or updated in Vibe
+
+- **WHEN** braid is installed or updated while Vibe sessions exist
+- **THEN** a new session runs the new braid, and a session opened or resumed from before keeps the copy it pinned
+
+#### Scenario: Command as the first message after opening
+
+- **WHEN** the first message after Vibe opens or resumes a session that was on is a braid command that changes its level
+- **THEN** that message also carries the core at the level before the command, after the command's confirmation, and the conversation keeps that older core until compaction; every later message's braid context follows the new level
+
+#### Scenario: Command queued while a turn runs in Vibe
+
+- **WHEN** the user queues a braid command behind another message while a turn runs
+- **THEN** the command is not seen, since Vibe hands the hook only the merged turn's first message, and the level stays; sent on its own once the turn ends, it works
+
+#### Scenario: User-only skills in Vibe
+
+- **WHEN** a Vibe session lists its skills for the model
+- **THEN** only braid's model-invoked skills are listed, and every braid skill still runs as `/braid:<skill>`
+
+#### Scenario: After compaction in Vibe
+
+- **WHEN** Vibe compacts the conversation
+- **THEN** the core is not re-injected, as in ZCode; with drift on, each prompt still restates the level
+
+#### Scenario: Subagents in Vibe
+
+- **WHEN** a Vibe session spawns a subagent
+- **THEN** it gets no core from braid, since Vibe fires no session event for subagents (as in ZCode and Pi), and braid's prompt hook doesn't run for its turns
+
+#### Scenario: Fork or rewind in Vibe
+
+- **WHEN** the user runs `/branch` or `/rewind`
+- **THEN** the new session starts at the default level
+
+#### Scenario: Broken environment in Vibe
+
+- **WHEN** `node` is missing or the hook times out
+- **THEN** Vibe shows its own hook warning and the session goes on without braid's context

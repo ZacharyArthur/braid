@@ -1,0 +1,8 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "braid",
+  "version": "1.10.0",
+  "repository": "https://github.com/ZacharyArthur/braid",
+  "license": "MIT",
+  "extensions": { "ai.mistral.vibe": { "schemaVersion": 1 } }
+}

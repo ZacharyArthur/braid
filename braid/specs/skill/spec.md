@@ -8,7 +8,7 @@ How `/braid:skill` measures a skill: who runs the heavy path, and how its evals 
 
 ### Requirement: Heavy path routes to the right creator
 
-When the user wants evals against a baseline, benchmarks or description-trigger tuning, `skill` SHALL hand the work to a skill creator that runs evals when the user names or prefers it and it is installed, and SHALL otherwise run braid's own eval path, in any of the four harnesses. After a hand-off, `skill`'s frontmatter checks SHALL still run on the result.
+When the user wants evals against a baseline, benchmarks or description-trigger tuning, `skill` SHALL hand the work to a skill creator that runs evals when the user names or prefers it and it is installed, and SHALL otherwise run braid's own eval path, in Claude Code, Codex, ZCode or Pi. In Vibe it SHALL say it has no Vibe route yet. After a hand-off, `skill`'s frontmatter checks SHALL still run on the result.
 
 #### Scenario: Anthropic's creator installed and preferred
 
@@ -29,6 +29,11 @@ When the user wants evals against a baseline, benchmarks or description-trigger 
 
 - **WHEN** the user asks for Anthropic's `skill-creator` and it is not installed
 - **THEN** `skill` says so and runs braid's eval path
+
+#### Scenario: Vibe
+
+- **WHEN** the user runs `/braid:skill` in Vibe
+- **THEN** `skill` says it has no Vibe route yet (skill folders, user-only marks, test runs, evals) before going on
 
 ### Requirement: Evals compare against a baseline
 

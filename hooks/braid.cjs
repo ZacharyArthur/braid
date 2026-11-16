@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-// braid hook: one script for Claude Code, Codex and ZCode, and for Pi through extensions/braid.js.
+// braid hook: one script for Claude Code, Codex, ZCode and Vibe (ai.mistral.vibe/hooks.toml), and for Pi
+// through extensions/braid.js.
 //   node braid.cjs session    SessionStart: inject core rules + project pointers + codebase map
 //   node braid.cjs prompt     UserPromptSubmit: track level / drift / adhd per session
 //   node braid.cjs subagent   SubagentStart: inject core rules into subagents
@@ -20,7 +21,7 @@ const DATA =
   process.env.ZCODE_PLUGIN_DATA ||
   process.env.PLUGIN_DATA ||
   path.join(os.tmpdir(), 'braid');
-const SESSIONS = path.join(DATA, 'sessions');
+let SESSIONS = path.join(DATA, 'sessions'); // Vibe's payload re-points it in run()
 
 const event = process.argv[2];
 const EVENT_NAME = { session: 'SessionStart', prompt: 'UserPromptSubmit', subagent: 'SubagentStart' }[event];
@@ -286,6 +287,10 @@ function run(raw) {
   try {
     input = JSON.parse(raw.replace(/^﻿/, ''));
   } catch {}
+  // Vibe sends its own event names. It adds PLUGIN_DATA to whatever environment it inherited, so an
+  // inherited CLAUDE_PLUGIN_DATA or ZCODE_PLUGIN_DATA would otherwise win and hold Vibe's state.
+  const vibe = /^(session_start|pre_agent)$/.test(input?.hook_event_name);
+  if (vibe && process.env.PLUGIN_DATA) SESSIONS = path.join(process.env.PLUGIN_DATA, 'sessions');
   const sid = input.session_id || input.sessionId;
   const st = load(sid);
   const context =
@@ -298,7 +303,10 @@ function run(raw) {
           : '';
   if (context && EVENT_NAME) {
     // Synchronous: process.exit follows, and on macOS a pending pipe write dies with the process.
-    fs.writeSync(1, JSON.stringify({ hookSpecificOutput: { hookEventName: EVENT_NAME, additionalContext: context } }));
+    const out = vibe
+      ? { hook_specific_output: { additional_context: context } }
+      : { hookSpecificOutput: { hookEventName: EVENT_NAME, additionalContext: context } };
+    fs.writeSync(1, JSON.stringify(out));
   }
 }
 
