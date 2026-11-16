@@ -2,7 +2,7 @@
 
 Clean-code harness for AI coding agents. Three strands: **YAGNI > KISS > DRY**.
 
-A plugin for **Claude Code**, **Codex**, **ZCode** and **Pi**: an always-on core that keeps generated code minimal, plus a workflow for grilling plans, writing specs, mapping repos, handing off and reviewing.
+A plugin for **Claude Code**, **Codex**, **ZCode**, **Pi** and **Vibe**: an always-on core that keeps generated code minimal, plus a workflow for grilling plans, writing specs, mapping repos, handing off and reviewing.
 
 > Status: released and in use since v1.0.0. What each release changed: [CHANGELOG.md](CHANGELOG.md). Decisions: [braid/adr/](braid/adr/).
 
@@ -40,11 +40,30 @@ pi install git:github.com/ZacharyArthur/braid
 
 Then start a new session. Skills are `/skill:<name>`, so the level is `/skill:braid lite`. braid's core is part of the system prompt on every run, so it survives compaction. It keeps each session's level in `braid/` inside Pi's agent folder (`~/.pi/agent`, or `$PI_CODING_AGENT_DIR`). Two differences: Pi has no subagent event, so subagents don't get the core (as in ZCode), and without Node on the PATH Pi starts without the core and shows no error.
 
-**Updating:** in Claude Code, run `claude plugin marketplace update braid`, then `claude plugin update braid@braid` (in the Desktop app: sync the marketplace, then update the plugin), and start a new session. It finds an update only once a release raises the version. In the Claude app, sync the braid marketplace, then update the plugin. In Codex, `codex plugin marketplace upgrade braid` (or syncing the marketplace in the ChatGPT app) updates the plugin too. In ZCode, sync the marketplace, then uninstall and reinstall braid; updating alone keeps the old cached copy. In Pi, run `pi update git:github.com/ZacharyArthur/braid` (plain `pi update` updates only Pi itself), then start a new session.
+**Vibe** (Mistral Vibe 3.1.2 or later)
+
+```bash
+git clone https://github.com/ZacharyArthur/braid "$HOME/.vibe/plugins/braid"
+```
+
+Vibe has no plugin install command: braid goes in `plugins/braid` inside Vibe's home folder (`~/.vibe`, or `VIBE_HOME` if you set it). The command works in PowerShell and POSIX shells; in cmd.exe write the folder out in full. Then start a new session. The clone tracks `main`, and from the next session braid's hook runs with your rights; Vibe doesn't ask first. Skills are `/braid:<name>`, as in Claude Code. A hand setup from before (braid's core pasted into `~/.vibe/AGENTS.md`, or an older copy in `~/.vibe/plugins/braid`): remove both first, or the core arrives twice. To uninstall, delete the folder (or list `braid` in `disabled_plugins` in Vibe's `config.toml`) and start a new session.
+
+Where Vibe falls short of the others:
+
+- The core arrives with your first message (and the first after each resume, clear or fork), not in the system prompt. If that first message is itself a braid command, the core at the old level follows its reply and stays in the conversation; send level commands as a later message.
+- Vibe never re-injects after compaction, as in ZCode; `/braid:braid drift on` partly makes up for it.
+- Subagents get no core (as in ZCode and Pi).
+- A braid command queued behind another message while a turn runs isn't seen; send it on its own.
+- `/branch` and `/rewind` start at the default level.
+- A resumed session keeps the braid it started with; an update reaches new sessions only.
+- Without Node, each hook shows a warning and the session runs without braid.
+- `/braid:skill` has no Vibe route yet.
+
+**Updating:** in Claude Code, run `claude plugin marketplace update braid`, then `claude plugin update braid@braid` (in the Desktop app: sync the marketplace, then update the plugin), and start a new session. It finds an update only once a release raises the version. In the Claude app, sync the braid marketplace, then update the plugin. In Codex, `codex plugin marketplace upgrade braid` (or syncing the marketplace in the ChatGPT app) updates the plugin too. In ZCode, sync the marketplace, then uninstall and reinstall braid; updating alone keeps the old cached copy. In Pi, run `pi update git:github.com/ZacharyArthur/braid` (plain `pi update` updates only Pi itself), then start a new session. In Vibe, `git -C "$HOME/.vibe/plugins/braid" pull` (with `VIBE_HOME` set, the `plugins/braid` folder inside it), then start a new session.
 
 ## What's in it
 
-**Always on:** the core rules (YAGNI > KISS > DRY), injected each session and after compaction, plus one-line pointers to the active change, route, repo map and handoff, and, in a git repo with no `braid/map.md`, a generated map of what the code already defines (`BRAID_MAP=0` turns it off). About 1.5k tokens, 2k with the map. Level: `/braid:braid lite|full|ultra`; off: "stop braid".
+**Always on:** the core rules (YAGNI > KISS > DRY), injected each session and after compaction (not in ZCode or Vibe), plus one-line pointers to the active change, route, repo map and handoff, and, in a git repo with no `braid/map.md`, a generated map of what the code already defines (`BRAID_MAP=0` turns it off). About 1.5k tokens, 2k with the map. Level: `/braid:braid lite|full|ultra`; off: "stop braid".
 
 | Skill | What it does |
 |---|---|
@@ -63,15 +82,15 @@ Then start a new session. Skills are `/skill:<name>`, so the level is `/skill:br
 | `security-audit` | Multi-phase security audit with verified findings |
 | `humanizer` | Make AI-written prose read like you |
 | `adhd` | Action-first answers; stays on until "stop adhd mode" |
-| `skill` | Write a new skill that stays small and triggers right; evals against a baseline and trigger tuning in any harness, or Anthropic's `skill-creator` when you prefer it |
-| `retro` | Failures agents repeat across sessions, read from Claude Code, Codex, ZCode and Pi transcripts, turned into AGENTS.md rules after a yes; then the harness's own usage, cost and config tools |
+| `skill` | Write a new skill that stays small and triggers right; evals against a baseline and trigger tuning in any harness but Vibe (no route there yet), or Anthropic's `skill-creator` when you prefer it |
+| `retro` | Failures agents repeat across sessions, read from Claude Code, Codex, ZCode, Pi and Vibe transcripts, turned into AGENTS.md rules after a yes; then the harness's own usage, cost and config tools |
 | `help` | What each skill does and how to call it in your harness; `help <skill>` for one in depth |
 
 Only `braid`, `grilling`, `domain-modeling` and `map` load on their own; the rest wait for you to call them. Adding a skill or syncing upstream: [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Mods
 
-Optional add-ons for **Claude Code only** (terminal and Desktop app, v2.1.287+), each a separate plugin in the same marketplace. Codex never lists them; ZCode lists them but can't run them; Pi never loads them. Install one with `claude plugin install <mod>@braid` (or `/plugin install <mod>@braid`), and switch it off or on in `/plugin`.
+Optional add-ons for **Claude Code only** (terminal and Desktop app, v2.1.287+), each a separate plugin in the same marketplace. Codex never lists them; ZCode lists them but can't run them; Pi and Vibe never load them. Install one with `claude plugin install <mod>@braid` (or `/plugin install <mod>@braid`), and switch it off or on in `/plugin`.
 
 | Mod | What it shows |
 |---|---|

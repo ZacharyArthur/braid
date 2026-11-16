@@ -1,0 +1,15 @@
+# Vibe's hooks: the same hook as hooks/hooks.json. Plugin hooks run in the plugin's folder.
+# No match on session_start, so it fires on startup, resume, clear and fork.
+[[hooks]]
+name = "session"
+type = "session_start"
+command = "node hooks/braid.cjs session"
+timeout = 15.0
+
+# main: never for a subagent's turns.
+[[hooks]]
+name = "prompt"
+type = "pre_agent"
+match = "main"
+command = "node hooks/braid.cjs prompt"
+timeout = 15.0

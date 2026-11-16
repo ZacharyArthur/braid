@@ -1,6 +1,6 @@
 ---
 name: retro
-description: "Find the tool failures agents keep repeating in this project, across Claude Code, Codex, ZCode and Pi transcripts, and turn them into AGENTS.md rules after a yes; then point to the harness's own usage, config and memory tools. Only when the user explicitly invokes it."
+description: "Find the tool failures agents keep repeating in this project, across Claude Code, Codex, ZCode, Pi and Vibe transcripts, and turn them into AGENTS.md rules after a yes; then point to the harness's own usage, config and memory tools. Only when the user explicitly invokes it."
 disable-model-invocation: true
 argument-hint: "[all] [insights] [<sessions>] [<days>d]"
 license: MIT
@@ -8,7 +8,7 @@ license: MIT
 
 Agents repeat the same mistakes across sessions: wrong-shell syntax, a missing
 tool, a wrong flag or path. Retro reads the transcripts every harness already
-keeps, finds the failures that recur, and proposes rules for the file all four
+keeps, finds the failures that recur, and proposes rules for the file all five
 harnesses read: the project's AGENTS.md. Usage, cost and config analysis stay
 with the tools the harness ships; retro points to them.
 
@@ -63,7 +63,8 @@ Target:
 - `all`: the user-level file of each installed harness the rule applies to:
   Claude Code `~/.claude/CLAUDE.md` (`$CLAUDE_CONFIG_DIR` if set), Codex
   `~/.codex/AGENTS.md` (`$CODEX_HOME`), ZCode `~/.zcode/AGENTS.md`, Pi
-  `~/.pi/agent/AGENTS.md` (`$PI_CODING_AGENT_DIR`).
+  `~/.pi/agent/AGENTS.md` (`$PI_CODING_AGENT_DIR`), Vibe `~/.vibe/AGENTS.md`
+  (`$VIBE_HOME`).
 
 Show every change as one diff with the rules numbered, then ask: accept all,
 drop some by number ("drop 2, 5"), or cancel. Write only what is accepted, and
@@ -77,15 +78,15 @@ saying it isn't installed. Offer to run a skill and run it only on a yes; a
 built-in command is for the user to type, so name it. Retro computes no token
 or cost figures itself.
 
-Verified 2026-10:
+Verified 2026-10 (Vibe 2026-11):
 
-| Finding | Claude Code | Codex | ZCode | Pi |
-|---|---|---|---|---|
-| Permission prompts or denials recur | `fewer-permission-prompts` skill | `/debug-config` | `zcode-configuration-guide` skill | none: Pi asks no approval |
-| Settings, hook or config errors | `update-config` skill, `/doctor` | `/debug-config`, `/hooks`, `codex doctor` | `diagnosing-hooks`, `zcode-configuration-guide` skills | `/settings`, `/reload` |
-| MCP server failures | `/mcp` | `/mcp` | `diagnosing-mcp` skill | `pi mcp list` |
-| Skill or plugin failures | `/plugin`, `skill-creator` skill | `/skills`, `/plugins`, `skill-creator` skill | `diagnosing-skills`, `diagnosing-plugins` skills | `pi list`, `pi config`, `/reload` |
-| Memory contradicts a new rule | `consolidate-memory` skill | `/memories` | none shipped | none shipped |
+| Finding | Claude Code | Codex | ZCode | Pi | Vibe |
+|---|---|---|---|---|---|
+| Permission prompts or denials recur | `fewer-permission-prompts` skill | `/debug-config` | `zcode-configuration-guide` skill | none: Pi asks no approval | `/config` (tools) |
+| Settings, hook or config errors | `update-config` skill, `/doctor` | `/debug-config`, `/hooks`, `codex doctor` | `diagnosing-hooks`, `zcode-configuration-guide` skills | `/settings`, `/reload` | `/config`, `/reload` |
+| MCP server failures | `/mcp` | `/mcp` | `diagnosing-mcp` skill | `pi mcp list` | `/mcp` |
+| Skill or plugin failures | `/plugin`, `skill-creator` skill | `/skills`, `/plugins`, `skill-creator` skill | `diagnosing-skills`, `diagnosing-plugins` skills | `pi list`, `pi config`, `/reload` | `/skills`, `/plugins`, `/reload-plugins` |
+| Memory contradicts a new rule | `consolidate-memory` skill | `/memories` | none shipped | none shipped | none shipped |
 
 Standing line, cost and cross-project:
 
@@ -94,3 +95,5 @@ Standing line, cost and cross-project:
 - Codex: `/status`, `/usage`.
 - ZCode: no usage or cost tool ships.
 - Pi: `/session` (this session's tokens and cost).
+- Vibe: `/status` (agent statistics), `/context`, and the footer's usage gauge
+  (spend against the plan, with a Vibe key and a Mistral model).

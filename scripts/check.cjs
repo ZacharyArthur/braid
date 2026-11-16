@@ -12,7 +12,12 @@ const read = (p) => fs.readFileSync(path.join(root, p), 'utf8');
 const exists = (p) => fs.existsSync(path.join(root, p));
 
 // Manifests: valid JSON, named braid, one shared version.
-const manifests = ['.claude-plugin/plugin.json', '.codex-plugin/plugin.json', '.zcode-plugin/plugin.json'];
+const manifests = [
+  '.claude-plugin/plugin.json',
+  '.codex-plugin/plugin.json',
+  '.zcode-plugin/plugin.json',
+  'plugin.json',
+];
 const versions = new Set();
 for (const m of manifests) {
   try {
@@ -35,6 +40,17 @@ const version = [...versions][0];
 if (!/^\d+\.\d+\.\d+$/.test(version || '')) fail(`manifest version "${version}" is not x.y.z`);
 else if (!read('CHANGELOG.md').includes(`## [${version}]`))
   fail(`CHANGELOG.md: no "## [${version}]" entry for the manifest version`);
+
+// Vibe's manifest (Agent Plugins 1.0): Vibe drops a plugin with any other $schema, loads its hooks only with the
+// extension, and would put a description in every system prompt, past the always-on budget.
+try {
+  const v = JSON.parse(read('plugin.json'));
+  if (v.$schema !== 'https://agent-plugins.org/schemas/1.0.0/plugin.schema.json')
+    fail('plugin.json: $schema must be https://agent-plugins.org/schemas/1.0.0/plugin.schema.json');
+  if (v.extensions?.['ai.mistral.vibe']?.schemaVersion !== 1)
+    fail('plugin.json: extensions["ai.mistral.vibe"].schemaVersion must be 1, or Vibe runs no hooks');
+  if ('description' in v) fail('plugin.json: no description (Vibe would inject it into every session)');
+} catch {} // unreadable: reported with the manifests above
 
 // Paths a manifest points at must exist (Claude Code and ZCode use the defaults: skills/, hooks/hooks.json).
 const codex = (() => {
@@ -85,6 +101,43 @@ try {
   }
 } catch (e) {
   fail(`hooks/hooks.json: ${e.message}`);
+}
+
+// ai.mistral.vibe/hooks.toml is what Vibe loads, run in the plugin's folder. Only the TOML it uses: [[hooks]]
+// tables of `key = "string"` or `key = number` lines. Any other line, key or a repeated key fails, since Vibe drops a
+// hook with an unknown key and the whole file on a repeated one.
+try {
+  const blocks = [];
+  for (const line of read('ai.mistral.vibe/hooks.toml').split(/\r?\n/)) {
+    if (/^\s*(#.*)?$/.test(line)) continue;
+    if (/^\[\[hooks\]\]\s*$/.test(line)) {
+      blocks.push({});
+      continue;
+    }
+    const kv = line.match(/^(name|type|command|match|timeout)\s*=\s*(?:"([^"]*)"|((?:0|[1-9]\d*)(?:\.\d+)?))\s*$/); // TOML: no leading zero
+    const h = blocks.at(-1);
+    if (!kv || !h || kv[1] in h) throw new Error(`unexpected line: ${line}`);
+    h[kv[1]] = kv[2] ?? Number(kv[3]);
+  }
+  if (blocks.length !== 2) throw new Error(`${blocks.length} hooks, want 2`);
+  for (const [name, type, arg, match] of [
+    ['session', 'session_start', 'session', undefined], // any match would drop resume, clear or fork
+    ['prompt', 'pre_agent', 'prompt', 'main'], // main: never a subagent's turns
+  ]) {
+    const h = blocks.find((x) => x.name === name);
+    if (!h) fail(`ai.mistral.vibe/hooks.toml: no hook named "${name}"`);
+    else if (
+      h.type !== type ||
+      h.command !== `node hooks/braid.cjs ${arg}` ||
+      h.match !== match ||
+      !(h.timeout >= 1 && h.timeout <= 15)
+    )
+      fail(
+        `ai.mistral.vibe/hooks.toml: "${name}" must be type ${type}, run node hooks/braid.cjs ${arg}, ${match ? `match "${match}"` : 'have no match'} and time out in 1-15 s`,
+      );
+  }
+} catch (e) {
+  fail(`ai.mistral.vibe/hooks.toml: ${e.message}`);
 }
 
 // Minimal frontmatter reader: `key: value`, quoted values, and `|` / `>` block scalars.
@@ -445,6 +498,53 @@ let alwaysOn = 0;
       ms >= 0 && ms < 3000 && bytes > 0,
       `hook with open stdin: ${ms < 0 ? 'still running after 4 s' : `${ms} ms, ${bytes} bytes`}`,
     );
+
+    // Vibe: its event names get its own output key, and its state stays in PLUGIN_DATA even when the shell that
+    // started Vibe exported another harness's variable (Vibe adds PLUGIN_DATA to what it inherited).
+    const vibeData = path.join(tmp, 'vibe-data');
+    const claudeData = path.join(tmp, 'data');
+    const vibe = (event, input) =>
+      JSON.parse(
+        execFileSync(process.execPath, [path.join(plugin, 'hooks', 'braid.cjs'), event], {
+          input: JSON.stringify({ session_id: 'vibe', cwd: path.dirname(proj), ...input }),
+          env: {
+            ...process.env,
+            BRAID_MAP: '',
+            PLUGIN_DATA: vibeData,
+            CLAUDE_PLUGIN_DATA: claudeData,
+            zcode_plugin_data: claudeData, // Windows matches variable names in any case
+          },
+        }).toString(),
+      );
+    const vStart = vibe('session', { hook_event_name: 'session_start', source: 'startup' });
+    expect(
+      vStart.hook_specific_output?.additional_context.includes('BRAID ACTIVE — level: full') &&
+        !vStart.hookSpecificOutput,
+      'Vibe session_start not answered under its own key alone',
+    );
+    const vLite = vibe('prompt', { hook_event_name: 'pre_agent', prompt: '/braid:braid lite' });
+    expect(
+      vLite.hook_specific_output?.additional_context.startsWith('BRAID LEVEL: lite'),
+      'Vibe pre_agent level switch not answered',
+    );
+    expect(
+      fs.existsSync(path.join(vibeData, 'sessions', 'vibe.json')) &&
+        !fs.existsSync(path.join(claudeData, 'sessions', 'vibe.json')),
+      "Vibe's state not kept in PLUGIN_DATA alone",
+    );
+    expect(
+      vibe('session', {
+        hook_event_name: 'session_start',
+        source: 'resume',
+      }).hook_specific_output?.additional_context.includes('level: lite'),
+      'Vibe resume lost the level',
+    );
+    // Other harnesses keep today's precedence and output with PLUGIN_DATA set too.
+    hook('prompt', { session_id: 'claude-too', prompt: '/braid:braid lite' }, { PLUGIN_DATA: vibeData });
+    expect(
+      fs.existsSync(path.join(claudeData, 'sessions', 'claude-too.json')),
+      'a Claude payload no longer prefers CLAUDE_PLUGIN_DATA',
+    );
   } catch (e) {
     fail(`hook: ${e.message}`);
   } finally {
@@ -474,7 +574,7 @@ let alwaysOn = 0;
   }
 }
 
-// retro's extractor on a fake home with all four stores: recurring failures counted across harnesses, one-offs,
+// retro's extractor on a fake home with all five stores: recurring failures counted across harnesses, one-offs,
 // other projects and prompt text left out, the window and `all` honored, insights read, nothing written.
 {
   // realpath: macOS's tmpdir is a symlink, and retro compares against the physical cwd.
@@ -609,6 +709,49 @@ let alwaysOn = 0;
     pi('pi-agent/sessions/--proj--/p3.jsonl', `fatal: can't find upstream 'r'`, 'powershell');
     pi('pi-agent/sessions/--other--/p4.jsonl', `fatal: can't find upstream 's'`, 'bash', other);
     pi('pi-agent/git/stray.jsonl', `fatal: can't find upstream 't'`); // outside sessions/: never read
+    // Vibe sessions, one folder each: meta.json, a generation's runtime state (its identity), chunks and journal.
+    // v1 fails in a chunk with an exit code; v2, a fork, only in its journal as a `failed` effect; both also ran
+    // `node -v` with no structured_content, as Vibe stores a few calls, which is no failure. v3 is a subagent, v4 is
+    // another project; corrupt or misshapen sessions and the store's index file sit beside them. The fork and the
+    // subagent both have a parent: only identity.kind tells them apart.
+    const vibeSession = (id, { cwd = proj, kind = 'root', chunk = [], journal = [] }) => {
+      const dir = `.vibe/logs/session/unified/${id}`;
+      const parent = kind === 'root' ? null : 'v1';
+      write(`${dir}/meta.json`, JSON.stringify({ session_id: id, origin_directory: cwd, parent_session_id: parent }));
+      write(`${dir}/generations/0000000000000001/runtime-state.json`, JSON.stringify({ identity: { kind } }));
+      write(`${dir}/chunks/a.json`, JSON.stringify(chunk));
+      write(
+        `${dir}/journal/0000000000000001.jsonl`,
+        jsonl(...journal.map((entry) => ({ payload: { delta: [{ entry }] } }))),
+      );
+    };
+    const vibeShell = (command, state, toolName = 'file_system.bash') => ({
+      type: 'effect',
+      detail: { kind: 'tool', toolName, input: { command } },
+      state,
+    });
+    const nodeV = vibeShell('node -v', {
+      status: 'completed',
+      output: { type: 'success', content: [{ type: 'text', text: 'v22' }] },
+    });
+    const gitExit = vibeShell('git push', {
+      status: 'completed',
+      output: { type: 'success', structured_content: { returncode: 1, stderr: `fatal: can't find upstream 'v'` } },
+    });
+    // v2's from the managed Git Bash tool, which groups with the rest
+    const gitFailed = vibeShell(
+      'git push',
+      { status: 'failed', error: { message: `fatal: can't find upstream 'w'` } },
+      'file_system.git_bash',
+    );
+    vibeSession('v1', { chunk: [nodeV, gitExit] });
+    vibeSession('v2', { kind: 'fork', chunk: [nodeV], journal: [gitFailed] });
+    vibeSession('v3', { kind: 'subagent', chunk: [gitExit] });
+    vibeSession('v4', { cwd: other, chunk: [gitExit] });
+    write('.vibe/logs/session/unified/v5/meta.json', '{not json');
+    write('.vibe/logs/session/unified/v6/meta.json', 'null');
+    write('.vibe/logs/session/unified/v7/meta.json', '{"origin_directory":123}');
+    write('.vibe/logs/session/unified/.session-index.json', '{}');
     const dbFile = path.join(tmp, '.zcode/cli/db/db.sqlite');
     let sqlite = false;
     try {
@@ -656,27 +799,31 @@ let alwaysOn = 0;
           CODEX_HOME: '',
           PI_CODING_AGENT_DIR: '',
           PI_CODING_AGENT_SESSION_DIR: '',
+          VIBE_HOME: '',
           ...env,
         },
         stdio: ['ignore', 'pipe', 'pipe'],
       }).toString();
     const retro = (...args) => run({}, ...args);
     const out = retro();
+    // Vibe's v1 and v2 join the `git` group; v3, v4 and v5 stay out.
     const want = sqlite
-      ? '1. 7 sessions (claude, codex, pi, zcode) · shell git'
-      : '1. 6 sessions (claude, codex, pi) · shell git';
+      ? '1. 9 sessions (claude, codex, pi, vibe, zcode) · shell git'
+      : '1. 8 sessions (claude, codex, pi, vibe) · shell git';
     if (!out.includes(want)) throw new Error(`no "${want}" in:\n${out}`);
-    if (!out.includes('pi 1)')) throw new Error(`Pi's default store not read alone:\n${out}`);
+    if (!out.includes('pi 1,')) throw new Error(`Pi's default store not read alone:\n${out}`);
+    if (!out.includes('vibe 2)')) throw new Error(`Vibe's sessions not counted as two:\n${out}`);
+    if (!run({ VIBE_HOME: '~/none' }).includes('vibe 0)')) throw new Error('retro read ~/.vibe with VIBE_HOME set');
     // The other folder's two project sessions join the `git` group whichever shell ran it; p4 stays out.
     const wantOther = sqlite
-      ? '1. 8 sessions (claude, codex, pi, zcode) · shell git'
-      : '1. 7 sessions (claude, codex, pi) · shell git';
+      ? '1. 10 sessions (claude, codex, pi, vibe, zcode) · shell git'
+      : '1. 9 sessions (claude, codex, pi, vibe) · shell git';
     for (const [name, value] of [
       ['PI_CODING_AGENT_SESSION_DIR', '~/pi-agent/sessions'],
       ['PI_CODING_AGENT_DIR', '~/pi-agent'],
     ]) {
       const piOut = run({ [name]: value });
-      if (!piOut.includes('pi 2)') || !piOut.includes(wantOther))
+      if (!piOut.includes('pi 2,') || !piOut.includes(wantOther))
         throw new Error(`no "${wantOther}" from ${name}=${value}:\n${piOut}`);
       if (/npm|SECRET|shell node/.test(piOut))
         throw new Error(`Pi: other project, prompt text or a passing step in:\n${piOut}`);
@@ -705,7 +852,7 @@ let alwaysOn = 0;
       const broken = retro();
       if (
         !broken.includes('zcode: skipped, its store could not be read') ||
-        !broken.includes('6 sessions (claude, codex, pi)')
+        !broken.includes('8 sessions (claude, codex, pi, vibe)')
       )
         throw new Error(`a broken ZCode store stopped the other harnesses:\n${broken}`);
     }

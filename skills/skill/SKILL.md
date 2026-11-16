@@ -11,6 +11,10 @@ code, write and follow a format; a skill adds only what it lacks: this team's
 process, its conventions, the traps, and what to hand back. The smallest skill
 that reliably changes behavior wins.
 
+**In Vibe:** say first that this skill has no Vibe route yet (skill folders,
+user-only marks, test runs, evals), then go on with the steps for the harness
+the skill is meant for.
+
 **Heavy path:** the user wants evals against a baseline, benchmarks, or
 description-trigger tuning.
 

@@ -6,8 +6,8 @@ argument-hint: "[section: project|stack|commands|gate|conventions|workflow|deleg
 license: MIT
 ---
 
-`AGENTS.md` is the project's rulebook for every agent: Codex, ZCode and Pi
-read it directly, Claude Code through a `CLAUDE.md` containing `@AGENTS.md`. It loads
+`AGENTS.md` is the project's rulebook for every agent: Codex, ZCode, Pi and
+Vibe read it directly, Claude Code through a `CLAUDE.md` containing `@AGENTS.md`. It loads
 every session, so it holds commands and decisions, never explanations.
 
 ## Which mode
@@ -96,7 +96,8 @@ things live is `braid/map.md`'s job; name a folder only when an invariant needs 
 1. Summary table: section → what it defines → command.
 2. Findings: **gaps** (a default section or tool category missing), **drift**
    (AGENTS.md says one tool or workflow, the repo uses another; Delegation
-   names an explorer but its file is missing or names another model; read
+   names an explorer but its file is missing or names another model, except a
+   built-in a project can't define, such as Vibe's `explore`; read
    `delegation.md` for the files), **broken**
    (run each command: fails or not installed).
 3. Offer to walk through sections, explaining the choice and its alternatives.

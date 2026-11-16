@@ -24,7 +24,7 @@ In a new session:
 - [ ] In a repo with code and no `braid/map.md`, ask "what does this code already define?" → it quotes the injected **Codebase map**; with `BRAID_MAP=0` set before launch, no map
 - [ ] In a scratch repo, `/braid:standards`: accept the Delegation round as recommended → no Delegation section, no `.claude/agents/` or `.codex/agents/` file; again with braid's policy, yes to Claude Code only → the section plus `.claude/agents/Explore.md`; after a restart, `/tasks` shows Haiku on the next Explore run
 - [ ] `/braid:humanizer`, `/braid:security-audit`, `/braid:help` and `/braid:skill` appear in the `/` menu; ask "make this sound less AI" without the command → humanizer does **not** auto-load
-- [ ] In a repo you've also used Codex, ZCode or Pi in, `/braid:retro` → its header counts sessions from each harness; cancel at the diff and nothing changes; `/braid:retro insights` with no `/insights` report says to run it first
+- [ ] In a repo you've also used Codex, ZCode, Pi or Vibe in, `/braid:retro` → its header counts sessions from each harness; cancel at the diff and nothing changes; `/braid:retro insights` with no `/insights` report says to run it first
 
 ## Codex
 
@@ -41,6 +41,7 @@ Run `codex`, open `/hooks`, review and trust braid's hooks, start a new thread.
 - [ ] `$spec propose add-something` works
 - [ ] User-only skills don't auto-trigger
 - [ ] In a scratch repo, `$standards` with braid's delegation policy, yes to Codex → `.codex/agents/explorer.toml`; on the next explorer run, `/agent` to its thread, then `/status` shows `gpt-6-luna`
+- [ ] With the root `plugin.json` (Vibe's manifest) in the tree, braid installs and its hooks run as before
 
 ## ZCode
 
@@ -52,6 +53,7 @@ Install from the plugin marketplace (GitHub source `ZacharyArthur/braid`).
 - [ ] Skills listed in Settings → Skills (plugin skills have no switch there)
 - [ ] `/braid:spec propose add-something` → `braid/changes/add-something/`; a new session's Project state shows it
 - [ ] `/braid:standards` with braid's delegation policy, giving the model picker's Flash id: accept the ZCode project explorer → `.zcode/agents/braid-explore.md`; in a new session, ask which subagents it can delegate to and note whether Settings → Subagents lists it on Flash (record both in `delegation.md`). Not available: rerun `/braid:standards delegation`, accept the fallback → `~/.zcode/agents/braid-explore.md`, listed in a new session. Decline both → the Settings step is shown and nothing is written
+- [ ] With the root `plugin.json` (Vibe's manifest) in the tree, braid installs and its hooks run as before
 
 ## Pi
 
@@ -69,6 +71,19 @@ To test a branch, `pi install <path to your checkout>` instead, and `pi remove <
 - [ ] Then `/skill:braid` → back at **full**
 - [ ] `/skill:help` lists every skill; ask "make this sound less AI" without the command → humanizer does **not** auto-load
 - [ ] After a Pi session with a failed command in a repo, `/skill:retro` in that repo → its header counts `pi` sessions; the standing line names `/session`
+
+## Vibe
+
+Run the README's clone once in Windows PowerShell and once in a POSIX shell (Git Bash, macOS or Linux), each with `VIBE_HOME` set to a fresh folder and the clone's target changed to match: `"$env:VIBE_HOME/plugins/braid"` in PowerShell, `"$VIBE_HOME/plugins/braid"` in a POSIX shell (as written, it would install into your real `~/.vibe`). Then start a new session. To test a branch, clone your checkout's path instead.
+
+- [ ] `/plugins` lists braid; the system prompt's plugin line carries no braid description
+- [ ] Ask "what braid level are you at?" → **full**
+- [ ] As a later message, `/braid:braid lite`; quit, `vibe --continue`, ask again → still **lite** (state under `logs/session/plugins/data/<session id>/braid/sessions/`)
+- [ ] "stop braid", then bare `/braid:braid` → back at **full**
+- [ ] `/braid:help` lists every skill; ask "make this sound less AI" without the command → humanizer does **not** auto-load, and `/braid:humanizer` still runs
+- [ ] `/braid:braid drift on`, then `/compact`, then a prompt → the drift line still arrives (the core itself is not re-injected)
+- [ ] The README's `pull`, with the same target, and a new commit, then a new session → the new hook runs; the old session keeps the old one
+- [ ] After a Vibe session with a failed command in a repo, `/braid:retro` there → its header counts `vibe` sessions; the standing line names `/status`
 
 ## A/B against ponytail
 

@@ -10,7 +10,7 @@ The gate in [AGENTS.md](AGENTS.md#before-saying-done) must pass before every com
 2. User-only (the default; the always-on budget has little room): `disable-model-invocation: true`, the description ends "Only when the user explicitly invokes it.", and `skills/<name>/agents/openai.yaml` sets `allow_implicit_invocation: false`. Model-invoked: description ≤ 300 chars and a reason it must load on its own.
 3. A row in [UPSTREAM.md](UPSTREAM.md) (`clean-room` with `-` cells if it has no source). Vendored: keep the upstream `LICENSE`. Based or derived: the upstream notice in `THIRD-PARTY-NOTICES`.
 4. A row in the README's skill table and in `skills/help/SKILL.md`.
-5. A `CHANGELOG.md` entry and a version bump in all three `plugin.json` files: minor for a new skill or verb, major for a rename or removal.
+5. A `CHANGELOG.md` entry and a version bump in all four `plugin.json` files (the root one is Vibe's): minor for a new skill or verb, major for a rename or removal.
 6. `node scripts/check.cjs`, then the harness checklist in [TESTING.md](TESTING.md) before the release.
 
 ## Adding a mod
@@ -24,7 +24,7 @@ Mods are Claude Code only (ADR 0011): each is its own plugin, so they never touc
 
 ## Releasing
 
-1. On the change's branch, before the PR: the new `version` in all three `plugin.json` files (semver as the top of `CHANGELOG.md` defines it), and the change's CHANGELOG entry under `## [X.Y.Z] - YYYY-MM-DD`.
+1. On the change's branch, before the PR: the new `version` in all four `plugin.json` files (the root one is Vibe's) (semver as the top of `CHANGELOG.md` defines it), and the change's CHANGELOG entry under `## [X.Y.Z] - YYYY-MM-DD`.
 2. After the squash merge, on that commit in `main`: `git tag -a vX.Y.Z -m "braid vX.Y.Z" <commit>`, then `git push origin vX.Y.Z`.
 3. `gh release create vX.Y.Z --verify-tag --title "braid vX.Y.Z" --notes-file <notes>`, the notes being that version's CHANGELOG section without its heading. Without the tag and release, GitHub's Releases page falls behind the manifests.
 

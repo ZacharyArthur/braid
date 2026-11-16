@@ -8,7 +8,7 @@ What `/braid:retro` reads, what it proposes and where it writes, and how it rout
 
 ### Requirement: Retro reads every harness's sessions for the project
 
-`/braid:retro` SHALL run only when the user invokes it, and SHALL read the Claude Code, Codex, ZCode and Pi session stores present on the machine for the current project, newest first across stores, within a window of the 30 most recent sessions and 30 days by default. Either bound SHALL accept any value the user passes, with no maximum.
+`/braid:retro` SHALL run only when the user invokes it, and SHALL read the Claude Code, Codex, ZCode, Pi and Vibe session stores present on the machine for the current project, newest first across stores, within a window of the 30 most recent sessions and 30 days by default. Either bound SHALL accept any value the user passes, with no maximum.
 
 #### Scenario: Two harnesses used on one project
 
@@ -19,6 +19,11 @@ What `/braid:retro` reads, what it proposes and where it writes, and how it rout
 
 - **WHEN** the project has Pi sessions in the window, in Pi's default store or the folder Pi's session-folder variable names
 - **THEN** their failed tool calls are counted with the other harnesses'
+
+#### Scenario: Vibe sessions
+
+- **WHEN** the project has Vibe sessions in the window, in Vibe's home folder (`VIBE_HOME` or the default)
+- **THEN** their failed tool calls and non-zero shell exits are counted with the other harnesses', a shell failure grouping with the same failure from any other harness, including one not yet written out of Vibe's journal, and a forked conversation's session is counted as a session of its own
 
 #### Scenario: Window overridden
 
@@ -133,3 +138,8 @@ Retro SHALL end with the vendor tools its findings call for, plus one line namin
 
 - **WHEN** retro runs in Pi
 - **THEN** the standing line names Pi's session stats command for the current session's tokens and cost
+
+#### Scenario: Vibe
+
+- **WHEN** retro runs in Vibe
+- **THEN** the standing line names Vibe's session statistics and context commands for the current session, and its cost tool, or that Vibe ships none

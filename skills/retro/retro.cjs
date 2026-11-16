@@ -32,6 +32,8 @@ const tilde = (p) => p.replace(/^~(?=$|[\\/])/, home);
 const piSessionsDir = tilde(
   process.env.PI_CODING_AGENT_SESSION_DIR || path.join(process.env.PI_CODING_AGENT_DIR || '~/.pi/agent', 'sessions'),
 );
+// Vibe's store under its home (`VIBE_HOME`, else ~/.vibe); a `session_logging.save_dir` in its config is not read.
+const vibeStore = path.join(tilde(process.env.VIBE_HOME || '~/.vibe'), 'logs', 'session', 'unified');
 const since = Math.max(0, Date.now() - days * 86400000); // any window, however large
 const norm = (p) => (process.platform === 'win32' ? path.resolve(p).toLowerCase() : path.resolve(p));
 const root = (() => {
@@ -71,7 +73,18 @@ const headCwd = (file) => {
 // The program a shell command runs: the first segment's executable, past cd, export and set, env prefixes
 // (`FOO=1 git`), PowerShell assignments (`$x = git ...`; a literal `$x = 'a'` is skipped), the `&` call operator, a
 // quoted path (`"/usr/bin/git" push`) and here-string bodies.
-const SHELL_TOOLS = new Set(['Bash', 'PowerShell', 'exec', 'exec_command', 'bash', 'powershell']);
+const SHELL_TOOLS = new Set([
+  'Bash',
+  'PowerShell',
+  'exec',
+  'exec_command',
+  'bash',
+  'powershell',
+  'file_system.bash',
+  // Vibe's managed shell tools, behind a setting and an experiment, on native Windows
+  'file_system.git_bash',
+  'file_system.powershell',
+]);
 const program = (cmd) => {
   const text = String(cmd || '').replace(/@(['"])\r?\n[\s\S]*?\r?\n\1@/g, '');
   for (const seg of text.split(/&&|\|\||;|\||\n/)) {
@@ -302,7 +315,67 @@ function piSessions() {
   }));
 }
 
-const sessions = [...claudeSessions(), ...codexSessions(), ...zcodeSessions(), ...piSessions()]
+// Vibe: one folder per session. A failed call is an `effect` entry that `failed`, or a shell call whose exit code is
+// a number other than 0 (Vibe marks those `success`). Entries sit in chunks/*.json arrays and, until Vibe writes
+// them out, only in journal/*.jsonl deltas; every copy is read, since a session counts once per signature anyway.
+function vibeSessions() {
+  if (!exists(vibeStore)) return [];
+  return fs.readdirSync(vibeStore, { withFileTypes: true }).flatMap((e) => {
+    if (!e.isDirectory()) return []; // .session-index.json sits beside the folders
+    const dir = path.join(vibeStore, e.name);
+    try {
+      const meta = path.join(dir, 'meta.json');
+      const cwd = JSON.parse(fs.readFileSync(meta, 'utf8')).origin_directory;
+      if (typeof cwd !== 'string') return [];
+      // Subagent sessions are left out, as ZCode's are. A fork has a parent_session_id too, so the mark is the
+      // identity Vibe keeps in each generation's runtime state, the same in all of them.
+      const states = files(path.join(dir, 'generations'), (n) => n === 'runtime-state.json');
+      if (states.some((f) => parse(fs.readFileSync(f, 'utf8'))?.identity?.kind === 'subagent')) return [];
+      return [
+        {
+          harness: 'vibe',
+          id: e.name,
+          time: fs.statSync(meta).mtimeMs, // end_time stays put when a session is resumed
+          cwd: () => cwd,
+          failures: () => vibeFailures(dir),
+        },
+      ];
+    } catch {
+      return []; // an unreadable session drops alone
+    }
+  });
+}
+function vibeFailures(dir) {
+  const out = [];
+  const take = (x) => {
+    if (x?.type !== 'effect' || !x.detail?.toolName) return;
+    const st = x.state || {};
+    const sc = st.output?.structured_content || {};
+    const exit = SHELL_TOOLS.has(x.detail.toolName) && typeof sc.returncode === 'number' && sc.returncode !== 0;
+    if (st.status !== 'failed' && !exit) return;
+    out.push({
+      tool: x.detail.toolName,
+      cmd: x.detail.input?.command,
+      text: st.status === 'failed' ? st.error?.message : sc.stderr || sc.stdout,
+    });
+  };
+  try {
+    for (const f of files(path.join(dir, 'chunks'), (n) => n.endsWith('.json'))) {
+      const a = parse(fs.readFileSync(f, 'utf8'));
+      if (Array.isArray(a)) a.forEach(take);
+    }
+    // shortcut(yagni): a set_history_entries op (Vibe's rare fallback) carries `entries` and isn't read; read it if
+    // a failure there is ever missed. None carried a shell call in the user's store (round 4).
+    for (const f of files(path.join(dir, 'journal'), (n) => n.endsWith('.jsonl')))
+      for (const j of fs.readFileSync(f, 'utf8').split('\n').map(parse))
+        for (const d of Array.isArray(j?.payload?.delta) ? j.payload.delta : []) take(d?.entry);
+  } catch {
+    return out; // what was read before an unreadable file
+  }
+  return out;
+}
+
+const sessions = [...claudeSessions(), ...codexSessions(), ...zcodeSessions(), ...piSessions(), ...vibeSessions()]
   .filter((s) => s.time >= since && inProject(s.cwd()))
   .sort((a, b) => b.time - a.time)
   .slice(0, limit);
@@ -322,7 +395,9 @@ const day = (t) => {
   const d = new Date(t);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
-const counts = ['claude', 'codex', 'zcode', 'pi'].map((h) => `${h} ${sessions.filter((s) => s.harness === h).length}`);
+const counts = ['claude', 'codex', 'zcode', 'pi', 'vibe'].map(
+  (h) => `${h} ${sessions.filter((s) => s.harness === h).length}`,
+);
 console.log(
   `retro: ${all ? 'all projects' : root} · ${sessions.length} sessions (${counts.join(', ')}) · since ${day(since)}`,
 );

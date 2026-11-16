@@ -1,6 +1,6 @@
 ---
 name: help
-description: "Explain braid's skills: what each does, when to use it, its arguments, and how to invoke it in Claude Code, Codex, ZCode and Pi. Pass a skill name for a deeper walkthrough of that one. Only when the user explicitly invokes it."
+description: "Explain braid's skills: what each does, when to use it, its arguments, and how to invoke it in Claude Code, Codex, ZCode, Pi and Vibe. Pass a skill name for a deeper walkthrough of that one. Only when the user explicitly invokes it."
 disable-model-invocation: true
 argument-hint: "[skill name]"
 license: MIT
@@ -26,6 +26,7 @@ Show the sections below, as they are.
 | Codex | `$<skill> [args]` | `$spec propose add-login` |
 | ZCode | `/braid:<skill> [args]` | `/braid:spec propose add-login` |
 | Pi | `/skill:<skill> [args]` | `/skill:spec propose add-login` |
+| Vibe | `/braid:<skill> [args]` | `/braid:spec propose add-login` |
 
 **Auto** skills also load by themselves when a prompt matches; the rest run
 only when you call them. ZCode is the exception: it has no user-only flag, so
@@ -36,7 +37,7 @@ any skill can load when a prompt matches it.
 The core rules (YAGNI > KISS > DRY) are injected every session and after
 compaction, with one-line pointers to the active change, route, repo map and
 handoff, and, in a git repo with no `braid/map.md`, a generated map of what the
-code already defines (`BRAID_MAP=0` turns it off). ZCode never re-injects
+code already defines (`BRAID_MAP=0` turns it off). ZCode and Vibe never re-inject
 after `/compact`; there `drift on` restates the level on every prompt. `/braid:braid lite|full|ultra` sets the level, `drift on|off` toggles
 a per-prompt reminder, "stop braid" turns it off for the session.
 
